@@ -1,9 +1,6 @@
 package de.yanwittmann.matheval;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class Lexer {
@@ -18,6 +15,14 @@ public class Lexer {
         iterator.forEach(tokens::add);
         System.out.println("\nAll tokens:");
         tokens.forEach(System.out::println);
+    }
+
+    public String getExpression() {
+        return expression;
+    }
+
+    public List<Token> getTokens() {
+        return Collections.unmodifiableList(tokens);
     }
 
     private static class StringIterator {
@@ -58,11 +63,7 @@ public class Lexer {
 
         @Override
         public String toString() {
-            return "Token{" +
-                   "value='" + value + '\'' +
-                   ", type=" + type +
-                   ", position=" + position +
-                   '}';
+            return value + "     (" + type + ")";
         }
     }
 
