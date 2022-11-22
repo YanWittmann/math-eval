@@ -1,4 +1,7 @@
-package de.yanwittmann.matheval;
+package de.yanwittmann.matheval.interpreter;
+
+import de.yanwittmann.matheval.EvalRuntime;
+import de.yanwittmann.matheval.parser.Parser;
 
 public class Interpreter {
 

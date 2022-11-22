@@ -1,4 +1,6 @@
-package de.yanwittmann.matheval;
+package de.yanwittmann.matheval.lexer;
+
+import de.yanwittmann.matheval.operator.Operators;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -6,19 +8,26 @@ import java.util.function.Consumer;
 public class Lexer {
 
     private final String expression;
+    private final Operators operators;
     private final List<Token> tokens = new ArrayList<>();
 
-    public Lexer(String expression) {
+    public Lexer(String expression, Operators operators) {
         this.expression = expression;
+        this.operators = operators;
 
-        final TokenIterator iterator = new TokenIterator(expression);
+        final TokenIterator iterator = new TokenIterator(expression, operators);
         iterator.forEach(tokens::add);
-        System.out.println("\nAll tokens:");
+
+        System.out.println("\nLexed tokens:");
         tokens.forEach(System.out::println);
     }
 
     public String getExpression() {
         return expression;
+    }
+
+    public Operators getOperators() {
+        return operators;
     }
 
     public List<Token> getTokens() {
@@ -61,9 +70,25 @@ public class Lexer {
             this.position = position;
         }
 
+        public Token(String value, TokenType type) {
+            this(value, type, -1);
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public TokenType getType() {
+            return type;
+        }
+
+        public int getPosition() {
+            return position;
+        }
+
         @Override
         public String toString() {
-            return value + "     (" + type + ")";
+            return value + " (" + type + ")";
         }
     }
 
@@ -86,9 +111,11 @@ public class Lexer {
     private static class TokenIterator implements Iterable<Token>, Iterator<Token> {
         private final StringIterator stringIterator;
         private Token nextToken;
+        private Operators operators;
 
-        public TokenIterator(String expression) {
+        public TokenIterator(String expression, Operators operators) {
             this.stringIterator = new StringIterator(expression + " ");
+            this.operators = operators;
             findNext();
         }
 
@@ -105,15 +132,10 @@ public class Lexer {
         }
 
         private final static char[] SINGLE_CHARACTER_TOKENS = {
-                '+', '-', '*', '/', '%', '^',
                 '(', ')', '[', ']', '{', '}',
                 ',', ';',
-                '!', ':', '.',
-                '=', '<', '>', '&', '|'
-        };
-
-        private final static String[] DOUBLE_CHARACTER_TOKENS = {
-                "==", "!=", "<=", ">=", "&&", "||"
+                ':', '.',
+                '='
         };
 
         private final static String[] KEYWORDS = {
@@ -127,11 +149,9 @@ public class Lexer {
             return false;
         }
 
-        private boolean isDoubleCharacterToken(String s) {
-            for (String token : DOUBLE_CHARACTER_TOKENS) {
-                if (token.equals(s)) return true;
-            }
-            return false;
+        private boolean isOperator(String s) {
+            return this.operators.getOperators().stream()
+                    .anyMatch(operator -> operator.getSymbol().equals(s));
         }
 
         private boolean isKeyword(String s) {
@@ -180,7 +200,7 @@ public class Lexer {
                         } else if (Character.isLetter(c)) {
                             buffer.append(c);
                             state = 8;
-                        } else if (isSingleCharacterToken(c) && !isDoubleCharacterToken("" + c + this.stringIterator.peek())) {
+                        } else if (isSingleCharacterToken(c) && !isOperator("" + c + this.stringIterator.peek())) {
                             buffer.append(c);
                             if (c == '(') {
                                 nextToken = createToken(buffer, TokenType.OPEN_PARENTHESIS);
@@ -202,9 +222,13 @@ public class Lexer {
                                 nextToken = createToken(buffer, TokenType.OPERATOR);
                             }
                             return;
-                        } else if (isDoubleCharacterToken("" + c + this.stringIterator.peek())) {
+                        } else if (isOperator("" + c + this.stringIterator.peek())) {
                             buffer.append(c);
                             buffer.append(this.stringIterator.next());
+                            nextToken = createToken(buffer, TokenType.OPERATOR);
+                            return;
+                        } else if (isOperator("" + c)) {
+                            buffer.append(c);
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             return;
                         } else {
@@ -310,11 +334,11 @@ public class Lexer {
                         }
                         break;
                     case 9:
-                        if (isSingleCharacterToken(c)) {
+                        if (isSingleCharacterToken(c) || isOperator("" + c)) {
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             this.stringIterator.stepBack();
                             return;
-                        } else if (isDoubleCharacterToken("" + c + this.stringIterator.peek())) {
+                        } else if (isOperator("" + c + this.stringIterator.peek())) {
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             this.stringIterator.stepBack();
                             return;
