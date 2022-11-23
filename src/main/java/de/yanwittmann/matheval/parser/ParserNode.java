@@ -51,11 +51,12 @@ public class ParserNode {
      * Formats the node tree below this node.<br>
      * Example:<br>
      * <code>
-     * type: value
-     * ├─ type: value
-     * │  ├─ type: value
-     * │  └─ type: value
+     * type: value<br>
+     * ├─ type: value<br>
+     * │  ├─ type: value<br>
+     * │  └─ type: value<br>
      * └─ type: value
+     * </code>
      *
      * @return
      */
@@ -89,18 +90,9 @@ public class ParserNode {
 
     public enum NodeType {
         ASSIGNMENT,
-        IDENTIFIER,
-        OPERATOR,
-        EXPRESSION,
-        LITERAL,
-        PARENTHESIS_PAIR,
-        SQUARE_BRACKET_PAIR,
-        CURLY_BRACKET_PAIR,
-        OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
-        OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET,
-        OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET,
-        FUNCTION_CALL,
-        FUNCTION_CALL_NAME,
-        FUNCTION_CALL_ARGUMENTS,
+        EXPRESSION, STATEMENT,
+        IDENTIFIER, ACCESSOR_IDENTIFIER,
+        PARENTHESIS_PAIR, SQUARE_BRACKET_PAIR, CURLY_BRACKET_PAIR,
+        FUNCTION, FUNCTION_CALL, FUNCTION_CALL_NAME, FUNCTION_CALL_ARGUMENTS,
     }
 }

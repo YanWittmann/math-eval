@@ -88,7 +88,7 @@ public class Lexer {
 
         @Override
         public String toString() {
-            return value + " (" + type + ")";
+            return type + ": " + value;
         }
     }
 
@@ -135,7 +135,6 @@ public class Lexer {
                 '(', ')', '[', ']', '{', '}',
                 ',', ';',
                 ':', '.',
-                '='
         };
 
         private final static String[] KEYWORDS = {

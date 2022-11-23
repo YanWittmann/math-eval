@@ -2,10 +2,10 @@ package de.yanwittmann.matheval.operator;
 
 import de.yanwittmann.matheval.interpreter.Value;
 import de.yanwittmann.matheval.lexer.Lexer;
+import de.yanwittmann.matheval.parser.Parser;
 import de.yanwittmann.matheval.parser.ParserNode;
 import de.yanwittmann.matheval.parser.ParserRule;
 
-import java.util.List;
 import java.util.function.Function;
 
 public interface Operator {
@@ -18,6 +18,10 @@ public interface Operator {
 
     boolean isRightAssociative();
 
+    default boolean shouldCreateParserRule() {
+        return true;
+    };
+
     Value<?> evaluate(Value<?>... arguments);
 
     default boolean isEmpty(String string) {
@@ -29,17 +33,16 @@ public interface Operator {
             for (int i = 0; i < tokens.size(); i++) {
                 final Object token = tokens.get(i);
 
-                if (token instanceof ParserNode) {
-                    final ParserNode operator = (ParserNode) token;
-                    final List<Object> operatorChildren = operator.getChildren();
-                    final boolean symbolEqual = getSymbol().equals(operatorChildren.size() > 0 && operatorChildren.get(0) instanceof Lexer.Token ? ((Lexer.Token) operatorChildren.get(0)).getValue() : null);
+                if (token instanceof Lexer.Token) {
+                    final Lexer.Token operator = (Lexer.Token) token;
+                    final boolean symbolEqual = getSymbol().equals(operator.getValue());
 
-                    if (operator.getType() == ParserNode.NodeType.OPERATOR && symbolEqual) {
+                    if (operator.getType() == Lexer.TokenType.OPERATOR && symbolEqual) {
                         final Object before = i > 0 ? tokens.get(i - 1) : null;
                         final Object after = i < tokens.size() - 1 ? tokens.get(i + 1) : null;
 
-                        final boolean hasBefore = isValidOperatorArgument(before);
-                        final boolean hasAfter = isValidOperatorArgument(after);
+                        final boolean hasBefore = Parser.isEvaluableToValue(before);
+                        final boolean hasAfter = Parser.isEvaluableToValue(after);
 
                         final boolean leftMatches = (isLeftAssociative() && hasBefore) || (!isLeftAssociative() && !hasBefore);
                         final boolean rightMatches = (isRightAssociative() && hasAfter) || (!isRightAssociative() && !hasAfter);
@@ -51,7 +54,7 @@ public interface Operator {
 
                             final int leftIndex = isLeftAssociative() ? i - 1 : i;
                             final int rightIndex = isRightAssociative() ? i + 1 : i;
-                            ParserRule.replace(tokens, leftIndex, rightIndex, operatorParentNode);
+                            ParserRule.replace(tokens, operatorParentNode, leftIndex, rightIndex);
                             return true;
                         }
                     }
@@ -61,23 +64,11 @@ public interface Operator {
         };
     }
 
-    default boolean isValidOperatorArgument(Object argument) {
-        if (argument instanceof ParserNode) {
-            final ParserNode parsed = (ParserNode) argument;
-            final ParserNode.NodeType type = parsed.getType();
-
-            if (type == ParserNode.NodeType.EXPRESSION) {
-                return true;
-            } else if (type == ParserNode.NodeType.LITERAL) {
-                return true;
-            }
-        }
-
-        return false;
+    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value<?>[], Value<?>> evaluator) {
+        return Operator.make(symbol, precedence, left, right, evaluator, true);
     }
 
-    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value<?>[], Value<?>>
-            evaluator) {
+    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value<?>[], Value<?>> evaluator, boolean shouldCreateParserRule) {
         return new Operator() {
             @Override
             public String getSymbol() {
@@ -97,6 +88,11 @@ public interface Operator {
             @Override
             public boolean isRightAssociative() {
                 return right;
+            }
+
+            @Override
+            public boolean shouldCreateParserRule() {
+                return shouldCreateParserRule;
             }
 
             @Override

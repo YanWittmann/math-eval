@@ -30,29 +30,64 @@ public class Parser {
         }
     }
 
-    public static boolean isLiteral(Token token) {
-        return token.getType() == TokenType.STRING_LITERAL || token.getType() == TokenType.NUMBER_LITERAL ||
-               token.getType() == TokenType.BOOLEAN_LITERAL || token.getType() == TokenType.REGEX_LITERAL ||
-               token.getType() == TokenType.OTHER_LITERAL;
+    public static boolean isLiteral(Object token) {
+        return isType(token, TokenType.STRING_LITERAL) || isType(token, TokenType.NUMBER_LITERAL) ||
+               isType(token, TokenType.BOOLEAN_LITERAL) || isType(token, TokenType.REGEX_LITERAL) ||
+               isType(token, TokenType.OTHER_LITERAL);
     }
 
-    private boolean isTokenType(Object token, TokenType type) {
-        return token instanceof Token && ((Token) token).getType() == type;
+    public static boolean isAssignable(Object token) {
+        return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.ACCESSOR_IDENTIFIER);
+    }
+
+    public static boolean isEvaluableToValue(Object token) {
+        return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.ACCESSOR_IDENTIFIER) ||
+               isType(token, ParserNode.NodeType.EXPRESSION) || isType(token, ParserNode.NodeType.FUNCTION_CALL) ||
+               isLiteral(token);
+    }
+
+    public static boolean isOperator(Object token, String symbol) {
+        return isType(token, TokenType.OPERATOR) && ((Token) token).getValue().equals(symbol);
+    }
+
+    public static boolean isStatementFinisher(Object token) {
+        return isType(token, TokenType.SEMICOLON) || isType(token, TokenType.NEWLINE);
+    }
+
+    private static boolean isType(Object token, Object type) {
+        if (token instanceof Token) {
+            final Token cast = (Token) token;
+
+            if (cast.getType() == type) {
+                return true;
+            }
+        }
+
+        if (token instanceof ParserNode) {
+            final ParserNode cast = (ParserNode) token;
+
+            if (cast.getType() == type) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @SuppressWarnings("unchecked")
     private void generateRules() {
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.LITERAL, (t) -> null, (t) -> isTokenType(t, TokenType.NUMBER_LITERAL)));
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.LITERAL, (t) -> null, (t) -> isTokenType(t, TokenType.STRING_LITERAL)));
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.LITERAL, (t) -> null, (t) -> isTokenType(t, TokenType.BOOLEAN_LITERAL)));
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.LITERAL, (t) -> null, (t) -> isTokenType(t, TokenType.REGEX_LITERAL)));
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.LITERAL, (t) -> null, (t) -> isTokenType(t, TokenType.OTHER_LITERAL)));
-
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.OPERATOR, (t) -> null, (t) -> isTokenType(t, TokenType.OPERATOR)));
-
         for (Operator operator : this.operators.getOperators()) {
-            rules.add(operator.makeParserRule());
+            if (operator.shouldCreateParserRule()) {
+                rules.add(operator.makeParserRule());
+            }
         }
+
+        final Operator assignment = this.operators.findOperator("=", true, true);
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ASSIGNMENT, (t) -> assignment, 1, (t, i) -> !isOperator(t, "="),
+                Parser::isAssignable,
+                (t) -> isOperator(t, "="),
+                Parser::isEvaluableToValue
+        ));
     }
 
     private void parse() {
@@ -60,14 +95,9 @@ public class Parser {
         tokenTree.addAll(tokens);
 
         while (true) {
-            boolean matched = false;
-            for (ParserRule rule : rules) {
-                if (rule.match(tokenTree)) {
-                    matched = true;
-                    break;
-                }
+            if (rules.stream().noneMatch(rule -> rule.match(tokenTree))) {
+                break;
             }
-            if (!matched) break;
         }
     }
 }

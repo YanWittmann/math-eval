@@ -10,7 +10,8 @@ class ParserRuleTest {
     @Test
     public void test() {
         Operators operators = new Operators();
-        //new Parser(new Lexer("1 + 2 * 4 + 6 && !true", operators));
-        new Parser(new Lexer("4-- + +--4", operators));
+        new Parser(new Lexer("1 + 2 * 4 + 6", operators));
+        new Parser(new Lexer("regex = r/regex/ig", operators));
+        new Parser(new Lexer("foo = var + 2 * 4;", operators));
     }
 }
