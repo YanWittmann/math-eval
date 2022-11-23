@@ -2,6 +2,7 @@ package de.yanwittmann.matheval.parser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class ParserNode {
@@ -37,6 +38,10 @@ public class ParserNode {
 
     public void addChild(int index, Object child) {
         children.add(index, child);
+    }
+
+    public void addChildren(Collection<Object> children) {
+        this.children.addAll(children);
     }
 
     public void addChildren(Object... children) {
@@ -93,6 +98,8 @@ public class ParserNode {
         EXPRESSION, STATEMENT,
         IDENTIFIER, ACCESSOR_IDENTIFIER,
         PARENTHESIS_PAIR, SQUARE_BRACKET_PAIR, CURLY_BRACKET_PAIR,
-        FUNCTION, FUNCTION_CALL, FUNCTION_CALL_NAME, FUNCTION_CALL_ARGUMENTS,
+        FUNCTION, FUNCTION_CALL, FUNCTION_CALL_NAME,
+        LISTED_ELEMENTS,
+        ARRAY, MAP,
     }
 }

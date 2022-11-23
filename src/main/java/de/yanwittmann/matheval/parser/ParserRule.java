@@ -48,6 +48,7 @@ public interface ParserRule {
                     return true;
                 }
             }
+
             return false;
         };
     }

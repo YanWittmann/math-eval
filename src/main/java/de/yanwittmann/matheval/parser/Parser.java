@@ -6,6 +6,7 @@ import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.operator.Operators;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static de.yanwittmann.matheval.lexer.Lexer.Token;
@@ -43,7 +44,13 @@ public class Parser {
     public static boolean isEvaluableToValue(Object token) {
         return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.ACCESSOR_IDENTIFIER) ||
                isType(token, ParserNode.NodeType.EXPRESSION) || isType(token, ParserNode.NodeType.FUNCTION_CALL) ||
-               isLiteral(token);
+               isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
+               isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP);
+    }
+
+    public static boolean isFinishedStatement(Object token) {
+        return isEvaluableToValue(token) || isType(token, ParserNode.NodeType.ASSIGNMENT) ||
+               isType(token, ParserNode.NodeType.FUNCTION_CALL);
     }
 
     public static boolean isOperator(Object token, String symbol) {
@@ -51,10 +58,12 @@ public class Parser {
     }
 
     public static boolean isStatementFinisher(Object token) {
-        return isType(token, TokenType.SEMICOLON) || isType(token, TokenType.NEWLINE);
+        return isType(token, TokenType.SEMICOLON) || isType(token, TokenType.NEWLINE) || isType(token, TokenType.EOF);
     }
 
     private static boolean isType(Object token, Object type) {
+        if (token == null) return false;
+
         if (token instanceof Token) {
             final Token cast = (Token) token;
 
@@ -82,11 +91,99 @@ public class Parser {
             }
         }
 
+        rules.add(tokens -> {
+            final ParserNode node = new ParserNode(ParserNode.NodeType.LISTED_ELEMENTS, null);
+            int start = -1;
+            int end = -1;
+            boolean includesSingleElements = false;
+
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                final boolean isComma = isType(currentToken, TokenType.COMMA);
+
+                if (isEvaluableToValue(currentToken) || isType(currentToken, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                    if (start == -1) start = i;
+                    includesSingleElements = true;
+                    node.addChild(currentToken);
+                } else if (isType(currentToken, ParserNode.NodeType.LISTED_ELEMENTS)) {
+                    if (start == -1) start = i;
+                    node.addChildren(((ParserNode) currentToken).getChildren());
+                } else if (isComma) {
+                    if (node.getChildren().size() > 0) {
+                        if (!isEvaluableToValue(nextToken) && !isType(nextToken, ParserNode.NodeType.LISTED_ELEMENTS) && !isType(nextToken, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                            start = -1;
+                            includesSingleElements = false;
+                            node.getChildren().clear();
+                        }
+                    }
+                } else if (start != -1) {
+                    end = i - 1;
+                    break;
+                }
+            }
+
+            if (start != -1 && includesSingleElements && node.getChildren().size() > 1) {
+                ParserRule.replace(tokens, node, start, end);
+                return true;
+            }
+
+            return false;
+        });
+
+        // detect parenthesis pairs as ParserNode.NodeType.PARENTHESIS_PAIR whilst collecting LISTED_ELEMENTS or isEvaluableToValue as child nodes
+        rules.add(tokens -> {
+            final ParserNode node = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR, null);
+            int start = -1;
+            int end = -1;
+            int replacedTokens = 0;
+
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+
+                if (isType(currentToken, TokenType.OPEN_PARENTHESIS)) {
+                    start = i;
+                    node.getChildren().clear();
+                    replacedTokens = 0;
+                } else if (start != -1) {
+                    if (isType(currentToken, ParserNode.NodeType.LISTED_ELEMENTS)) {
+                        node.addChildren(((ParserNode) currentToken).getChildren());
+                        replacedTokens++;
+                    } else if (isEvaluableToValue(currentToken)) {
+                        node.addChild(currentToken);
+                        replacedTokens++;
+                    } else if (replacedTokens > 0 && isType(currentToken, TokenType.CLOSE_PARENTHESIS)) {
+                        end = i;
+                        break;
+                    }
+                }
+            }
+
+            if (start != -1 && end != -1) {
+                ParserRule.replace(tokens, node, start, end);
+                return true;
+            }
+
+            return false;
+        });
+
+        rules.add(ParserRulePart.createRule(ParserNode.NodeType.PARENTHESIS_PAIR, Arrays.asList(
+                new ParserRulePart(1, 1, true, (t) -> isType(t, TokenType.OPEN_PARENTHESIS)),
+                new ParserRulePart(1, 999, true, (t) -> isType(t, ParserNode.NodeType.LISTED_ELEMENTS) || isEvaluableToValue(t)),
+                new ParserRulePart(1, 1, true, (t) -> isType(t, TokenType.CLOSE_PARENTHESIS))
+        )));
+
         final Operator assignment = this.operators.findOperator("=", true, true);
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ASSIGNMENT, (t) -> assignment, 1, (t, i) -> !isOperator(t, "="),
                 Parser::isAssignable,
                 (t) -> isOperator(t, "="),
                 Parser::isEvaluableToValue
+        ));
+
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.STATEMENT, (t) -> null, 1, (t, i) -> !isStatementFinisher(t),
+                Parser::isFinishedStatement,
+                Parser::isStatementFinisher
         ));
     }
 

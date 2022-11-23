@@ -24,7 +24,7 @@ public interface Operator {
 
     Value<?> evaluate(Value<?>... arguments);
 
-    default boolean isEmpty(String string) {
+    static boolean isEmpty(String string) {
         return string == null || string.isEmpty();
     }
 

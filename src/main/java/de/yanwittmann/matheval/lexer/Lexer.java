@@ -1,5 +1,6 @@
 package de.yanwittmann.matheval.lexer;
 
+import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.operator.Operators;
 
 import java.util.*;
@@ -17,6 +18,7 @@ public class Lexer {
 
         final TokenIterator iterator = new TokenIterator(expression, operators);
         iterator.forEach(tokens::add);
+        tokens.add(new Token("", TokenType.EOF, expression.length()));
 
         System.out.println("\nLexed tokens:");
         tokens.forEach(System.out::println);
@@ -88,7 +90,7 @@ public class Lexer {
 
         @Override
         public String toString() {
-            return type + ": " + value;
+            return type + (Operator.isEmpty(value) ? "" : ": " + value);
         }
     }
 
@@ -101,7 +103,8 @@ public class Lexer {
         OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET,
         COMMA, SEMICOLON,
         KEYWORD,
-        INDENTED_BLOCK, NEWLINE;
+        INDENTED_BLOCK, NEWLINE,
+        EOF;
 
         public Token create(String value, int position) {
             return new Token(value, this, position);
