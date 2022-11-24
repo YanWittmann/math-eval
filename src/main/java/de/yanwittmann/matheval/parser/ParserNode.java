@@ -80,9 +80,7 @@ public class ParserNode {
         if (value != null) {
             sb.append(": ").append(value);
         }
-        if (children.size() > 0) {
-            sb.append("\n");
-        }
+        sb.append("\n");
 
         for (int i = 0; i < children.size(); i++) {
             Object child = children.get(i);

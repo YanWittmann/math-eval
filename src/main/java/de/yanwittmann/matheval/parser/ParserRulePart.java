@@ -1,91 +1,71 @@
 package de.yanwittmann.matheval.parser;
 
-import de.yanwittmann.matheval.lexer.Lexer;
-
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-/*
-static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Function<Object, Boolean>... expected) {
-    return tokens -> {
-        int currentMatchLength = 0;
-        for (int i = 0; i < tokens.size(); i++) {
-            final Object currentToken = tokens.get(i);
 
-            if (currentToken instanceof Token || currentToken instanceof ParserNode) {
-                if (currentMatchLength < expected.length && expected[currentMatchLength].apply(currentToken)) {
-                    currentMatchLength++;
-                } else {
-                    i -= currentMatchLength > 1 ? currentMatchLength - 1 : 0;
-                    currentMatchLength = 0;
-                }
-            }
-
-            if (currentMatchLength == expected.length) {
-                final Object replaceValueObject = replaceValueObjectIndex < 0 ? currentToken : tokens.get(i - replaceValueObjectIndex);
-
-                final ParserNode node = new ParserNode(type, replaceValue.apply(replaceValueObject));
-                for (int j = 0; j < currentMatchLength; j++) {
-                    final Object token = tokens.get(i - currentMatchLength + j + 1);
-                    if (keepValue.apply(token, j)) {
-                        node.addChild(token);
-                    }
-                }
-
-                ParserRule.replace(tokens, node, i - currentMatchLength + 1, i);
-                return true;
-            }
-        }
-
-        return false;
-    };
-}
- */
 public class ParserRulePart {
 
     private final Function<Object, Boolean> expected;
+    private final Function<Object, Object> transformValue;
     private final int minRepetitions;
     private final int maxRepetitions;
-    private final boolean includeInResult;
 
-    public ParserRulePart(int minRepetitions, int maxRepetitions, boolean includeInResult, Function<Object, Boolean> expected) {
+    public ParserRulePart(int minRepetitions, int maxRepetitions, Function<Object, Boolean> expected, Function<Object, Object> transformValue) {
         this.minRepetitions = minRepetitions;
         this.maxRepetitions = maxRepetitions;
-        this.includeInResult = includeInResult;
         this.expected = expected;
+        this.transformValue = transformValue;
     }
 
     public static ParserRule createRule(ParserNode.NodeType resultType, List<ParserRulePart> parts) {
         return tokens -> {
             ParserRulePart currentPart = parts.get(0);
+            int matchStart = -1;
             int currentMatchLength = 0;
+            final List<Object> targetChildNodes = new ArrayList<>();
+            Object resultValue = null;
+
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
 
-                if (currentToken instanceof Lexer.Token || currentToken instanceof ParserNode) {
-                    if (currentMatchLength < currentPart.maxRepetitions && currentPart.expected.apply(currentToken)) {
-                        currentMatchLength++;
-                    } else {
-                        i -= currentMatchLength > 1 ? currentMatchLength - 1 : 0;
-                        currentMatchLength = 0;
-                    }
-                }
+                if (currentPart.expected.apply(currentToken)) {
+                    if (matchStart == -1) matchStart = i;
+                    currentMatchLength++;
 
-                if (currentMatchLength == currentPart.maxRepetitions) {
-                    if(currentPart == parts.get(parts.size() - 1)) {
-                        final ParserNode node = new ParserNode(resultType, null);
-                        for (int j = 0; j < currentMatchLength; j++) {
-                            final Object token = tokens.get(i - currentMatchLength + j + 1);
-                            if (currentPart.includeInResult) {
-                                node.addChild(token);
-                            }
+                    final Object transformedToken = currentPart.transformValue.apply(currentToken);
+                    if (transformedToken != null) {
+                        if (transformedToken instanceof Collection) {
+                            targetChildNodes.addAll((Collection<?>) transformedToken);
+                        } else {
+                            targetChildNodes.add(transformedToken);
                         }
+                    }
 
-                        ParserRule.replace(tokens, node, i - currentMatchLength + 1, i);
-                        return true;
-                    } else {
-                        currentPart = parts.get(parts.indexOf(currentPart) + 1);
+                    if (currentMatchLength == currentPart.maxRepetitions) {
+                        if (parts.indexOf(currentPart) == parts.size() - 1) {
+                            final ParserNode node = new ParserNode(resultType, resultValue);
+                            node.addChildren(targetChildNodes);
+
+                            ParserRule.replace(tokens, node, matchStart, i);
+                            return true;
+                        } else {
+                            currentPart = parts.get(parts.indexOf(currentPart) + 1);
+                            currentMatchLength = 0;
+                        }
+                    }
+                } else {
+                    if (currentMatchLength == 0 || currentMatchLength < currentPart.minRepetitions) {
+                        i -= currentMatchLength;
                         currentMatchLength = 0;
+                        matchStart = -1;
+                        targetChildNodes.clear();
+                        currentPart = parts.get(0);
+                    } else {
+                        currentMatchLength = 0;
+                        currentPart = parts.get(parts.indexOf(currentPart) + 1);
                     }
                 }
             }
