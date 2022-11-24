@@ -20,7 +20,9 @@ public interface Operator {
 
     default boolean shouldCreateParserRule() {
         return true;
-    };
+    }
+
+    ;
 
     Value<?> evaluate(Value<?>... arguments);
 
@@ -38,6 +40,13 @@ public interface Operator {
                     final boolean symbolEqual = getSymbol().equals(operator.getValue());
 
                     if (operator.getType() == Lexer.TokenType.OPERATOR && symbolEqual) {
+
+                        final Object nextAfterToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
+                        if (Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_PARENTHESIS)) {
+                            i++;
+                            continue;
+                        }
+
                         final Object before = i > 0 ? tokens.get(i - 1) : null;
                         final Object after = i < tokens.size() - 1 ? tokens.get(i + 1) : null;
 

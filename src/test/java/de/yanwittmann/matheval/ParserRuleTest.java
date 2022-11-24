@@ -15,6 +15,9 @@ class ParserRuleTest {
         //new Parser(new Lexer("foo = var + 2 * 4;3 + 6", operators));
         //new Parser(new Lexer("1,2,3,(4,5)", operators));
         //new Parser(new Lexer("(1, 3, (foo, 5), 9 + 8)", operators));
-        new Parser(new Lexer("1 * (3 + 4)", operators));
+        //new Parser(new Lexer("1 * (3 + 4)", operators));
+        //new Parser(new Lexer("foo.bar(1, 2, test(3 + 6) * 4)", operators));
+        //new Parser(new Lexer("(4 * (2 + 3) + foo.bar(1 + 2), hallo(3 + 5)); foo = hallo(3 + 5)", operators));
+        new Parser(new Lexer("test[\"varname-\" + test] = 5", operators));
     }
 }

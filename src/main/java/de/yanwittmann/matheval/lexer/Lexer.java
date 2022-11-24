@@ -22,6 +22,7 @@ public class Lexer {
 
         System.out.println("\nLexed tokens:");
         tokens.forEach(System.out::println);
+        System.out.println();
     }
 
     public String getExpression() {
@@ -101,7 +102,7 @@ public class Lexer {
         OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
         OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET,
         OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET,
-        COMMA, SEMICOLON,
+        COMMA, SEMICOLON, DOT,
         KEYWORD,
         INDENTED_BLOCK, NEWLINE,
         EOF;
@@ -220,6 +221,8 @@ public class Lexer {
                                 nextToken = createToken(buffer, TokenType.COMMA);
                             } else if (c == ';') {
                                 nextToken = createToken(buffer, TokenType.SEMICOLON);
+                            } else if (c == '.') {
+                                nextToken = createToken(buffer, TokenType.DOT);
                             } else {
                                 nextToken = createToken(buffer, TokenType.OPERATOR);
                             }

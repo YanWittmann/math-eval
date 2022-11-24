@@ -69,6 +69,9 @@ public class ParserNode {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         toString(sb, "", "");
+        if (sb.length() > 0) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
         return sb.toString();
     }
 

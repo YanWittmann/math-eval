@@ -16,6 +16,11 @@ public interface ParserRule {
             tokenTree.subList(startIndex, endIndex + 1).clear();
         }
         tokenTree.add(startIndex, replacement);
+
+        for (int i = 0; i < tokenTree.size(); i++) {
+            System.out.println(tokenTree.get(i));
+        }
+        System.out.println();
     }
 
     static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Function<Object, Boolean>... expected) {

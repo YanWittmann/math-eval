@@ -6,7 +6,6 @@ import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.operator.Operators;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static de.yanwittmann.matheval.lexer.Lexer.Token;
@@ -37,7 +36,7 @@ public class Parser {
                isType(token, TokenType.OTHER_LITERAL);
     }
 
-    public static boolean isAssignable(Object token) {
+    public static boolean isIdentifier(Object token) {
         return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.ACCESSOR_IDENTIFIER);
     }
 
@@ -61,7 +60,7 @@ public class Parser {
         return isType(token, TokenType.SEMICOLON) || isType(token, TokenType.NEWLINE) || isType(token, TokenType.EOF);
     }
 
-    private static boolean isType(Object token, Object type) {
+    public static boolean isType(Object token, Object type) {
         if (token == null) return false;
 
         if (token instanceof Token) {
@@ -85,17 +84,26 @@ public class Parser {
 
     @SuppressWarnings("unchecked")
     private void generateRules() {
-        for (Operator operator : this.operators.getOperators()) {
-            if (operator.shouldCreateParserRule()) {
-                rules.add(operator.makeParserRule());
-            }
-        }
 
+        // accessors
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ACCESSOR_IDENTIFIER, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT),
+                Parser::isIdentifier,
+                (t) -> isType(t, TokenType.DOT),
+                Parser::isIdentifier
+        ));
+
+        // function calls
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_CALL, (t) -> null, 0, (t, i) -> true,
+                Parser::isIdentifier,
+                (t) -> isType(t, ParserNode.NodeType.PARENTHESIS_PAIR)
+        ));
+
+        // rule for listed elements , separated
         rules.add(tokens -> {
             final ParserNode node = new ParserNode(ParserNode.NodeType.LISTED_ELEMENTS, null);
             int start = -1;
             int end = -1;
-            boolean includesSingleElements = false;
+            boolean includesNotListElements = false;
 
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
@@ -105,7 +113,7 @@ public class Parser {
 
                 if (isEvaluableToValue(currentToken) || isType(currentToken, ParserNode.NodeType.PARENTHESIS_PAIR)) {
                     if (start == -1) start = i;
-                    includesSingleElements = true;
+                    includesNotListElements = true;
                     node.addChild(currentToken);
                 } else if (isType(currentToken, ParserNode.NodeType.LISTED_ELEMENTS)) {
                     if (start == -1) start = i;
@@ -114,17 +122,21 @@ public class Parser {
                     if (node.getChildren().size() > 0) {
                         if (!isEvaluableToValue(nextToken) && !isType(nextToken, ParserNode.NodeType.LISTED_ELEMENTS) && !isType(nextToken, ParserNode.NodeType.PARENTHESIS_PAIR)) {
                             start = -1;
-                            includesSingleElements = false;
+                            includesNotListElements = false;
                             node.getChildren().clear();
                         }
                     }
+                } else if (Parser.isType(currentToken, TokenType.OPEN_PARENTHESIS)) {
+                    start = -1;
+                    includesNotListElements = false;
+                    node.getChildren().clear();
                 } else if (start != -1) {
                     end = i - 1;
                     break;
                 }
             }
 
-            if (start != -1 && includesSingleElements && node.getChildren().size() > 1) {
+            if (start != -1 && includesNotListElements && node.getChildren().size() > 1) {
                 ParserRule.replace(tokens, node, start, end);
                 return true;
             }
@@ -132,12 +144,17 @@ public class Parser {
             return false;
         });
 
-        // detect parenthesis pairs as ParserNode.NodeType.PARENTHESIS_PAIR whilst collecting LISTED_ELEMENTS or isEvaluableToValue as child nodes
+        for (Operator operator : this.operators.getOperators()) {
+            if (operator.shouldCreateParserRule()) {
+                rules.add(operator.makeParserRule());
+            }
+        }
+
+        // rule for parenthesis pairs ()
         rules.add(tokens -> {
             final ParserNode node = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR, null);
             int start = -1;
             int end = -1;
-            int replacedTokens = 0;
 
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
@@ -145,15 +162,12 @@ public class Parser {
                 if (isType(currentToken, TokenType.OPEN_PARENTHESIS)) {
                     start = i;
                     node.getChildren().clear();
-                    replacedTokens = 0;
                 } else if (start != -1) {
                     if (isType(currentToken, ParserNode.NodeType.LISTED_ELEMENTS)) {
                         node.addChildren(((ParserNode) currentToken).getChildren());
-                        replacedTokens++;
                     } else if (isEvaluableToValue(currentToken)) {
                         node.addChild(currentToken);
-                        replacedTokens++;
-                    } else if (replacedTokens > 0 && isType(currentToken, TokenType.CLOSE_PARENTHESIS)) {
+                    } else if (isType(currentToken, TokenType.CLOSE_PARENTHESIS)) {
                         end = i;
                         break;
                     }
@@ -168,20 +182,14 @@ public class Parser {
             return false;
         });
 
-        rules.add(ParserRulePart.createRule(ParserNode.NodeType.PARENTHESIS_PAIR, Arrays.asList(
-                new ParserRulePart(1, 1, true, (t) -> isType(t, TokenType.OPEN_PARENTHESIS)),
-                new ParserRulePart(1, 999, true, (t) -> isType(t, ParserNode.NodeType.LISTED_ELEMENTS) || isEvaluableToValue(t)),
-                new ParserRulePart(1, 1, true, (t) -> isType(t, TokenType.CLOSE_PARENTHESIS))
-        )));
-
         final Operator assignment = this.operators.findOperator("=", true, true);
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ASSIGNMENT, (t) -> assignment, 1, (t, i) -> !isOperator(t, "="),
-                Parser::isAssignable,
+                Parser::isIdentifier,
                 (t) -> isOperator(t, "="),
                 Parser::isEvaluableToValue
         ));
 
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.STATEMENT, (t) -> null, 1, (t, i) -> !isStatementFinisher(t),
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.STATEMENT, (t) -> null, 0, (t, i) -> !isStatementFinisher(t),
                 Parser::isFinishedStatement,
                 Parser::isStatementFinisher
         ));
