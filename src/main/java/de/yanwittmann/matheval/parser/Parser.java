@@ -44,11 +44,11 @@ public class Parser {
     }
 
     public static boolean isIdentifier(Object token) {
-        return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.ACCESSOR_IDENTIFIER);
+        return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.IDENTIFIER_ACCESSED);
     }
 
     public static boolean isEvaluableToValue(Object token) {
-        return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.ACCESSOR_IDENTIFIER) ||
+        return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.IDENTIFIER_ACCESSED) ||
                isType(token, ParserNode.NodeType.EXPRESSION) || isType(token, ParserNode.NodeType.FUNCTION_CALL) ||
                isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP);
@@ -133,21 +133,21 @@ public class Parser {
     @SuppressWarnings("unchecked")
     private void generateRules() {
 
-        // accessor using .
-        // TODO: Write rule for function calls on literals
-        /*rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ACCESSOR_IDENTIFIER, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT),
+        // accessor using . for literals and functions/identifiers
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT),
                 Parser::isLiteral,
                 (t) -> isType(t, TokenType.DOT),
-                (t) -> isType(t, ParserNode.NodeType.FUNCTION_CALL)
-        ));*/
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ACCESSOR_IDENTIFIER, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT),
+                (t) -> isType(t, ParserNode.NodeType.FUNCTION_CALL) || isIdentifier(t)
+        ));
+        // accessor using . for identifiers
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT),
                 Parser::isIdentifier,
                 (t) -> isType(t, TokenType.DOT),
                 Parser::isIdentifier
         ));
 
         // accessor using []
-        rules.add(ParserRulePart.createRule(ParserNode.NodeType.ACCESSOR_IDENTIFIER, Arrays.asList(
+        rules.add(ParserRulePart.createRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, Arrays.asList(
                 new ParserRulePart(1, 1, Parser::isIdentifier, t -> t),
                 new ParserRulePart(1, 1, (t) -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR), t -> ((ParserNode) t).getChildren())
         )));
@@ -221,8 +221,8 @@ public class Parser {
         }
 
         // rule for parenthesis pairs
-        rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_PARENTHESIS, TokenType.CLOSE_PARENTHESIS, ParserNode.NodeType.PARENTHESIS_PAIR, TokenType.OPEN_SQUARE_BRACKET));
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_SQUARE_BRACKET, TokenType.CLOSE_SQUARE_BRACKET, ParserNode.NodeType.SQUARE_BRACKET_PAIR, TokenType.OPEN_PARENTHESIS));
+        rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_PARENTHESIS, TokenType.CLOSE_PARENTHESIS, ParserNode.NodeType.PARENTHESIS_PAIR, TokenType.OPEN_SQUARE_BRACKET));
 
         final Operator assignment = this.operators.findOperator("=", true, true);
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ASSIGNMENT, (t) -> assignment, 1, (t, i) -> !isOperator(t, "="),
