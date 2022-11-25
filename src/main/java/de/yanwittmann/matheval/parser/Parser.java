@@ -148,6 +148,26 @@ public class Parser {
     @SuppressWarnings("unchecked")
     private void generateRules() {
 
+        // check for curly bracket pairs with only map elements inside to transform into a map
+        rules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+
+                if (isType(currentToken, ParserNode.NodeType.CURLY_BRACKET_PAIR)) {
+                    final ParserNode node = (ParserNode) currentToken;
+
+                    if (node.getChildren().stream().allMatch(token -> isType(token, ParserNode.NodeType.MAP_ELEMENT))) {
+                        final ParserNode mapNode = new ParserNode(ParserNode.NodeType.MAP, null);
+                        mapNode.addChildren(node.getChildren());
+                        tokens.set(i, mapNode);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        });
+
         // accessor using . for literals and functions/identifiers
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT), (t, i) -> true,
                 Parser::isLiteral,
@@ -172,13 +192,6 @@ public class Parser {
                 new ParserRulePart(1, 1, (t) -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR), t -> ((ParserNode) t).getChildren())
         )));
 
-        // detect : in a map, an identifier before it, and a value after it
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.MAP_ELEMENT, (t) -> null, 0, (t, i) -> !isOperator(t, ":"), (t, i) -> true,
-                Parser::isIdentifier,
-                (t) -> isOperator(t, ":"),
-                Parser::isEvaluableToValue
-        ));
-
         // function calls
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_CALL, (t) -> null, 0, (t, i) -> true, (t, i) -> true,
                 Parser::isIdentifier,
@@ -190,6 +203,13 @@ public class Parser {
                 rules.add(operator.makeParserRule());
             }
         }
+
+        // detect : in a map, an identifier before it, and a value after it
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.MAP_ELEMENT, (t) -> null, 0, (t, i) -> !isOperator(t, ":"), (t, i) -> true,
+                Parser::isIdentifier,
+                (t) -> isOperator(t, ":"),
+                Parser::isEvaluableToValue
+        ));
 
         // rule for parenthesis pairs
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_CURLY_BRACKET, TokenType.CLOSE_CURLY_BRACKET, ParserNode.NodeType.CURLY_BRACKET_PAIR,
@@ -227,7 +247,8 @@ public class Parser {
                             node.getChildren().clear();
                         }
                     }
-                } else if (Parser.isType(currentToken, TokenType.OPEN_PARENTHESIS) || Parser.isType(currentToken, TokenType.OPEN_SQUARE_BRACKET)) {
+                } else if (Parser.isType(currentToken, TokenType.OPEN_PARENTHESIS) || Parser.isType(currentToken, TokenType.OPEN_SQUARE_BRACKET) ||
+                           Parser.isType(currentToken, TokenType.OPEN_CURLY_BRACKET)) {
                     start = -1;
                     includesNotListElements = false;
                     node.getChildren().clear();

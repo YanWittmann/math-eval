@@ -231,7 +231,7 @@ class ParserRuleTest {
                 "a[b].c.d[e].f.\"g\".h(i)", operators);
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ CURLY_BRACKET_PAIR\n" +
+                               "└─ MAP\n" +
                                "   ├─ MAP_ELEMENT\n" +
                                "   │  ├─ IDENTIFIER: test\n" +
                                "   │  └─ IDENTIFIER: hello\n" +
@@ -323,6 +323,28 @@ class ParserRuleTest {
                                "            ├─ NUMBER_LITERAL: 1\n" +
                                "            └─ NUMBER_LITERAL: 2",
                 "un, pack = foo([1, 2])", operators);
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: var\n" +
+                               "   └─ MAP\n" +
+                               "      ├─ MAP_ELEMENT\n" +
+                               "      │  ├─ IDENTIFIER: test\n" +
+                               "      │  └─ NUMBER_LITERAL: 5\n" +
+                               "      ├─ MAP_ELEMENT\n" +
+                               "      │  ├─ IDENTIFIER: hmm\n" +
+                               "      │  └─ EXPRESSION: * (120 l r)\n" +
+                               "      │     ├─ STRING_LITERAL: \"wow\"\n" +
+                               "      │     └─ NUMBER_LITERAL: 3\n" +
+                               "      └─ MAP_ELEMENT\n" +
+                               "         ├─ IDENTIFIER: rec\n" +
+                               "         └─ MAP\n" +
+                               "            └─ MAP_ELEMENT\n" +
+                               "               ├─ IDENTIFIER: arr\n" +
+                               "               └─ ARRAY\n" +
+                               "                  ├─ NUMBER_LITERAL: 9\n" +
+                               "                  └─ NUMBER_LITERAL: 2",
+                "var = {test: 5, hmm: \"wow\" * 3, rec: {arr: [9, 2]}}", operators);
     }
 
     private void assertParsedTreeEquals(String expected, String expression, Operators operators) {
@@ -336,11 +358,7 @@ class ParserRuleTest {
     public void currentTest() {
         Operators operators = new Operators();
 
-        new Parser(new Lexer("var = {test = 5; hmm = \"wow\" * 3}", operators));
-        new Parser(new Lexer("\"a\".b.c();a[\"b\" * 3].c()", operators));
-        new Parser(new Lexer("un, pack = foo([1, 2])", operators));
-        new Parser(new Lexer("[1, [5, 3], 3]", operators));
-        new Parser(new Lexer("a[b].c.d[e].f.\"g\".h(i)", operators));
-        new Parser(new Lexer("test[\"varname-\" + test][\"second\" + foo()] = (3, (5, PI * 4 + sum(map([5, 6, 7], mapper)))) + [34, foo.bar(x)]", operators));
+        //new Parser(new Lexer("{test: hello, z: \"test\"}", operators));
+        new Parser(new Lexer("var = {test: 5, hmm: \"wow\" * 3, rec: {arr: [9, 2]}}", operators));
     }
 }
