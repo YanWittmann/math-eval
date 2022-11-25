@@ -9,6 +9,9 @@ import static de.yanwittmann.matheval.lexer.Lexer.Token;
 
 @FunctionalInterface
 public interface ParserRule {
+
+    boolean logChanges = false;
+
     boolean match(List<Object> tokens);
 
     static void replace(List<Object> tokenTree, Object replacement, int startIndex, int endIndex) {
@@ -17,13 +20,15 @@ public interface ParserRule {
         }
         tokenTree.add(startIndex, replacement);
 
-        for (int i = 0; i < tokenTree.size(); i++) {
-            System.out.println(tokenTree.get(i));
+        if (logChanges) {
+            for (int i = 0; i < tokenTree.size(); i++) {
+                System.out.println(tokenTree.get(i));
+            }
+            System.out.println();
         }
-        System.out.println();
     }
 
-    static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Function<Object, Boolean>... expected) {
+    static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Functions.Function2<Object, Integer, Boolean> replaceValuePadding, Function<Object, Boolean>... expected) {
         return tokens -> {
             int currentMatchLength = 0;
             for (int i = 0; i < tokens.size(); i++) {
@@ -42,14 +47,18 @@ public interface ParserRule {
                     final Object replaceValueObject = replaceValueObjectIndex < 0 ? currentToken : tokens.get(i - replaceValueObjectIndex);
 
                     final ParserNode node = new ParserNode(type, replaceValue.apply(replaceValueObject));
+                    int paddedValueLength = 0;
                     for (int j = 0; j < currentMatchLength; j++) {
                         final Object token = tokens.get(i - currentMatchLength + j + 1);
-                        if (keepValue.apply(token, j)) {
+
+                        if (!replaceValuePadding.apply(token, j)) {
+                            paddedValueLength++;
+                        } else if (keepValue.apply(token, j)) {
                             node.addChild(token);
                         }
                     }
 
-                    ParserRule.replace(tokens, node, i - currentMatchLength + 1, i);
+                    ParserRule.replace(tokens, node, i - currentMatchLength + 1, i - paddedValueLength);
                     return true;
                 }
             }
