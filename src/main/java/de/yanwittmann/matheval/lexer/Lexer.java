@@ -3,38 +3,39 @@ package de.yanwittmann.matheval.lexer;
 import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.operator.Operators;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterator;
 import java.util.function.Consumer;
 
 public class Lexer {
 
-    private final String expression;
     private final Operators operators;
-    private final List<Token> tokens = new ArrayList<>();
 
-    public Lexer(String expression, Operators operators) {
-        this.expression = expression;
+    public Lexer(Operators operators) {
         this.operators = operators;
+    }
 
-        final TokenIterator iterator = new TokenIterator(expression, operators);
-        iterator.forEach(tokens::add);
+    public List<Token> parse(String expression) {
+        List<Token> tokens = new ArrayList<>();
+
+        new TokenIterator(expression, operators).forEach(tokens::add);
         tokens.add(new Token("", TokenType.EOF, expression.length()));
 
         System.out.println("\nLexed tokens:");
         tokens.forEach(System.out::println);
         System.out.println();
+
+        return tokens;
     }
 
-    public String getExpression() {
-        return expression;
+    public List<Token> parse(List<String> expressions) {
+        return parse(String.join("\n", expressions));
     }
 
     public Operators getOperators() {
         return operators;
-    }
-
-    public List<Token> getTokens() {
-        return Collections.unmodifiableList(tokens);
     }
 
     private static class StringIterator {

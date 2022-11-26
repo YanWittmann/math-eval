@@ -1,41 +1,49 @@
 package de.yanwittmann.matheval.parser;
 
-import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Lexer.TokenType;
 import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.operator.Operators;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static de.yanwittmann.matheval.lexer.Lexer.Token;
 
 public class Parser {
 
-    private final Lexer lexer;
+    // lru cache for parsing rules using an operator instance as key
+    private final static Map<Operators, List<ParserRule>> CACHED_PARSE_RULES = new LinkedHashMap<Operators, List<ParserRule>>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Operators, List<ParserRule>> eldest) {
+            return size() > 5;
+        }
+    };
+
     private final Operators operators;
     private final List<ParserRule> rules = new ArrayList<>();
-    private final List<Object> tokenTree = new ArrayList<>();
 
-    public Parser(Lexer lexer) {
-        this.lexer = lexer;
-        this.operators = lexer.getOperators();
-
-        generateRules();
-        parse();
-
-        System.out.println("\nParsed syntax tree:");
-        for (int i = 0; i < tokenTree.size(); i++) {
-            System.out.println(tokenTree.get(i));
-        }
+    public Parser(Operators operators) {
+        this.operators = operators;
+        generateRules(operators);
     }
 
-    @Override
-    public String toString() {
-        return tokenTree.stream().map(String::valueOf).collect(Collectors.joining("\n"));
+    public List<Object> parse(List<Token> tokens) {
+        generateRules(operators);
+
+        final List<Object> tokenTree = new ArrayList<>(tokens);
+        while (true) {
+            if (rules.stream().noneMatch(rule -> rule.match(tokenTree))) {
+                break;
+            }
+        }
+
+        System.out.println("Parsed tokens:\n" + toString(tokenTree));
+
+        return tokenTree;
+    }
+
+    public String toString(List<Object> tokens) {
+        return tokens.stream().map(String::valueOf).collect(Collectors.joining("\n"));
     }
 
     public static boolean isLiteral(Object token) {
@@ -156,7 +164,18 @@ public class Parser {
     }
 
     @SuppressWarnings("unchecked")
-    private void generateRules() {
+    private void generateRules(Operators operators) {
+
+        if (operators == null) {
+            throw new IllegalArgumentException("Operators cannot be null");
+        }
+
+        // find in CACHED_PARSE_RULES
+        this.rules.clear();
+        if (CACHED_PARSE_RULES.containsKey(operators)) {
+            this.rules.addAll(CACHED_PARSE_RULES.get(operators));
+            return;
+        }
 
         // check for curly bracket pairs with only map elements inside to transform into a map
         rules.add(tokens -> {
@@ -287,7 +306,7 @@ public class Parser {
                 (t) -> isType(t, ParserNode.NodeType.PARENTHESIS_PAIR)
         ));
 
-        for (Operator operator : this.operators.getOperatorsDoubleAssociative()) {
+        for (Operator operator : operators.getOperatorsDoubleAssociative()) {
             if (operator.shouldCreateParserRule()) {
                 rules.add(operator.makeParserRule());
             }
@@ -359,13 +378,13 @@ public class Parser {
             return false;
         });
 
-        for (Operator operator : this.operators.getOperatorsSingleAssociative()) {
+        for (Operator operator : operators.getOperatorsSingleAssociative()) {
             if (operator.shouldCreateParserRule()) {
                 rules.add(operator.makeParserRule());
             }
         }
 
-        final Operator assignment = this.operators.findOperator("=", true, true);
+        final Operator assignment = operators.findOperator("=", true, true);
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.ASSIGNMENT, (t) -> assignment, 1, (t, i) -> !isOperator(t, "="), (t, i) -> true, (t, i) -> t,
                 Parser::isAssignable,
                 t -> isOperator(t, "="),
@@ -391,6 +410,20 @@ public class Parser {
                 Parser::isFinishedStatement,
                 Parser::isStatementFinisher
         ));
+
+        // remove all remaining unnecessary tokens like newlines
+        rules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object token = tokens.get(i);
+                if (isType(token, TokenType.NEWLINE)) {
+                    tokens.remove(i);
+                    i--;
+                }
+            }
+            return false;
+        });
+
+        CACHED_PARSE_RULES.put(operators, new ArrayList<>(this.rules));
     }
 
     private static ParserNode makeProperCodeBlock(ParserNode node) {
@@ -417,16 +450,5 @@ public class Parser {
         }
 
         return blockNode;
-    }
-
-    private void parse() {
-        final List<Token> tokens = lexer.getTokens();
-        tokenTree.addAll(tokens);
-
-        while (true) {
-            if (rules.stream().noneMatch(rule -> rule.match(tokenTree))) {
-                break;
-            }
-        }
     }
 }
