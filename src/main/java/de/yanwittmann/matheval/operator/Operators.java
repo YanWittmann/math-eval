@@ -148,6 +148,27 @@ public class Operators {
         return operators;
     }
 
+    public List<Operator> getOperatorsSingleAssociative() {
+        List<Operator> operators = new ArrayList<>();
+        for (Operator operator : this.operators) {
+            if (operator.isLeftAssociative() && !operator.isRightAssociative() ||
+                    !operator.isLeftAssociative() && operator.isRightAssociative()) {
+                operators.add(operator);
+            }
+        }
+        return operators;
+    }
+
+    public List<Operator> getOperatorsDoubleAssociative() {
+        List<Operator> operators = new ArrayList<>();
+        for (Operator operator : this.operators) {
+            if (operator.isLeftAssociative() && operator.isRightAssociative()) {
+                operators.add(operator);
+            }
+        }
+        return operators;
+    }
+
     public List<Operator> findOperators(String symbol) {
         final List<Operator> result = new ArrayList<>();
 

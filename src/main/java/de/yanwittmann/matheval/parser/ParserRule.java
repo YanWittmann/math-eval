@@ -2,6 +2,7 @@ package de.yanwittmann.matheval.parser;
 
 import de.yanwittmann.matheval.Functions;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -28,7 +29,7 @@ public interface ParserRule {
         }
     }
 
-    static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Functions.Function2<Object, Integer, Boolean> replaceValuePadding, Function<Object, Boolean>... expected) {
+    static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Functions.Function2<Object, Integer, Boolean> replacePadding, Functions.Function2<Object, Integer, Object> replaceChildMapper, Function<Object, Boolean>... expected) {
         return tokens -> {
             int currentMatchLength = 0;
             for (int i = 0; i < tokens.size(); i++) {
@@ -49,12 +50,16 @@ public interface ParserRule {
                     final ParserNode node = new ParserNode(type, replaceValue.apply(replaceValueObject));
                     int paddedValueLength = 0;
                     for (int j = 0; j < currentMatchLength; j++) {
-                        final Object token = tokens.get(i - currentMatchLength + j + 1);
+                        final Object token = replaceChildMapper.apply(tokens.get(i - currentMatchLength + j + 1), j);
 
-                        if (!replaceValuePadding.apply(token, j)) {
+                        if (!replacePadding.apply(token, j)) {
                             paddedValueLength++;
                         } else if (keepValue.apply(token, j)) {
-                            node.addChild(token);
+                            if (token instanceof Collection) {
+                                node.addChildren((Collection<Object>) token);
+                            } else {
+                                node.addChild(token);
+                            }
                         }
                     }
 

@@ -345,6 +345,84 @@ class ParserRuleTest {
                                "                  ├─ NUMBER_LITERAL: 9\n" +
                                "                  └─ NUMBER_LITERAL: 2",
                 "var = {test: 5, hmm: \"wow\" * 3, rec: {arr: [9, 2]}}", operators);
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: TestModule\n" +
+                               "   │  └─ STRING_LITERAL: \"myFunction\"\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      ├─ IDENTIFIER_ACCESSED\n" +
+                               "      │  ├─ IDENTIFIER: TestModule\n" +
+                               "      │  └─ STRING_LITERAL: \"myVariable\"\n" +
+                               "      ├─ NUMBER_LITERAL: 3\n" +
+                               "      └─ NUMBER_LITERAL: 6",
+                "TestModule[\"myFunction\"](TestModule[\"myVariable\"], 3, 6)", operators);
+
+        assertParsedTreeEquals("IMPORT_STATEMENT\n" +
+                               "└─ IDENTIFIER: TestModule",
+                "import TestModule", operators);
+
+        assertParsedTreeEquals("IMPORT_STATEMENT\n" +
+                               "└─ IDENTIFIER: TestModule",
+                "import TestModule", operators);
+
+        assertParsedTreeEquals("IMPORT_AS_STATEMENT\n" +
+                               "├─ IDENTIFIER: TestModule\n" +
+                               "└─ IDENTIFIER: Test",
+                "import TestModule as Test", operators);
+
+        assertParsedTreeEquals("IMPORT_INLINE_STATEMENT\n" +
+                               "└─ IDENTIFIER: TestModule",
+                "import TestModule inline", operators);
+
+        assertParsedTreeEquals("EXPORT_STATEMENT\n" +
+                               "├─ ARRAY\n" +
+                               "│  ├─ IDENTIFIER: myFunction\n" +
+                               "│  └─ IDENTIFIER: myVariable\n" +
+                               "└─ IDENTIFIER: TestModule",
+                "export [myFunction, myVariable] as TestModule", operators);
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ EXPRESSION: - (110 l r)\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  ├─ IDENTIFIER: test\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   │     └─ NUMBER_LITERAL: 4\n" +
+                               "   └─ NUMBER_LITERAL: 3",
+                "test(4) - 3", operators);
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: myFunction\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  ├─ IDENTIFIER: x\n" +
+                               "   │  ├─ IDENTIFIER: y\n" +
+                               "   │  └─ IDENTIFIER: z\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ EXPRESSION: - (110 l r)\n" +
+                               "         ├─ EXPRESSION: + (110 l r)\n" +
+                               "         │  ├─ IDENTIFIER: x\n" +
+                               "         │  └─ FUNCTION_CALL\n" +
+                               "         │     ├─ IDENTIFIER: pow\n" +
+                               "         │     └─ PARENTHESIS_PAIR\n" +
+                               "         │        ├─ IDENTIFIER: z\n" +
+                               "         │        └─ NUMBER_LITERAL: 2\n" +
+                               "         └─ IDENTIFIER: y",
+                "myFunction(x, y, z) = x + pow(z, 2)\n - y", operators);
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: a\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      ├─ FUNCTION_CALL\n" +
+                               "      │  ├─ IDENTIFIER: b\n" +
+                               "      │  └─ PARENTHESIS_PAIR\n" +
+                               "      └─ FUNCTION_CALL\n" +
+                               "         ├─ IDENTIFIER: c\n" +
+                               "         └─ PARENTHESIS_PAIR",
+                "a() = {b(); c()}", operators);
     }
 
     private void assertParsedTreeEquals(String expected, String expression, Operators operators) {
@@ -358,7 +436,8 @@ class ParserRuleTest {
     public void currentTest() {
         Operators operators = new Operators();
 
-        //new Parser(new Lexer("{test: hello, z: \"test\"}", operators));
-        new Parser(new Lexer("var = {test: 5, hmm: \"wow\" * 3, rec: {arr: [9, 2]}}", operators));
+        // new Parser(new Lexer("{test: hello, z: \"test\"}", operators));
+        new Parser(new Lexer("myFunction(x, y, z) = x + pow(z, 2)\n - y", operators));
+        // new Parser(new Lexer("a() = {b(); c()}", operators));
     }
 }

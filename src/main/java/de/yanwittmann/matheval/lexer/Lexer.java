@@ -177,11 +177,13 @@ public class Lexer {
                             buffer.append(c);
                             if (this.stringIterator.peek() == '\t' || this.stringIterator.peek() == ' ') {
                                 buffer.append(this.stringIterator.next());
-                                nextToken = createToken(buffer, TokenType.INDENTED_BLOCK);
+                                buffer.setLength(0);
+                                // do not append TokenType.INDENTED_BLOCK. this token should not be used anymore, as it would be removed in any case later on.
+                                continue;
                             } else {
                                 nextToken = createToken(buffer, TokenType.NEWLINE);
+                                return;
                             }
-                            return;
                         } else if (Character.isWhitespace(c)) {
                             continue;
                         } else if (c == '0') {
