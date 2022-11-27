@@ -64,7 +64,8 @@ public class Parser {
         return isType(token, TokenType.IDENTIFIER) || isType(token, ParserNode.NodeType.IDENTIFIER_ACCESSED) ||
                isType(token, ParserNode.NodeType.EXPRESSION) || isType(token, ParserNode.NodeType.FUNCTION_CALL) ||
                isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
-               isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP);
+               isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
+               isType(token, ParserNode.NodeType.CONDITIONAL);
     }
 
     public static boolean isListable(Object token) {
@@ -80,7 +81,7 @@ public class Parser {
     public static boolean isFinishedStatement(Object token) {
         return isEvaluableToValue(token) || isType(token, ParserNode.NodeType.ASSIGNMENT) ||
                isType(token, ParserNode.NodeType.FUNCTION_CALL) || isType(token, ParserNode.NodeType.CURLY_BRACKET_PAIR) ||
-               isType(token, ParserNode.NodeType.FUNCTION_DECLARATION);
+               isType(token, ParserNode.NodeType.FUNCTION_DECLARATION) || isType(token, ParserNode.NodeType.CONDITIONAL);
     }
 
     public static boolean isOperator(Object token, String symbol) {
@@ -179,6 +180,8 @@ public class Parser {
 
         // remove comments
         rules.add(createRemoveTokensRule(new Object[]{TokenType.COMMENT}));
+        // remove double newlines
+        rules.add(createRemoveDoubleTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON}));
 
         // check for curly bracket pairs with only map elements inside to transform into a map
         rules.add(tokens -> {
@@ -207,11 +210,27 @@ public class Parser {
                 if (isType(currentToken, ParserNode.NodeType.CURLY_BRACKET_PAIR)) {
                     final ParserNode node = (ParserNode) currentToken;
 
-                    if (node.getChildren().stream().allMatch(token -> isType(token, ParserNode.NodeType.STATEMENT) || isFinishedStatement(token))) {
+                    if (node.getChildren().stream().allMatch(token -> isType(token, ParserNode.NodeType.STATEMENT) || isType(token, ParserNode.NodeType.RETURN_STATEMENT) ||
+                                                                      isFinishedStatement(token))) {
                         final ParserNode blockNode = makeProperCodeBlock(node);
                         tokens.set(i, blockNode);
                         return true;
                     }
+                }
+            }
+
+            return false;
+        });
+
+        // remove newline in front of elif and else
+        rules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isType(currentToken, TokenType.NEWLINE) && (isKeyword(nextToken, "elif") || isKeyword(nextToken, "else"))) {
+                    tokens.remove(i);
+                    return true;
                 }
             }
 
@@ -324,7 +343,7 @@ public class Parser {
 
         // rule for parenthesis pairs
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_CURLY_BRACKET, TokenType.CLOSE_CURLY_BRACKET, ParserNode.NodeType.CURLY_BRACKET_PAIR,
-                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET}, new Object[]{ParserNode.NodeType.MAP_ELEMENT, ParserNode.NodeType.STATEMENT}));
+                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET}, new Object[]{ParserNode.NodeType.MAP_ELEMENT, ParserNode.NodeType.STATEMENT, ParserNode.NodeType.RETURN_STATEMENT}));
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_SQUARE_BRACKET, TokenType.CLOSE_SQUARE_BRACKET, ParserNode.NodeType.SQUARE_BRACKET_PAIR,
                 new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET}, new Object[]{}));
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_PARENTHESIS, TokenType.CLOSE_PARENTHESIS, ParserNode.NodeType.PARENTHESIS_PAIR,
@@ -394,6 +413,75 @@ public class Parser {
                 Parser::isEvaluableToValue
         ));
 
+        // conditions via CONDITIONAL_BRANCH wrapped in CONDITIONAL
+        // if (condition) { ... } elif (condition) { ... } else { ... }
+        // if CONDITIONAL_BRANCH: condition, body
+        // elif CONDITIONAL_BRANCH: condition, body
+        // else CONDITIONAL_BRANCH: body
+        rules.add(tokens -> {
+            final ParserNode node = new ParserNode(ParserNode.NodeType.CONDITIONAL, null);
+            int start = -1;
+            int end = -1;
+
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object token = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+                final Object nextNextToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
+
+                final ParserNode branch = new ParserNode(ParserNode.NodeType.CONDITIONAL_BRANCH, null);
+                boolean isElse = false;
+                boolean conditionStarterFound = false;
+
+                if (isKeyword(token, "if")) {
+                    start = i;
+                    node.getChildren().clear();
+                    conditionStarterFound = true;
+                } else if (isKeyword(token, "elif")) {
+                    if (start == -1) {
+                        continue;
+                    }
+                } else if (isKeyword(token, "else")) {
+                    if (start == -1) {
+                        continue;
+                    }
+                    isElse = true;
+                } else if (start != -1 && node.getChildren().size() > 0) {
+                    ParserRule.replace(tokens, node, start, end);
+                    return true;
+                }
+
+                if (node.getChildren().size() > 0 || conditionStarterFound) {
+                    final Object conditionToken = isElse ? null : nextToken;
+                    final Object bodyToken = isElse ? nextToken : nextNextToken;
+
+                    if (!isElse) {
+                        if (isType(conditionToken, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                            branch.addChild(conditionToken);
+                        } else {
+                            start = -1;
+                            node.getChildren().clear();
+                            continue;
+                        }
+                    }
+
+                    if (isEvaluableToValue(bodyToken) || isType(bodyToken, ParserNode.NodeType.CODE_BLOCK) || isType(bodyToken, ParserNode.NodeType.RETURN_STATEMENT)) {
+                        branch.addChild(makeProperCodeBlock((ParserNode) bodyToken));
+                        end = isElse ? i + 1 : i + 2;
+                        i = end;
+                    } else {
+                        start = -1;
+                        node.getChildren().clear();
+                        continue;
+                    }
+
+                    node.addChild(branch);
+                }
+            }
+
+            return false;
+        });
+
+        // function declaration
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_DECLARATION, (t) -> assignment, 1, (t, i) -> !isOperator(t, "="), (t, i) -> true,
                 (t, i) -> {
                     if (i == 0) {
@@ -406,7 +494,25 @@ public class Parser {
                 },
                 t -> isType(t, ParserNode.NodeType.FUNCTION_CALL),
                 t -> isOperator(t, "="),
-                token -> isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK)
+                token -> isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)
+        ));
+        // native functions
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_DECLARATION, (t) -> assignment, 1, (t, i) -> true, (t, i) -> true,
+                (t, i) -> {
+                    if (i == 1) {
+                        return isType(t, ParserNode.NodeType.FUNCTION_CALL) ? ((ParserNode) t).getChildren() : t;
+                    } else {
+                        return t;
+                    }
+                },
+                t -> isKeyword(t, "native"),
+                t -> isType(t, ParserNode.NodeType.FUNCTION_CALL)
+        ));
+
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.RETURN_STATEMENT, (t) -> null, 0, (t, i) -> !isStatementFinisher(t) && !isKeyword(t, "return"), (t, i) -> !isType(t, TokenType.CLOSE_CURLY_BRACKET), (t, i) -> t,
+                t -> isKeyword(t, "return"),
+                Parser::isEvaluableToValue,
+                Parser::isStatementFinisher
         ));
 
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.STATEMENT, (t) -> null, 0, (t, i) -> !isStatementFinisher(t), (t, i) -> !isType(t, TokenType.CLOSE_CURLY_BRACKET), (t, i) -> t,
@@ -433,6 +539,20 @@ public class Parser {
         };
     }
 
+    private static ParserRule createRemoveDoubleTokensRule(Object[] removeTokens) {
+        return tokens -> {
+            for (int i = 0; i < tokens.size() - 1; i++) {
+                final Object token = tokens.get(i);
+                final Object nextToken = tokens.get(i + 1);
+                if (Arrays.stream(removeTokens).anyMatch(t -> isType(token, t)) && Arrays.stream(removeTokens).anyMatch(t -> isType(nextToken, t))) {
+                    tokens.remove(i);
+                    i--;
+                }
+            }
+            return false;
+        };
+    }
+
     private static ParserNode makeProperCodeBlock(ParserNode node) {
         if (isType(node, ParserNode.NodeType.CODE_BLOCK)) {
             return node;
@@ -442,10 +562,11 @@ public class Parser {
 
         if (isType(node, ParserNode.NodeType.CURLY_BRACKET_PAIR)) {
             for (int j = 0; j < node.getChildren().size(); j++) {
-                if (isType(node.getChildren().get(j), ParserNode.NodeType.STATEMENT)) {
-                    blockNode.addChildren(((ParserNode) node.getChildren().get(j)).getChildren());
+                final Object childToken = node.getChildren().get(j);
+                if (isType(childToken, ParserNode.NodeType.STATEMENT)) {
+                    blockNode.addChildren(((ParserNode) childToken).getChildren());
                 } else {
-                    blockNode.addChild(node.getChildren().get(j));
+                    blockNode.addChild(childToken);
                 }
             }
         } else {

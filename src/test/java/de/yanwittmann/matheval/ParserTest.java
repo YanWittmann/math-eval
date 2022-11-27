@@ -477,6 +477,184 @@ class ParserTest {
                                "      ├─ NUMBER_LITERAL: 12\n" +
                                "      └─ NUMBER_LITERAL: 5",
                 "call() # this is a comment\ng = 12 + 5");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "   ├─ KEYWORD: native\n" +
+                               "   ├─ IDENTIFIER: foo\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      └─ IDENTIFIER: bar",
+                "native foo(bar)");
+
+        assertParsedTreeEquals("FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "├─ IDENTIFIER: foo\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  └─ IDENTIFIER: bar\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ RETURN_STATEMENT\n" +
+                               "      └─ NUMBER_LITERAL: 4",
+                "foo(bar) = return 4");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: foo\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER: bar\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      ├─ ASSIGNMENT: = (10 l r)\n" +
+                               "      │  ├─ IDENTIFIER: test\n" +
+                               "      │  └─ NUMBER_LITERAL: 4\n" +
+                               "      └─ RETURN_STATEMENT\n" +
+                               "         └─ IDENTIFIER: test",
+                "foo(bar) = {test = 4; return test}");
+    }
+
+    @Test
+    public void conditionTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ IDENTIFIER: cond1\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ RETURN_STATEMENT\n" +
+                               "   │        └─ NUMBER_LITERAL: 4\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ IDENTIFIER: cond2\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     ├─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │     │  ├─ IDENTIFIER: foo\n" +
+                               "   │     │  └─ NUMBER_LITERAL: 5\n" +
+                               "   │     └─ RETURN_STATEMENT\n" +
+                               "   │        └─ IDENTIFIER: foo\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      └─ CODE_BLOCK\n" +
+                               "         └─ RETURN_STATEMENT\n" +
+                               "            └─ NUMBER_LITERAL: 6",
+                "if (cond1) {return 4} elif (cond2) {foo = 5;return foo;} else {return 6;}");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ IDENTIFIER: cond1\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ RETURN_STATEMENT\n" +
+                               "   │        └─ NUMBER_LITERAL: 4\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ IDENTIFIER: cond2\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     ├─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │     │  ├─ IDENTIFIER: foo\n" +
+                               "   │     │  └─ NUMBER_LITERAL: 5\n" +
+                               "   │     └─ RETURN_STATEMENT\n" +
+                               "   │        └─ IDENTIFIER: foo\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ IDENTIFIER: cond3\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ IDENTIFIER: test\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      └─ CODE_BLOCK\n" +
+                               "         └─ RETURN_STATEMENT\n" +
+                               "            └─ NUMBER_LITERAL: 6",
+                "if (cond1) {\n" +
+                "    return 4\n" +
+                "} elif (cond2) {" +
+                "    foo = 5;\n" +
+                "    return foo;\n" +
+                "} elif (cond3) {\n" +
+                "    test;\n" +
+                "} else {\n" +
+                "    return 6;\n" +
+                "}");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │     ├─ EXPRESSION: + (110 l r)\n" +
+                               "   │  │     │  ├─ IDENTIFIER: var\n" +
+                               "   │  │     │  └─ NUMBER_LITERAL: 5\n" +
+                               "   │  │     └─ NUMBER_LITERAL: 4\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ CONDITIONAL\n" +
+                               "   │        ├─ CONDITIONAL_BRANCH\n" +
+                               "   │        │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │        │  │  └─ EXPRESSION: > (90 l r)\n" +
+                               "   │        │  │     ├─ FUNCTION_CALL\n" +
+                               "   │        │  │     │  ├─ IDENTIFIER: foo\n" +
+                               "   │        │  │     │  └─ PARENTHESIS_PAIR\n" +
+                               "   │        │  │     │     ├─ NUMBER_LITERAL: 4\n" +
+                               "   │        │  │     │     └─ ARRAY\n" +
+                               "   │        │  │     │        ├─ NUMBER_LITERAL: 4\n" +
+                               "   │        │  │     │        └─ NUMBER_LITERAL: 2\n" +
+                               "   │        │  │     └─ NUMBER_LITERAL: 4\n" +
+                               "   │        │  └─ CODE_BLOCK\n" +
+                               "   │        │     └─ FUNCTION_CALL\n" +
+                               "   │        │        ├─ IDENTIFIER: bar\n" +
+                               "   │        │        └─ PARENTHESIS_PAIR\n" +
+                               "   │        └─ CONDITIONAL_BRANCH\n" +
+                               "   │           └─ CODE_BLOCK\n" +
+                               "   │              └─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │                 ├─ IDENTIFIER: test\n" +
+                               "   │                 └─ EXPRESSION: + (110 l r)\n" +
+                               "   │                    ├─ NUMBER_LITERAL: 5\n" +
+                               "   │                    └─ NUMBER_LITERAL: 3\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ EXPRESSION: % (120 l r)\n" +
+                               "   │  │     ├─ FUNCTION_CALL\n" +
+                               "   │  │     │  ├─ IDENTIFIER: var\n" +
+                               "   │  │     │  └─ PARENTHESIS_PAIR\n" +
+                               "   │  │     │     ├─ NUMBER_LITERAL: 34\n" +
+                               "   │  │     │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │     │        ├─ IDENTIFIER: foo\n" +
+                               "   │  │     │        └─ STRING_LITERAL: \"acc\"\n" +
+                               "   │  │     └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │        ├─ NUMBER_LITERAL: 3\n" +
+                               "   │  │        └─ NUMBER_LITERAL: 1\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │        ├─ IDENTIFIER: test\n" +
+                               "   │        └─ CONDITIONAL\n" +
+                               "   │           ├─ CONDITIONAL_BRANCH\n" +
+                               "   │           │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │           │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │           │  │     ├─ FUNCTION_CALL\n" +
+                               "   │           │  │     │  ├─ IDENTIFIER: foo\n" +
+                               "   │           │  │     │  └─ PARENTHESIS_PAIR\n" +
+                               "   │           │  │     │     └─ IDENTIFIER: bar\n" +
+                               "   │           │  │     └─ ARRAY\n" +
+                               "   │           │  │        └─ IDENTIFIER_ACCESSED\n" +
+                               "   │           │  │           ├─ IDENTIFIER: bar\n" +
+                               "   │           │  │           └─ IDENTIFIER: foo\n" +
+                               "   │           │  └─ CODE_BLOCK\n" +
+                               "   │           │     └─ RETURN_STATEMENT\n" +
+                               "   │           │        └─ NUMBER_LITERAL: 3\n" +
+                               "   │           └─ CONDITIONAL_BRANCH\n" +
+                               "   │              └─ CODE_BLOCK\n" +
+                               "   │                 └─ RETURN_STATEMENT\n" +
+                               "   │                    └─ NUMBER_LITERAL: 6\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      └─ CODE_BLOCK\n" +
+                               "         └─ ASSIGNMENT: = (10 l r)\n" +
+                               "            ├─ IDENTIFIER: test\n" +
+                               "            └─ NUMBER_LITERAL: 6",
+                "if (var + 5 == 4) {\n" +
+                "    if (foo(4, [4, 2]) > 4) {\n" +
+                "        bar();\n" +
+                "    } else {\n" +
+                "        test = 5 + 3;\n" +
+                "    }\n" +
+                "} elif (var(34, foo[\"acc\"]) % 3 == 1) {\n" +
+                "    test = if (foo(bar) == [bar[foo]]) {return 3} else {return 6};\n" +
+                "} else {\n" +
+                "    test = 6;\n" +
+                "}");
     }
 
     @Test

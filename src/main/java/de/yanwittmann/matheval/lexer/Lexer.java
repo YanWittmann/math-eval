@@ -144,7 +144,7 @@ public class Lexer {
         };
 
         private final static String[] KEYWORDS = {
-                "if", "else", "elif", "true", "false", "null", "export", "as", "import", "inline"
+                "if", "else", "elif", "true", "false", "null", "export", "as", "import", "inline", "native", "return"
         };
 
         private boolean isSingleCharacterToken(char c) {
