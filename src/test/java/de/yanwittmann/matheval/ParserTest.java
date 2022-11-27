@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 
 class ParserTest {
@@ -507,6 +508,12 @@ class ParserTest {
                                "      └─ RETURN_STATEMENT\n" +
                                "         └─ IDENTIFIER: test",
                 "foo(bar) = {test = 4; return test}");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   └─ STRING_LITERAL: \"\"hey\"\"",
+                "test = \"\\\"hey\\\"\"");
     }
 
     @Test
@@ -668,9 +675,64 @@ class ParserTest {
 
     @Test
     public void parseFileTest() throws IOException {
+        Parser parser = new Parser(ParserTest.DEFAULT_OPERATORS);
         ExpressionFileReader reader = new ExpressionFileReader(DEFAULT_OPERATORS);
-        // reader.parse(new File("src/test/resources/modules/documentation/ImportModule1.me"));
-        // reader.parse(new File("src/test/resources/modules/allFeatures/a.me"));
+
+        Assertions.assertEquals(
+                "STATEMENT\n" +
+                "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                "   ├─ IDENTIFIER: fibonacci\n" +
+                "   ├─ PARENTHESIS_PAIR\n" +
+                "   │  └─ IDENTIFIER: n\n" +
+                "   └─ CODE_BLOCK\n" +
+                "      └─ CONDITIONAL\n" +
+                "         ├─ CONDITIONAL_BRANCH\n" +
+                "         │  ├─ PARENTHESIS_PAIR\n" +
+                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
+                "         │  │     ├─ IDENTIFIER: n\n" +
+                "         │  │     └─ NUMBER_LITERAL: 0\n" +
+                "         │  └─ CODE_BLOCK\n" +
+                "         │     └─ RETURN_STATEMENT\n" +
+                "         │        └─ ARRAY\n" +
+                "         │           └─ NUMBER_LITERAL: 0\n" +
+                "         ├─ CONDITIONAL_BRANCH\n" +
+                "         │  ├─ PARENTHESIS_PAIR\n" +
+                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
+                "         │  │     ├─ IDENTIFIER: n\n" +
+                "         │  │     └─ NUMBER_LITERAL: 1\n" +
+                "         │  └─ CODE_BLOCK\n" +
+                "         │     └─ RETURN_STATEMENT\n" +
+                "         │        └─ ARRAY\n" +
+                "         │           ├─ NUMBER_LITERAL: 0\n" +
+                "         │           └─ NUMBER_LITERAL: 1\n" +
+                "         └─ CONDITIONAL_BRANCH\n" +
+                "            └─ CODE_BLOCK\n" +
+                "               ├─ ASSIGNMENT: = (10 l r)\n" +
+                "               │  ├─ IDENTIFIER: fib\n" +
+                "               │  └─ FUNCTION_CALL\n" +
+                "               │     ├─ IDENTIFIER: fibonacci\n" +
+                "               │     └─ PARENTHESIS_PAIR\n" +
+                "               │        └─ EXPRESSION: - (110 l r)\n" +
+                "               │           ├─ IDENTIFIER: n\n" +
+                "               │           └─ NUMBER_LITERAL: 1\n" +
+                "               ├─ ASSIGNMENT: = (10 l r)\n" +
+                "               │  ├─ IDENTIFIER_ACCESSED\n" +
+                "               │  │  ├─ IDENTIFIER: fib\n" +
+                "               │  │  └─ IDENTIFIER: n\n" +
+                "               │  └─ EXPRESSION: + (110 l r)\n" +
+                "               │     ├─ IDENTIFIER_ACCESSED\n" +
+                "               │     │  ├─ IDENTIFIER: fib\n" +
+                "               │     │  └─ EXPRESSION: - (110 l r)\n" +
+                "               │     │     ├─ IDENTIFIER: n\n" +
+                "               │     │     └─ NUMBER_LITERAL: 1\n" +
+                "               │     └─ IDENTIFIER_ACCESSED\n" +
+                "               │        ├─ IDENTIFIER: fib\n" +
+                "               │        └─ EXPRESSION: - (110 l r)\n" +
+                "               │           ├─ IDENTIFIER: n\n" +
+                "               │           └─ NUMBER_LITERAL: 2\n" +
+                "               └─ RETURN_STATEMENT\n" +
+                "                  └─ IDENTIFIER: fib",
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/a.me"))));
     }
 
     private void assertParsedTreeEquals(String expected, String expression) {

@@ -18,9 +18,16 @@ public class Parser {
             return size() > 5;
         }
     };
+    private final static Map<Operators, List<ParserRule>> CACHED_PARSE_ONCE_RULES = new LinkedHashMap<Operators, List<ParserRule>>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Operators, List<ParserRule>> eldest) {
+            return size() > 5;
+        }
+    };
 
     private final Operators operators;
     private final List<ParserRule> rules = new ArrayList<>();
+    private final List<ParserRule> applyOnceRules = new ArrayList<>();
 
     public Parser(Operators operators) {
         this.operators = operators;
@@ -31,6 +38,10 @@ public class Parser {
         generateRules(operators);
 
         final List<Object> tokenTree = new ArrayList<>(tokens);
+        for (ParserRule rule : applyOnceRules) {
+            while (rule.match(tokenTree)) ;
+        }
+
         while (true) {
             if (rules.stream().noneMatch(rule -> rule.match(tokenTree))) {
                 break;
@@ -173,15 +184,31 @@ public class Parser {
 
         // check if rules have already been generated for these operators
         this.rules.clear();
-        if (CACHED_PARSE_RULES.containsKey(operators)) {
+        this.applyOnceRules.clear();
+        if (CACHED_PARSE_RULES.containsKey(operators) && CACHED_PARSE_ONCE_RULES.containsKey(operators)) {
             this.rules.addAll(CACHED_PARSE_RULES.get(operators));
+            this.applyOnceRules.addAll(CACHED_PARSE_ONCE_RULES.get(operators));
             return;
         }
 
         // remove comments
-        rules.add(createRemoveTokensRule(new Object[]{TokenType.COMMENT}));
+        this.applyOnceRules.add(createRemoveTokensRule(new Object[]{TokenType.COMMENT}));
         // remove double newlines
-        rules.add(createRemoveDoubleTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON}));
+        this.applyOnceRules.add(createRemoveDoubleTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON}));
+        // transform else if to elif
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object token = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isKeyword(token, "else") && isKeyword(nextToken, "if")) {
+                    tokens.set(i, new Token("elif", TokenType.KEYWORD));
+                    tokens.remove(i + 1);
+                    return true;
+                }
+            }
+            return false;
+        });
 
         // check for curly bracket pairs with only map elements inside to transform into a map
         rules.add(tokens -> {
@@ -524,6 +551,7 @@ public class Parser {
         rules.add(createRemoveTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.EOF}));
 
         CACHED_PARSE_RULES.put(operators, new ArrayList<>(this.rules));
+        CACHED_PARSE_ONCE_RULES.put(operators, new ArrayList<>(this.applyOnceRules));
     }
 
     private static ParserRule createRemoveTokensRule(Object[] removeTokens) {

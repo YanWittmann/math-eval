@@ -173,6 +173,11 @@ public class Lexer {
             while (this.stringIterator.hasNext()) {
                 final char c = this.stringIterator.next();
 
+                if (c == '\\') {
+                    buffer.append(this.stringIterator.next());
+                    continue;
+                }
+
                 switch (state) {
                     case 0:
                         if (c == '\n') {
