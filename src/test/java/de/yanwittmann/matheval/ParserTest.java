@@ -396,7 +396,7 @@ class ParserTest {
                 "test(4) - 3");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
                                "   ├─ IDENTIFIER: myFunction\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  ├─ IDENTIFIER: x\n" +
@@ -415,7 +415,7 @@ class ParserTest {
                 "myFunction(x, y, z) = x + pow(z, 2)\n - y");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
                                "   ├─ IDENTIFIER: a\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -452,7 +452,7 @@ class ParserTest {
                 "##\nmultiline\ncomment\n##");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
                                "   ├─ IDENTIFIER: fibonacci\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: n\n" +
@@ -480,14 +480,14 @@ class ParserTest {
                 "call() # this is a comment\ng = 12 + 5");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
                                "   ├─ KEYWORD: native\n" +
                                "   ├─ IDENTIFIER: foo\n" +
                                "   └─ PARENTHESIS_PAIR\n" +
                                "      └─ IDENTIFIER: bar",
                 "native foo(bar)");
 
-        assertParsedTreeEquals("FUNCTION_DECLARATION: = (10 l r)\n" +
+        assertParsedTreeEquals("FUNCTION_DECLARATION\n" +
                                "├─ IDENTIFIER: foo\n" +
                                "├─ PARENTHESIS_PAIR\n" +
                                "│  └─ IDENTIFIER: bar\n" +
@@ -497,7 +497,7 @@ class ParserTest {
                 "foo(bar) = return 4");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
                                "   ├─ IDENTIFIER: foo\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: bar\n" +
@@ -665,12 +665,41 @@ class ParserTest {
     }
 
     @Test
-    @Disabled
-    public void test() {
-        Parser parser = new Parser(ParserTest.DEFAULT_OPERATORS);
-        Lexer lexer = new Lexer(ParserTest.DEFAULT_OPERATORS);
-
-        parser.parse(lexer.parse(""));
+    public void inlineFunctionTest() {
+        assertParsedTreeEquals("FUNCTION_INLINE: -> (0 l r)\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  └─ IDENTIFIER: x\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "      ├─ IDENTIFIER: x\n" +
+                               "      └─ NUMBER_LITERAL: 1\n" +
+                               "FUNCTION_INLINE: -> (0 l r)\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  └─ IDENTIFIER: x\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ RETURN_STATEMENT\n" +
+                               "      └─ EXPRESSION: + (110 l r)\n" +
+                               "         ├─ IDENTIFIER: x\n" +
+                               "         └─ NUMBER_LITERAL: 1\n" +
+                               "FUNCTION_INLINE: -> (0 l r)\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  └─ IDENTIFIER: x\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "      ├─ IDENTIFIER: x\n" +
+                               "      └─ NUMBER_LITERAL: 1\n" +
+                               "FUNCTION_INLINE: -> (0 l r)\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  └─ IDENTIFIER: x\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ RETURN_STATEMENT\n" +
+                               "      └─ EXPRESSION: + (110 l r)\n" +
+                               "         ├─ IDENTIFIER: x\n" +
+                               "         └─ NUMBER_LITERAL: 1",
+             "(x) -> x + 1\n" +
+             "(x) -> { return x + 1; }\n" +
+             "x -> x + 1\n" +
+             "x -> { return x + 1; }");
     }
 
     @Test
@@ -680,7 +709,7 @@ class ParserTest {
 
         Assertions.assertEquals(
                 "STATEMENT\n" +
-                "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                "└─ FUNCTION_DECLARATION\n" +
                 "   ├─ IDENTIFIER: fibonacci\n" +
                 "   ├─ PARENTHESIS_PAIR\n" +
                 "   │  └─ IDENTIFIER: n\n" +
@@ -732,7 +761,60 @@ class ParserTest {
                 "               │           └─ NUMBER_LITERAL: 2\n" +
                 "               └─ RETURN_STATEMENT\n" +
                 "                  └─ IDENTIFIER: fib",
-                parser.toString(reader.parse(new File("src/test/resources/lang/other/a.me"))));
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.me"))));
+
+        Assertions.assertEquals(
+                "STATEMENT\n" +
+                "└─ FUNCTION_DECLARATION\n" +
+                "   ├─ IDENTIFIER: test\n" +
+                "   ├─ PARENTHESIS_PAIR\n" +
+                "   │  └─ IDENTIFIER: x\n" +
+                "   └─ CODE_BLOCK\n" +
+                "      └─ RETURN_STATEMENT\n" +
+                "         └─ EXPRESSION: + (110 l r)\n" +
+                "            ├─ IDENTIFIER: x\n" +
+                "            └─ NUMBER_LITERAL: 1\n" +
+                "STATEMENT\n" +
+                "└─ FUNCTION_DECLARATION\n" +
+                "   ├─ IDENTIFIER: test\n" +
+                "   ├─ PARENTHESIS_PAIR\n" +
+                "   │  └─ IDENTIFIER: x\n" +
+                "   └─ CODE_BLOCK\n" +
+                "      └─ RETURN_STATEMENT\n" +
+                "         └─ EXPRESSION: + (110 l r)\n" +
+                "            ├─ IDENTIFIER: x\n" +
+                "            └─ NUMBER_LITERAL: 1\n" +
+                "STATEMENT\n" +
+                "└─ FUNCTION_DECLARATION\n" +
+                "   ├─ IDENTIFIER: test\n" +
+                "   ├─ PARENTHESIS_PAIR\n" +
+                "   │  └─ IDENTIFIER: x\n" +
+                "   └─ CODE_BLOCK\n" +
+                "      └─ RETURN_STATEMENT\n" +
+                "         └─ EXPRESSION: + (110 l r)\n" +
+                "            ├─ IDENTIFIER: x\n" +
+                "            └─ NUMBER_LITERAL: 1\n" +
+                "STATEMENT\n" +
+                "└─ FUNCTION_DECLARATION\n" +
+                "   ├─ IDENTIFIER: test\n" +
+                "   ├─ PARENTHESIS_PAIR\n" +
+                "   │  └─ IDENTIFIER: x\n" +
+                "   └─ CODE_BLOCK\n" +
+                "      └─ RETURN_STATEMENT\n" +
+                "         └─ EXPRESSION: + (110 l r)\n" +
+                "            ├─ IDENTIFIER: x\n" +
+                "            └─ NUMBER_LITERAL: 1\n" +
+                "STATEMENT\n" +
+                "└─ FUNCTION_DECLARATION\n" +
+                "   ├─ IDENTIFIER: test\n" +
+                "   ├─ PARENTHESIS_PAIR\n" +
+                "   │  └─ IDENTIFIER: x\n" +
+                "   └─ CODE_BLOCK\n" +
+                "      └─ RETURN_STATEMENT\n" +
+                "         └─ EXPRESSION: + (110 l r)\n" +
+                "            ├─ IDENTIFIER: x\n" +
+                "            └─ NUMBER_LITERAL: 1",
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/inlineFunctions.me"))));
     }
 
     private void assertParsedTreeEquals(String expected, String expression) {

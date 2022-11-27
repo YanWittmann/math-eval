@@ -124,7 +124,7 @@ public class Operators {
 
         add(Operator.make("->", 0, true, true, (arguments) -> {
             return null;
-        }));
+        }, false));
 
         /*operators.stream().map(Operator::toString).forEach(System.out::println);
         System.out.println();*/

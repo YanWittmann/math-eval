@@ -39,7 +39,11 @@ public interface ParserRule {
                     if (currentMatchLength < expected.length && expected[currentMatchLength].apply(currentToken)) {
                         currentMatchLength++;
                     } else {
-                        i -= currentMatchLength > 1 ? currentMatchLength - 1 : 0;
+                        if (currentMatchLength > 1) {
+                            i -= currentMatchLength - 1;
+                        } else if (currentMatchLength == 1) {
+                            i--;
+                        }
                         currentMatchLength = 0;
                     }
                 }
