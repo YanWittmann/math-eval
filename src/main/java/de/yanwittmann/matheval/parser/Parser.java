@@ -170,12 +170,15 @@ public class Parser {
             throw new IllegalArgumentException("Operators cannot be null");
         }
 
-        // find in CACHED_PARSE_RULES
+        // check if rules have already been generated for these operators
         this.rules.clear();
         if (CACHED_PARSE_RULES.containsKey(operators)) {
             this.rules.addAll(CACHED_PARSE_RULES.get(operators));
             return;
         }
+
+        // remove comments
+        rules.add(createRemoveTokensRule(new Object[]{TokenType.COMMENT}));
 
         // check for curly bracket pairs with only map elements inside to transform into a map
         rules.add(tokens -> {
@@ -412,18 +415,22 @@ public class Parser {
         ));
 
         // remove all remaining unnecessary tokens like newlines
-        rules.add(tokens -> {
+        rules.add(createRemoveTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.EOF}));
+
+        CACHED_PARSE_RULES.put(operators, new ArrayList<>(this.rules));
+    }
+
+    private static ParserRule createRemoveTokensRule(Object[] removeTokens) {
+        return tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
                 final Object token = tokens.get(i);
-                if (isType(token, TokenType.NEWLINE)) {
+                if (Arrays.stream(removeTokens).anyMatch(t -> isType(token, t))) {
                     tokens.remove(i);
                     i--;
                 }
             }
             return false;
-        });
-
-        CACHED_PARSE_RULES.put(operators, new ArrayList<>(this.rules));
+        };
     }
 
     private static ParserNode makeProperCodeBlock(ParserNode node) {

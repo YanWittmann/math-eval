@@ -106,6 +106,7 @@ public class Lexer {
         COMMA, SEMICOLON, DOT,
         KEYWORD,
         INDENTED_BLOCK, NEWLINE,
+        COMMENT,
         EOF;
 
         public Token create(String value, int position) {
@@ -187,6 +188,9 @@ public class Lexer {
                             }
                         } else if (Character.isWhitespace(c)) {
                             continue;
+                        } else if (c == '#') {
+                            buffer.append(c);
+                            state = 12;
                         } else if (c == '0') {
                             buffer.append(c);
                             state = 3;
@@ -376,6 +380,46 @@ public class Lexer {
                             return;
                         }
                         break;
+                    case 12: // comment start
+                        buffer.append(c);
+                        if (c == '#') {
+                            state = 13; // multiline comment ##
+                        } else {
+                            state = 16; // single line comment #
+                        }
+                        break;
+                    case 13: // multiline comment
+                        buffer.append(c);
+                        if (c == '#') {
+                            state = 15; // potential comment end
+                        } else {
+                            state = 14; // comment body
+                        }
+                        break;
+                    case 14: // multiline comment body
+                        buffer.append(c);
+                        if (c == '#') {
+                            state = 15; // potential comment end
+                        }
+                        break;
+                    case 15: // potential multiline comment end
+                        buffer.append(c);
+                        if (c == '#') {
+                            nextToken = createToken(buffer, TokenType.COMMENT);
+                            return;
+                        } else {
+                            state = 14; // return to comment body
+                        }
+                        break;
+                    case 16: // single line comment
+                        if (c == '\n' || c == '\r' || !this.stringIterator.hasNext()) {
+                            nextToken = createToken(buffer, TokenType.COMMENT);
+                            this.stringIterator.stepBack();
+                            return;
+                        } else {
+                            buffer.append(c);
+                        }
+
                 }
             }
 

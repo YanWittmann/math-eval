@@ -5,9 +5,9 @@ import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.operator.Operators;
 import de.yanwittmann.matheval.parser.Parser;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 class ParserTest {
@@ -426,8 +426,66 @@ class ParserTest {
                                "         └─ PARENTHESIS_PAIR",
                 "a() = {b(); c()}");
 
-        /*assertParsedTreeEquals("",
-                "fib[n] = fib[n - 1] + fib[n - 2];");*/
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: fib\n" +
+                               "   │  └─ IDENTIFIER: n\n" +
+                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "      ├─ IDENTIFIER_ACCESSED\n" +
+                               "      │  ├─ IDENTIFIER: fib\n" +
+                               "      │  └─ EXPRESSION: - (110 l r)\n" +
+                               "      │     ├─ IDENTIFIER: n\n" +
+                               "      │     └─ NUMBER_LITERAL: 1\n" +
+                               "      └─ IDENTIFIER_ACCESSED\n" +
+                               "         ├─ IDENTIFIER: fib\n" +
+                               "         └─ EXPRESSION: - (110 l r)\n" +
+                               "            ├─ IDENTIFIER: n\n" +
+                               "            └─ NUMBER_LITERAL: 2",
+                "fib[n] = fib[n - 1] + fib[n - 2];");
+
+        assertParsedTreeEquals("",
+                "# this is a comment");
+
+        assertParsedTreeEquals("",
+                "##\nmultiline\ncomment\n##");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: fibonacci\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER: n\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ FUNCTION_CALL\n" +
+                               "         ├─ IDENTIFIER: doSomething\n" +
+                               "         └─ PARENTHESIS_PAIR",
+                "##\n" +
+                "function that creates an array of fibonacci numbers\n" +
+                "##\n" +
+                "fibonacci(n) = {\n" +
+                "    doSomething()\n" +
+                "}");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER: call\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: g\n" +
+                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "      ├─ NUMBER_LITERAL: 12\n" +
+                               "      └─ NUMBER_LITERAL: 5",
+                "call() # this is a comment\ng = 12 + 5");
+    }
+
+    @Test
+    @Disabled
+    public void test() {
+        Parser parser = new Parser(ParserTest.DEFAULT_OPERATORS);
+        Lexer lexer = new Lexer(ParserTest.DEFAULT_OPERATORS);
+
+        parser.parse(lexer.parse(""));
     }
 
     @Test

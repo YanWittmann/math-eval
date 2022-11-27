@@ -42,7 +42,8 @@ public interface Operator {
                     if (operator.getType() == Lexer.TokenType.OPERATOR && symbolEqual) {
 
                         final Object nextAfterToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
-                        if (Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_PARENTHESIS)) {
+                        if (Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_PARENTHESIS) || Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_SQUARE_BRACKET) ||
+                            Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_CURLY_BRACKET)) {
                             i++;
                             continue;
                         }
