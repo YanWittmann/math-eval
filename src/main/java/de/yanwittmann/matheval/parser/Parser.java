@@ -1,15 +1,19 @@
 package de.yanwittmann.matheval.parser;
 
+import de.yanwittmann.matheval.interpreter.Interpreter;
 import de.yanwittmann.matheval.lexer.Lexer.TokenType;
+import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.operator.Operators;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static de.yanwittmann.matheval.lexer.Lexer.Token;
-
 public class Parser {
+
+    private static final Logger LOG = LogManager.getLogger(Parser.class);
 
     // lru cache for parsing rules using an operator instance as key
     private final static Map<Operators, List<ParserRule>> CACHED_PARSE_RULES = new LinkedHashMap<Operators, List<ParserRule>>() {
@@ -34,7 +38,7 @@ public class Parser {
         generateRules(operators);
     }
 
-    public List<Object> parse(List<Token> tokens) {
+    public ParserNode parse(List<Token> tokens) {
         generateRules(operators);
 
         final List<Object> tokenTree = new ArrayList<>(tokens);
@@ -48,9 +52,14 @@ public class Parser {
             }
         }
 
-        System.out.println("Parsed tokens:\n" + toString(tokenTree));
+        if (Interpreter.isDebugMode()) {
+            LOG.info("Parsed tokens:\n" + toString(tokenTree));
+        }
 
-        return tokenTree;
+        final ParserNode root = new ParserNode(ParserNode.NodeType.ROOT, null);
+        root.addChildren(tokenTree);
+
+        return root;
     }
 
     public String toString(List<Object> tokens) {

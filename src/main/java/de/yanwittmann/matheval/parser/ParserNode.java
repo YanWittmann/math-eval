@@ -95,6 +95,7 @@ public class ParserNode {
     }
 
     public enum NodeType {
+        ROOT,
         ASSIGNMENT,
         EXPRESSION, CODE_BLOCK,
         STATEMENT,

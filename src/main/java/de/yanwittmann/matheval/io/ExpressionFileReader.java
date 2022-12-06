@@ -1,9 +1,10 @@
 package de.yanwittmann.matheval.io;
 
 import de.yanwittmann.matheval.lexer.Lexer;
-import de.yanwittmann.matheval.lexer.Lexer.Token;
+import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operators;
 import de.yanwittmann.matheval.parser.Parser;
+import de.yanwittmann.matheval.parser.ParserNode;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -26,7 +27,7 @@ public class ExpressionFileReader {
         return lexer.parse(lines);
     }
 
-    public List<Object> parse(File file) throws IOException {
+    public ParserNode parse(File file) throws IOException {
         return parser.parse(lex(file));
     }
 }

@@ -1,7 +1,9 @@
 package de.yanwittmann.matheval.lexer;
 
-import de.yanwittmann.matheval.operator.Operator;
+import de.yanwittmann.matheval.interpreter.Interpreter;
 import de.yanwittmann.matheval.operator.Operators;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -10,6 +12,8 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 public class Lexer {
+
+    private static final Logger LOG = LogManager.getLogger(Lexer.class);
 
     private final Operators operators;
 
@@ -23,9 +27,13 @@ public class Lexer {
         new TokenIterator(expression, operators).forEach(tokens::add);
         tokens.add(new Token("", TokenType.EOF, expression.length()));
 
-        System.out.println("\nLexed tokens:");
-        tokens.forEach(System.out::println);
-        System.out.println();
+        if (Interpreter.isDebugMode()) {
+            LOG.info("Lexed tokens:");
+            for (Token token : tokens) {
+                LOG.info(token);
+            }
+            LOG.info("");
+        }
 
         return tokens;
     }
@@ -60,39 +68,6 @@ public class Lexer {
 
         public void stepBack() {
             position--;
-        }
-    }
-
-    public static class Token {
-        public final String value;
-        public final TokenType type;
-        public final int position;
-
-        public Token(String value, TokenType type, int position) {
-            this.value = value;
-            this.type = type;
-            this.position = position;
-        }
-
-        public Token(String value, TokenType type) {
-            this(value, type, -1);
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public TokenType getType() {
-            return type;
-        }
-
-        public int getPosition() {
-            return position;
-        }
-
-        @Override
-        public String toString() {
-            return type + (Operator.isEmpty(value) ? "" : ": " + value);
         }
     }
 

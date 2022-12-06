@@ -1,19 +1,26 @@
 package de.yanwittmann.matheval.interpreter;
 
 import de.yanwittmann.matheval.EvalRuntime;
-import de.yanwittmann.matheval.parser.Parser;
+import de.yanwittmann.matheval.operator.Operators;
 
-public class Interpreter {
+public class Interpreter extends EvalRuntime {
 
-    private final EvalRuntime runtime;
-    private final Parser parser;
+    private static boolean debugMode = false;
 
-    public Interpreter(EvalRuntime runtime, Parser parser) {
-        this.runtime = runtime;
-        this.parser = parser;
+
+    public Interpreter(Operators operators) {
+        super(operators);
     }
 
     public Object evaluate(String expression) {
         return null;
+    }
+
+    public static void setDebugMode(boolean debugMode) {
+        Interpreter.debugMode = debugMode;
+    }
+
+    public static boolean isDebugMode() {
+        return debugMode;
     }
 }

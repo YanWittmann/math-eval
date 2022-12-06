@@ -5,7 +5,6 @@ import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.operator.Operators;
 import de.yanwittmann.matheval.parser.Parser;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -696,10 +695,10 @@ class ParserTest {
                                "      └─ EXPRESSION: + (110 l r)\n" +
                                "         ├─ IDENTIFIER: x\n" +
                                "         └─ NUMBER_LITERAL: 1",
-             "(x) -> x + 1\n" +
-             "(x) -> { return x + 1; }\n" +
-             "x -> x + 1\n" +
-             "x -> { return x + 1; }");
+                "(x) -> x + 1\n" +
+                "(x) -> { return x + 1; }\n" +
+                "x -> x + 1\n" +
+                "x -> { return x + 1; }");
     }
 
     @Test
@@ -761,7 +760,7 @@ class ParserTest {
                 "               │           └─ NUMBER_LITERAL: 2\n" +
                 "               └─ RETURN_STATEMENT\n" +
                 "                  └─ IDENTIFIER: fib",
-                parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.me"))));
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.ter")).getChildren()));
 
         Assertions.assertEquals(
                 "STATEMENT\n" +
@@ -814,7 +813,7 @@ class ParserTest {
                 "         └─ EXPRESSION: + (110 l r)\n" +
                 "            ├─ IDENTIFIER: x\n" +
                 "            └─ NUMBER_LITERAL: 1",
-                parser.toString(reader.parse(new File("src/test/resources/lang/other/inlineFunctions.me"))));
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/inlineFunctions.ter")).getChildren()));
     }
 
     private void assertParsedTreeEquals(String expected, String expression) {
@@ -822,7 +821,7 @@ class ParserTest {
         Lexer lexer = new Lexer(ParserTest.DEFAULT_OPERATORS);
         Assertions.assertEquals(
                 expected,
-                parser.toString(parser.parse(lexer.parse(expression))
+                parser.toString(parser.parse(lexer.parse(expression)).getChildren()
                 ));
     }
 }

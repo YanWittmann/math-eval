@@ -2,6 +2,7 @@ package de.yanwittmann.matheval.operator;
 
 import de.yanwittmann.matheval.interpreter.Value;
 import de.yanwittmann.matheval.lexer.Lexer;
+import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.parser.Parser;
 import de.yanwittmann.matheval.parser.ParserNode;
 import de.yanwittmann.matheval.parser.ParserRule;
@@ -35,8 +36,8 @@ public interface Operator {
             for (int i = 0; i < tokens.size(); i++) {
                 final Object token = tokens.get(i);
 
-                if (token instanceof Lexer.Token) {
-                    final Lexer.Token operator = (Lexer.Token) token;
+                if (token instanceof Token) {
+                    final Token operator = (Token) token;
                     final boolean symbolEqual = getSymbol().equals(operator.getValue());
 
                     if (operator.getType() == Lexer.TokenType.OPERATOR && symbolEqual) {

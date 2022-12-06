@@ -1,17 +1,19 @@
 package de.yanwittmann.matheval.parser;
 
 import de.yanwittmann.matheval.Functions;
+import de.yanwittmann.matheval.interpreter.Interpreter;
+import de.yanwittmann.matheval.lexer.Token;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-import static de.yanwittmann.matheval.lexer.Lexer.Token;
-
 @FunctionalInterface
 public interface ParserRule {
 
-    boolean logChanges = false;
+    Logger LOG = LogManager.getLogger(ParserRule.class);
 
     boolean match(List<Object> tokens);
 
@@ -21,11 +23,9 @@ public interface ParserRule {
         }
         tokenTree.add(startIndex, replacement);
 
-        if (logChanges) {
-            for (int i = 0; i < tokenTree.size(); i++) {
-                System.out.println(tokenTree.get(i));
-            }
-            System.out.println();
+        if (Interpreter.isDebugMode()) {
+            tokenTree.forEach(LOG::info);
+            LOG.info("");
         }
     }
 
