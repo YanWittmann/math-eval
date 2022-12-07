@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Deprecated
 public class ExpressionFileReader {
 
     private final Lexer lexer;

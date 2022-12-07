@@ -2,26 +2,26 @@ package de.yanwittmann.matheval.interpreter.structure;
 
 import java.util.regex.Pattern;
 
-public class Value<T> {
+public class Value {
 
-    private T value;
+    private Object value;
     private final String type;
 
-    protected Value(T value, String type) {
+    protected Value(Object value, String type) {
         this.value = value;
         this.type = type;
     }
 
-    protected Value(T value, ValueType type) {
+    protected Value(Object value, PrimitiveValueType type) {
         this.value = value;
         this.type = type.getType();
     }
 
-    public T getValue() {
+    public Object getValue() {
         return value;
     }
 
-    public void setValue(T value) {
+    public void setValue(Object value) {
         this.value = value;
     }
 
@@ -29,17 +29,25 @@ public class Value<T> {
         return type;
     }
 
-    public static Value<?> of(Object value) {
+    public static Value of(Object value) {
+        final Object type;
+
         if (value instanceof Number) {
-            return new Value<>((Number) value, ValueType.NUMBER);
+            type = PrimitiveValueType.NUMBER;
         } else if (value instanceof String) {
-            return new Value<>((String) value, ValueType.STRING);
+            type = PrimitiveValueType.STRING;
         } else if (value instanceof Boolean) {
-            return new Value<>((Boolean) value, ValueType.BOOLEAN);
+            type = PrimitiveValueType.BOOLEAN;
         } else if (value instanceof Pattern) {
-            return new Value<>((Pattern) value, ValueType.REGEX);
+            type = PrimitiveValueType.REGEX;
         } else {
-            return new Value<>(value, "unknown");
+            type = "unknown";
+        }
+
+        if (type instanceof PrimitiveValueType) {
+            return new Value(value, (PrimitiveValueType) type);
+        } else {
+            return new Value(value, (String) type);
         }
     }
 }

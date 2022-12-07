@@ -23,9 +23,7 @@ public interface Operator {
         return true;
     }
 
-    ;
-
-    Value<?> evaluate(Value<?>... arguments);
+    Value evaluate(Value... arguments);
 
     static boolean isEmpty(String string) {
         return string == null || string.isEmpty();
@@ -75,11 +73,11 @@ public interface Operator {
         };
     }
 
-    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value<?>[], Value<?>> evaluator) {
+    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value[], Value> evaluator) {
         return Operator.make(symbol, precedence, left, right, evaluator, true);
     }
 
-    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value<?>[], Value<?>> evaluator, boolean shouldCreateParserRule) {
+    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value[], Value> evaluator, boolean shouldCreateParserRule) {
         return new Operator() {
             @Override
             public String getSymbol() {
@@ -107,7 +105,7 @@ public interface Operator {
             }
 
             @Override
-            public Value<?> evaluate(Value<?>... arguments) {
+            public Value evaluate(Value... arguments) {
                 return evaluator.apply(arguments);
             }
 

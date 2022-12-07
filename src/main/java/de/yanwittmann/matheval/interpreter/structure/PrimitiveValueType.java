@@ -1,6 +1,6 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
-public enum ValueType {
+public enum PrimitiveValueType {
 
     NUMBER("number"),
     STRING("string"),
@@ -11,7 +11,7 @@ public enum ValueType {
 
     private final String type;
 
-    ValueType(String type) {
+    PrimitiveValueType(String type) {
         this.type = type;
     }
 

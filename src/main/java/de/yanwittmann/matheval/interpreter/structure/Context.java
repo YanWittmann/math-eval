@@ -15,6 +15,8 @@ public class Context {
     private final ParserNode root;
     private final List<Module> modules = new ArrayList<>();
     private final List<Import> imports = new ArrayList<>();
+    private final List<Function> globalScopeFunctions = new ArrayList<>();
+    private final List<Value> globalScopeVariables = new ArrayList<>();
 
     public Context(ParserNode root, Object source) {
         this.root = root;
@@ -23,12 +25,21 @@ public class Context {
         for (Object child : root.getChildren()) {
             if (child instanceof ParserNode) {
                 final ParserNode childNode = (ParserNode) child;
+
                 if (childNode.getType() == ParserNode.NodeType.EXPORT_STATEMENT) {
                     modules.add(new Module(childNode));
+
                 } else if (childNode.getType() == ParserNode.NodeType.IMPORT_STATEMENT ||
                            childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
                            childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
                     imports.add(new Import(childNode));
+
+                } else if (childNode.getType() == ParserNode.NodeType.STATEMENT) {
+                    // a statement can only have one child
+                    final Object statementChild = childNode.getChildren().get(0);
+                    if (statementChild instanceof ParserNode) {
+                        final Object res = parseNodeFromNodeTree((ParserNode) statementChild);
+                    }
                 }
             }
         }
@@ -90,6 +101,10 @@ public class Context {
     }
 
     public Object evaluate() {
+        return null;
+    }
+
+    protected static Object parseNodeFromNodeTree(ParserNode node) {
         return null;
     }
 
