@@ -1,9 +1,8 @@
 package de.yanwittmann.matheval.parser;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import de.yanwittmann.matheval.lexer.Token;
+
+import java.util.*;
 
 public class ParserNode {
 
@@ -108,5 +107,188 @@ public class ParserNode {
         ARRAY, LISTED_ELEMENTS,
         MAP, MAP_ELEMENT,
         CONDITIONAL, CONDITIONAL_BRANCH
+    }
+
+    public String reconstructCode() {
+        final StringBuilder sb = new StringBuilder();
+        reconstructCode(this, sb);
+        return sb.toString();
+    }
+
+    private static String reconstructCode(Object o, StringBuilder sb) {
+        if (o instanceof ParserNode) {
+            ParserNode node = (ParserNode) o;
+            switch (node.getType()) {
+                case ROOT:
+                case EXPRESSION:
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    break;
+                case STATEMENT:
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    sb.append(";");
+                    break;
+                case ASSIGNMENT:
+                    reconstructCode(node.getChildren().get(0), sb);
+                    sb.append(" = ");
+                    reconstructCode(node.getChildren().get(1), sb);
+                    break;
+                case IDENTIFIER_ACCESSED:
+                    final Iterator<Object> accessorIterator = node.getChildren().iterator();
+                    while (accessorIterator.hasNext()) {
+                        Object child = accessorIterator.next();
+                        reconstructCode(child, sb);
+                        if (accessorIterator.hasNext()) {
+                            sb.append(".");
+                        }
+                    }
+                    break;
+                case PARENTHESIS_PAIR:
+                    sb.append("(");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    sb.append(")");
+                    break;
+                case SQUARE_BRACKET_PAIR:
+                    sb.append("[");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    sb.append("]");
+                    break;
+                case CURLY_BRACKET_PAIR:
+                    sb.append("{");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    sb.append("}");
+                    break;
+                case CODE_BLOCK:
+                    sb.append("{ ");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                        sb.append("; ");
+                    }
+                    sb.append("}");
+                    break;
+                case FUNCTION_DECLARATION:
+                    reconstructCode(node.getChildren().get(0), sb);
+                    sb.append(" = ");
+                    reconstructCode(node.getChildren().get(1), sb);
+                    sb.append(" -> ");
+                    reconstructCode(node.getChildren().get(2), sb);
+                    break;
+                case FUNCTION_CALL:
+                    reconstructCode(node.getChildren().get(0), sb);
+                    reconstructCode(node.getChildren().get(1), sb);
+                    break;
+                case FUNCTION_INLINE:
+                    // TODO
+                    break;
+                case ARRAY:
+                    final Iterator<Object> arrayIterator = node.getChildren().iterator();
+                    sb.append("[");
+                    while (arrayIterator.hasNext()) {
+                        Object child = arrayIterator.next();
+                        reconstructCode(child, sb);
+                        if (arrayIterator.hasNext()) {
+                            sb.append(", ");
+                        }
+                    }
+                    sb.append("]");
+                    break;
+                case CONDITIONAL:
+                    boolean first = true;
+                    // if elif else
+                    for (Object child : node.getChildren()) {
+                        if (child instanceof ParserNode && ((ParserNode) child).getType() == NodeType.CONDITIONAL_BRANCH && ((ParserNode) child).getChildren().size() == 2) {
+                            if (first) {
+                                sb.append("if ");
+                                first = false;
+                            } else {
+                                sb.append(" else if ");
+                            }
+                            reconstructCode(child, sb);
+                        } else {
+                            sb.append(" else ");
+                            reconstructCode(child, sb);
+                        }
+                    }
+                    break;
+                case CONDITIONAL_BRANCH:
+                    reconstructCode(node.getChildren().get(0), sb);
+                    if (node.getChildren().size() == 2) {
+                        sb.append(" ");
+                        reconstructCode(node.getChildren().get(1), sb);
+                    }
+                    break;
+                case RETURN_STATEMENT:
+                    sb.append("return ");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    break;
+                case IMPORT_STATEMENT:
+                case IMPORT_INLINE_STATEMENT:
+                case IMPORT_AS_STATEMENT:
+                    sb.append("import ");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    break;
+                case EXPORT_STATEMENT:
+                    sb.append("export ");
+                    for (Object child : node.getChildren()) {
+                        reconstructCode(child, sb);
+                    }
+                    break;
+                case MAP:
+                    final Iterator<Object> mapIterator = node.getChildren().iterator();
+                    sb.append("{");
+                    while (mapIterator.hasNext()) {
+                        Object child = mapIterator.next();
+                        reconstructCode(child, sb);
+                        if (mapIterator.hasNext()) {
+                            sb.append(", ");
+                        }
+                    }
+                    sb.append("}");
+                    break;
+                case MAP_ELEMENT:
+                    reconstructCode(node.getChildren().get(0), sb);
+                    sb.append(": ");
+                    reconstructCode(node.getChildren().get(1), sb);
+                    break;
+                case LISTED_ELEMENTS:
+                    final Iterator<Object> listedIterator = node.getChildren().iterator();
+                    while (listedIterator.hasNext()) {
+                        Object child = listedIterator.next();
+                        reconstructCode(child, sb);
+                        if (listedIterator.hasNext()) {
+                            sb.append(", ");
+                        }
+                    }
+                    break;
+                default:
+                    if (node.getChildren().size() > 0) {
+                        for (Object child : node.getChildren()) {
+                            reconstructCode(child, sb);
+                        }
+                    } else {
+                        sb.append(node.getValue());
+                    }
+                    break;
+            }
+        } else if (o instanceof Token) {
+            sb.append(((Token) o).getValue());
+        } else {
+            sb.append(o);
+        }
+
+        return sb.toString();
     }
 }

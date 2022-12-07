@@ -365,10 +365,6 @@ class ParserTest {
                                "└─ IDENTIFIER: TestModule",
                 "import TestModule");
 
-        assertParsedTreeEquals("IMPORT_STATEMENT\n" +
-                               "└─ IDENTIFIER: TestModule",
-                "import TestModule");
-
         assertParsedTreeEquals("IMPORT_AS_STATEMENT\n" +
                                "├─ IDENTIFIER: TestModule\n" +
                                "└─ IDENTIFIER: Test",

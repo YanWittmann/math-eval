@@ -1,0 +1,4 @@
+
+import math as ma
+
+ma.add(1, 2)

@@ -1,4 +1,4 @@
-package de.yanwittmann.matheval.interpreter;
+package de.yanwittmann.matheval.interpreter.structure;
 
 import java.util.regex.Pattern;
 

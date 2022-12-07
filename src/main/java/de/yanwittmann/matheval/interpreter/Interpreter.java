@@ -12,10 +12,6 @@ public class Interpreter extends EvalRuntime {
         super(operators);
     }
 
-    public Object evaluate(String expression) {
-        return null;
-    }
-
     public static void setDebugMode(boolean debugMode) {
         Interpreter.debugMode = debugMode;
     }

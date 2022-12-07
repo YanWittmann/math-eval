@@ -1,6 +1,6 @@
 package de.yanwittmann.matheval.operator;
 
-import de.yanwittmann.matheval.interpreter.Value;
+import de.yanwittmann.matheval.interpreter.structure.Value;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.parser.Parser;

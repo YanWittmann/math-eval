@@ -1,5 +1,6 @@
 package de.yanwittmann.matheval;
 
+import de.yanwittmann.matheval.interpreter.structure.Context;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operators;
@@ -18,6 +19,7 @@ public class EvalRuntime {
 
     protected final Lexer lexer;
     protected final Parser parser;
+    protected final List<Context> contexts = new ArrayList<>();
 
     public EvalRuntime(Operators operators) {
         lexer = new Lexer(operators);
@@ -33,7 +35,7 @@ public class EvalRuntime {
 
         for (File file : files) {
             if (file.isDirectory()) {
-                filesToLoad.addAll(FileUtils.listFiles(file, new String[]{"me"}, true));
+                filesToLoad.addAll(FileUtils.listFiles(file, new String[]{"ter"}, true));
             } else {
                 filesToLoad.add(file);
             }
@@ -41,25 +43,33 @@ public class EvalRuntime {
 
         for (File file : filesToLoad) {
             try {
-                loadContexts(FileUtils.readLines(file, StandardCharsets.UTF_8));
+                loadContext(FileUtils.readLines(file, StandardCharsets.UTF_8), file.getName());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void loadContexts(List<String> str) {
+    public void loadContext(List<String> str, String source) {
         final List<Token> tokens = lexer.parse(str);
-        final ParserNode parserNode = parser.parse(tokens);
+        final ParserNode rootNode = parser.parse(tokens);
 
+        final Context context = new Context(rootNode, source);
+        contexts.add(context);
+    }
 
+    public void finish() {
+        for (Context context : contexts) {
+            context.finish(contexts);
+        }
     }
 
     public Object evaluate(String expression) {
         final List<Token> tokens = lexer.parse(expression);
         final ParserNode tokenTree = parser.parse(tokens);
 
-
-        return null;
+        final Context context = new Context(tokenTree, "eval");
+        context.finish(contexts);
+        return context.evaluate();
     }
 }

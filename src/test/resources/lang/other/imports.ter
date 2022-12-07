@@ -1,0 +1,3 @@
+import TestModule
+import TestModule as TM
+import TestModule inline
