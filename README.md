@@ -6,3 +6,6 @@ An interpreted language for evaluating expressions with functions and variables 
 ## Specification
 
 Check out the [loose specification](doc/requirements.md) for the language.
+
+
+![Menter Thumbnail](doc/thumbnail.png)
