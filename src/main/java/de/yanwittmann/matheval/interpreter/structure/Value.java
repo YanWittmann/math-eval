@@ -17,7 +17,7 @@ public class Value {
     }
 
     public void inheritValue(Value value) {
-        this.value = value;
+        this.value = value.value;
     }
 
     public void setValue(Object value) {

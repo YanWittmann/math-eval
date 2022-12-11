@@ -42,7 +42,7 @@ public class Import {
     }
 
     public String getName() {
-        return nameOrModule instanceof String ? (String) nameOrModule : null;
+        return nameOrModule instanceof String ? (String) nameOrModule : ((Module) nameOrModule).getName();
     }
 
     public Module getModule() {

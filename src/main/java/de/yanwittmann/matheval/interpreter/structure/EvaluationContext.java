@@ -9,7 +9,9 @@ import de.yanwittmann.matheval.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class EvaluationContext {
@@ -17,11 +19,18 @@ public abstract class EvaluationContext {
     private static final Logger LOG = LogManager.getLogger(EvaluationContext.class);
 
     private final EvaluationContext parentContext;
-    private Map<String, Value> variables;
+    private final Map<String, Value> variables;
+    protected final static Map<Object, java.util.function.Function<Value[], Value>> nativeFunctions = new HashMap<>();
+
+    static {
+        nativeFunctions.put("print", arguments -> {
+            System.out.println(Arrays.stream(arguments).map(Value::getValue).map(Objects::toString).collect(Collectors.joining(" ")));
+            return new Value(null);
+        });
+    }
 
     public EvaluationContext(EvaluationContext parentContext) {
-        this.parentContext = parentContext;
-        this.variables = new HashMap<>();
+        this(parentContext, new HashMap<>());
     }
 
     public EvaluationContext(EvaluationContext parentContext, Map<String, Value> variables) {
@@ -47,6 +56,10 @@ public abstract class EvaluationContext {
             return parentContext.getVariable(name);
         }
         return value;
+    }
+
+    public void registerNativeFunction(Function functionInstance, java.util.function.Function<Value[], Value> function) {
+        nativeFunctions.put(functionInstance, function);
     }
 
     public Value evaluate(Object node, GlobalContext globalContext, Map<String, Value> localSymbols, SymbolCreationMode symbolCreationMode) {
@@ -106,15 +119,35 @@ public abstract class EvaluationContext {
                     .collect(Collectors.toList()));
 
         } else if (node.getType() == ParserNode.NodeType.FUNCTION_DECLARATION) {
-            final Value functionName = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
-            final List<Object> functionArguments = Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(1)).getChildren() : null;
-            if (functionArguments == null) {
-                throw new MenterExecutionException("Function arguments are not a parenthesis pair", node);
-            }
-            final ParserNode functionCode = (ParserNode) node.getChildren().get(2);
+            if (Parser.isKeyword(node.getChildren().get(0), "native")) {
+                final Value functionValue = evaluate(node.getChildren().get(1), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
+                final String functionName = ((Token) node.getChildren().get(1)).getValue();
+                final List<Object> functionArguments = Parser.isType(node.getChildren().get(2), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(2)).getChildren() : null;
+                if (functionArguments == null) {
+                    throw new MenterExecutionException("Function arguments are not a parenthesis pair", node);
+                }
 
-            final Function function = new Function(functionArguments, functionCode);
-            functionName.setValue(function);
+                final Function function = new Function(globalContext, functionArguments);
+                functionValue.setValue(function);
+                if (nativeFunctions.containsKey(functionName)) {
+                    final java.util.function.Function<Value[], Value> natFunc = nativeFunctions.remove(functionName);
+                    nativeFunctions.put(function, natFunc);
+                }
+
+                result = functionValue;
+            } else {
+                final Value functionValue = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
+                final List<Object> functionArguments = Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(1)).getChildren() : null;
+                if (functionArguments == null) {
+                    throw new MenterExecutionException("Function arguments are not a parenthesis pair", node);
+                }
+                final ParserNode functionCode = (ParserNode) node.getChildren().get(2);
+
+                final Function function = new Function(globalContext, functionArguments, functionCode);
+                functionValue.setValue(function);
+
+                result = functionValue;
+            }
 
         } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
             final Value function = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
@@ -134,18 +167,29 @@ public abstract class EvaluationContext {
             final Function executableFunction = (Function) function.getValue();
             final List<String> functionArgumentNames = executableFunction.getArgumentNames();
 
-            if (functionArgumentNames.size() != evaluatedArguments.size()) {
-                throw new MenterExecutionException("Function " + function + " requires " + functionArgumentNames.size() + " arguments, but " + evaluatedArguments.size() + " were given", node);
-            }
+            if (executableFunction.isNative()) {
+                LOG.info("Calling native function [{}] with arguments [{}]", function, evaluatedArguments);
+                result = nativeFunctions.get(executableFunction).apply(evaluatedArguments.toArray(new Value[0]));
 
-            final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);
-            for (int i = 0; i < functionArgumentNames.size(); i++) {
-                final String argumentName = functionArgumentNames.get(i);
-                final Value argumentValue = (Value) evaluatedArguments.get(i);
-                functionLocalSymbols.put(argumentName, argumentValue);
-            }
+            } else {
+                if (functionArgumentNames.size() != evaluatedArguments.size()) {
+                    throw new MenterExecutionException("Function " + function + " requires " + functionArgumentNames.size() + " arguments, but " + evaluatedArguments.size() + " were given", node);
+                }
 
-            result = evaluate(executableFunction.getBody(), globalContext, functionLocalSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);
+                for (int i = 0; i < functionArgumentNames.size(); i++) {
+                    final String argumentName = functionArgumentNames.get(i);
+                    final Value argumentValue = (Value) evaluatedArguments.get(i);
+                    functionLocalSymbols.put(argumentName, argumentValue);
+                }
+
+                functionLocalSymbols.putAll(executableFunction.getParentContext().getVariables());
+
+                if (executableFunction.isNative()) {
+                } else {
+                    result = evaluate(executableFunction.getBody(), globalContext, functionLocalSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                }
+            }
 
             LOG.info("Function [{}] returned [{}]", function, result);
         }
@@ -160,6 +204,14 @@ public abstract class EvaluationContext {
             result = resolveSymbol(node, symbolCreationMode, globalContext, localSymbols);
             LOG.info("Resolved symbol [{}] to [{}]", node, result);
 
+        } else if (node.getType() == Lexer.TokenType.NUMBER_LITERAL) {
+            result = new Value(new BigDecimal(node.getValue()));
+        } else if (node.getType() == Lexer.TokenType.BOOLEAN_LITERAL) {
+            result = new Value(Boolean.valueOf(node.getValue()));
+        } else if (node.getType() == Lexer.TokenType.STRING_LITERAL) {
+            result = new Value(node.getValue().substring(1, node.getValue().length() - 1));
+        } else if (node.getType() == Lexer.TokenType.REGEX_LITERAL) {
+            result = new Value(Pattern.compile(node.getValue()));
         } else if (Parser.isListable(node)) {
             result = new Value(node.getValue());
         }
@@ -229,6 +281,7 @@ public abstract class EvaluationContext {
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();
+                            localSymbols = globalContext.getVariables();
                             value = null;
                             foundImport = true;
                             break;
@@ -256,7 +309,7 @@ public abstract class EvaluationContext {
                 } else {
                     value = new Value(new HashMap<>());
                 }
-                globalContext.addVariable(stringKey, value);
+                localSymbols.put(stringKey, value);
             }
         }
 

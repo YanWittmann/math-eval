@@ -1,6 +1,5 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
-import de.yanwittmann.matheval.EvalRuntime;
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
@@ -81,23 +80,19 @@ public class GlobalContext extends EvaluationContext {
         return imports;
     }
 
-    private boolean isFinished = false;
+    private boolean inputsResolved = false;
 
-    public void finish(List<GlobalContext> globalContexts) {
-        if (isFinished) return;
-        isFinished = true;
+    public void resolveImports(List<GlobalContext> globalContexts) {
+        if (inputsResolved) return;
+        inputsResolved = true;
 
         for (Import anImport : imports) {
             anImport.findModule(globalContexts);
         }
-
-        evaluate();
-
-        System.out.println(this + "\n");
     }
 
     public Object evaluate() {
-        return super.evaluate(root, this, new HashMap<>(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+        return super.evaluate(root, this, super.getVariables(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
     }
 
     @Override

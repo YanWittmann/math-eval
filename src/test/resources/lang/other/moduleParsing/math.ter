@@ -1,5 +1,10 @@
 
+pi = 3.141
+
 add(a, b) = a + b
 sub(a, b) = a - b
 
+piOp(x) = x + pi
+
 export [add, sub] as math
+

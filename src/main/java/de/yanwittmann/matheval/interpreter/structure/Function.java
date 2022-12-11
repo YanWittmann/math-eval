@@ -8,12 +8,23 @@ import java.util.stream.Collectors;
 
 public class Function {
 
+    private final GlobalContext parentContext;
     private final List<Object> parameters;
     private final ParserNode body;
+    private final boolean isNative;
 
-    public Function(List<Object> parameters, ParserNode body) {
+    public Function(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
+        this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = body;
+        this.isNative = false;
+    }
+
+    public Function(GlobalContext parentContext, List<Object> parameters) {
+        this.parentContext = parentContext;
+        this.parameters = parameters;
+        this.body = null;
+        this.isNative = true;
     }
 
     public List<String> getArgumentNames() {
@@ -22,6 +33,14 @@ public class Function {
 
     public ParserNode getBody() {
         return body;
+    }
+
+    public boolean isNative() {
+        return isNative;
+    }
+
+    public GlobalContext getParentContext() {
+        return parentContext;
     }
 
     @Override

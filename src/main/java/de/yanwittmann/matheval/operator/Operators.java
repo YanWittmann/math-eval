@@ -29,6 +29,18 @@ public class Operators {
         }
     }
 
+    private static void throwCannotPerformOperationException(String symbol, Value... values) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Cannot perform operation '").append(symbol).append("' with arguments: ");
+        for (int i = 0; i < values.length; i++) {
+            builder.append(values[i]);
+            if (i < values.length - 1) {
+                builder.append(", ");
+            }
+        }
+        throw new MenterExecutionException(builder.toString());
+    }
+
     public Operators() {
         // precedence values see https://introcs.cs.princeton.edu/java/11precedence/
 
@@ -86,7 +98,8 @@ public class Operators {
                 return new Value(leftString.get() + rightString.get());
             }
 
-            throw new MenterExecutionException("Cannot add " + arguments[0].getType() + " and " + arguments[1].getType() + "!");
+            throwCannotPerformOperationException("+", arguments);
+            return null;
         }));
         add(Operator.make("-", 110, true, true, (arguments) -> {
             return null;
