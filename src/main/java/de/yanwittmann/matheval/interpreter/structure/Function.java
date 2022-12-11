@@ -1,27 +1,34 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
+import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.parser.ParserNode;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Function {
 
-    private final Object name;
-    private final List<Object> parameters = new ArrayList<>();
-    private final List<Object> body = new ArrayList<>();
+    private final List<Object> parameters;
+    private final ParserNode body;
 
-    public Function(ParserNode functionStatement) {
-        name = functionStatement.getChildren().get(0);
+    public Function(List<Object> parameters, ParserNode body) {
+        this.parameters = parameters;
+        this.body = body;
+    }
 
-        final ParserNode array = (ParserNode) functionStatement.getChildren().get(1);
-        parameters.addAll(array.getChildren());
+    public List<String> getArgumentNames() {
+        return parameters.stream().map(o -> ((Token) o).getValue()).collect(Collectors.toList());
+    }
 
-        body.addAll(((ParserNode) functionStatement.getChildren().get(2)).getChildren());
+    public ParserNode getBody() {
+        return body;
     }
 
     @Override
     public String toString() {
-        return name + "(" + parameters + ") = " + body.size() + " statements";
+        return "Function{" +
+               "parameters=" + parameters +
+               ", body=" + body +
+               '}';
     }
 }

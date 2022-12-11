@@ -7,6 +7,7 @@ public enum PrimitiveValueType {
     BOOLEAN("boolean"),
     ARRAY("array"),
     FUNCTION("function"),
+    OBJECT("object"),
     REGEX("regex");
 
     private final String type;

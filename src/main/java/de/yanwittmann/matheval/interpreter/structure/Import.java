@@ -1,6 +1,6 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
-import de.yanwittmann.matheval.exceptions.ContextInitializationException;
+import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.parser.ParserNode;
 
@@ -65,9 +65,13 @@ public class Import {
         return nameOrModule instanceof String;
     }
 
-    protected void findModule(List<Context> contexts) {
-        for (Context context : contexts) {
-            for (Module module : context.getModules()) {
+    public String getAliasOrName() {
+        return alias != null ? alias : getName();
+    }
+
+    protected void findModule(List<GlobalContext> globalContexts) {
+        for (GlobalContext globalContext : globalContexts) {
+            for (Module module : globalContext.getModules()) {
                 if (module.getName().equals(getName())) {
                     nameOrModule = module;
                     return;
@@ -75,7 +79,7 @@ public class Import {
             }
         }
 
-        throw new ContextInitializationException("Could not find module '" + getName() + "'. Modules available: " + contexts.stream().flatMap(context -> context.getModules().stream()).map(Module::getName).collect(Collectors.toList()));
+        throw new MenterExecutionException("Could not find module '" + getName() + "'. Modules available: " + globalContexts.stream().flatMap(context -> context.getModules().stream()).map(Module::getName).collect(Collectors.toList()));
     }
 
     @Override

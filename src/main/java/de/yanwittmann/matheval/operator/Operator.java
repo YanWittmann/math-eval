@@ -25,6 +25,16 @@ public interface Operator {
 
     Value evaluate(Value... arguments);
 
+    default int getNumberOfArguments() {
+        if (isLeftAssociative() && isRightAssociative()) {
+            return 2;
+        } else if (isLeftAssociative() || isRightAssociative()) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
     static boolean isEmpty(String string) {
         return string == null || string.isEmpty();
     }

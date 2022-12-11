@@ -1,13 +1,33 @@
 package de.yanwittmann.matheval.operator;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import de.yanwittmann.matheval.exceptions.MenterExecutionException;
+import de.yanwittmann.matheval.interpreter.structure.PrimitiveValueType;
+import de.yanwittmann.matheval.interpreter.structure.Value;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 public class Operators {
 
     private final List<Operator> operators = new ArrayList<>();
+
+    private static Optional<Value> getNumericValue(Value value) {
+        if (value.getType().equals(PrimitiveValueType.NUMBER.getType())) {
+            return Optional.of(value);
+        } else if (value.getType().equals(PrimitiveValueType.STRING.getType())) {
+            return Optional.of(new Value(new BigDecimal((String) value.getValue())));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<String> getStringValue(Value value) {
+        if (value.getType().equals(PrimitiveValueType.STRING.getType())) {
+            return Optional.of((String) value.getValue());
+        } else {
+            return Optional.empty();
+        }
+    }
 
     public Operators() {
         // precedence values see https://introcs.cs.princeton.edu/java/11precedence/
@@ -52,7 +72,21 @@ public class Operators {
         }));
 
         add(Operator.make("+", 110, true, true, (arguments) -> {
-            return null;
+            final Optional<Value> left = getNumericValue(arguments[0]);
+            final Optional<Value> right = getNumericValue(arguments[1]);
+
+            if (left.isPresent() && right.isPresent()) {
+                return new Value(((BigDecimal) left.get().getValue()).add((BigDecimal) right.get().getValue()));
+            }
+
+            final Optional<String> leftString = getStringValue(arguments[0]);
+            final Optional<String> rightString = getStringValue(arguments[1]);
+
+            if (leftString.isPresent() && rightString.isPresent()) {
+                return new Value(leftString.get() + rightString.get());
+            }
+
+            throw new MenterExecutionException("Cannot add " + arguments[0].getType() + " and " + arguments[1].getType() + "!");
         }));
         add(Operator.make("-", 110, true, true, (arguments) -> {
             return null;
@@ -153,7 +187,7 @@ public class Operators {
         List<Operator> operators = new ArrayList<>();
         for (Operator operator : this.operators) {
             if (operator.isLeftAssociative() && !operator.isRightAssociative() ||
-                    !operator.isLeftAssociative() && operator.isRightAssociative()) {
+                !operator.isLeftAssociative() && operator.isRightAssociative()) {
                 operators.add(operator);
             }
         }

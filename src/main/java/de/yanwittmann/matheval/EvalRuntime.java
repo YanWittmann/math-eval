@@ -1,12 +1,14 @@
 package de.yanwittmann.matheval;
 
-import de.yanwittmann.matheval.interpreter.structure.Context;
+import de.yanwittmann.matheval.interpreter.structure.GlobalContext;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operators;
 import de.yanwittmann.matheval.parser.Parser;
 import de.yanwittmann.matheval.parser.ParserNode;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,9 +19,11 @@ import java.util.List;
 
 public class EvalRuntime {
 
+    private static final Logger LOG = LogManager.getLogger(EvalRuntime.class);
+
     protected final Lexer lexer;
     protected final Parser parser;
-    protected final List<Context> contexts = new ArrayList<>();
+    protected final List<GlobalContext> globalContexts = new ArrayList<>();
 
     public EvalRuntime(Operators operators) {
         lexer = new Lexer(operators);
@@ -54,13 +58,13 @@ public class EvalRuntime {
         final List<Token> tokens = lexer.parse(str);
         final ParserNode rootNode = parser.parse(tokens);
 
-        final Context context = new Context(rootNode, source);
-        contexts.add(context);
+        final GlobalContext globalContext = new GlobalContext(rootNode, source);
+        globalContexts.add(globalContext);
     }
 
     public void finish() {
-        for (Context context : contexts) {
-            context.finish(contexts);
+        for (GlobalContext globalContext : globalContexts) {
+            globalContext.finish(globalContexts);
         }
     }
 
@@ -68,8 +72,8 @@ public class EvalRuntime {
         final List<Token> tokens = lexer.parse(expression);
         final ParserNode tokenTree = parser.parse(tokens);
 
-        final Context context = new Context(tokenTree, "eval");
-        context.finish(contexts);
+        final GlobalContext context = new GlobalContext(tokenTree, "eval");
+        context.finish(globalContexts);
         return context.evaluate();
     }
 }

@@ -1,24 +1,25 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
-import de.yanwittmann.matheval.exceptions.ContextInitializationException;
+import de.yanwittmann.matheval.EvalRuntime;
+import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.parser.ParserNode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class Context {
+public class GlobalContext extends EvaluationContext {
+
+    private static final Logger LOG = LogManager.getLogger(GlobalContext.class);
 
     private final Object source;
     private final ParserNode root;
     private final List<Module> modules = new ArrayList<>();
     private final List<Import> imports = new ArrayList<>();
-    private final List<Function> globalScopeFunctions = new ArrayList<>();
-    private final List<Value> globalScopeVariables = new ArrayList<>();
 
-    public Context(ParserNode root, Object source) {
+    public GlobalContext(ParserNode root, Object source) {
+        super(null);
         this.root = root;
         this.source = source;
 
@@ -27,19 +28,12 @@ public class Context {
                 final ParserNode childNode = (ParserNode) child;
 
                 if (childNode.getType() == ParserNode.NodeType.EXPORT_STATEMENT) {
-                    modules.add(new Module(childNode));
+                    modules.add(new Module(this, childNode));
 
                 } else if (childNode.getType() == ParserNode.NodeType.IMPORT_STATEMENT ||
                            childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
                            childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
                     imports.add(new Import(childNode));
-
-                } else if (childNode.getType() == ParserNode.NodeType.STATEMENT) {
-                    // a statement can only have one child
-                    final Object statementChild = childNode.getChildren().get(0);
-                    if (statementChild instanceof ParserNode) {
-                        final Object res = parseNodeFromNodeTree((ParserNode) statementChild);
-                    }
                 }
             }
         }
@@ -59,7 +53,7 @@ public class Context {
             final Set<String> moduleNames = new HashSet<>();
             for (Module module : modules) {
                 if (!moduleNames.add(module.getName())) {
-                    throw new ContextInitializationException("Duplicate module name: " + module.getName());
+                    throw new MenterExecutionException("Duplicate module name: " + module.getName());
                 }
             }
         }
@@ -68,17 +62,15 @@ public class Context {
             for (Import anImport : imports) {
                 if (anImport.getAlias() != null) {
                     if (!importNames.add(anImport.getAlias())) {
-                        throw new ContextInitializationException("Duplicate import alias: " + anImport.getAlias());
+                        throw new MenterExecutionException("Duplicate import alias: " + anImport.getAlias());
                     }
                 } else if (anImport.getName() != null) {
                     if (!importNames.add(anImport.getName())) {
-                        throw new ContextInitializationException("Duplicate import name: " + anImport.getName());
+                        throw new MenterExecutionException("Duplicate import name: " + anImport.getName());
                     }
                 }
             }
         }
-
-        System.out.println(this + "\n");
     }
 
     public List<Module> getModules() {
@@ -91,21 +83,21 @@ public class Context {
 
     private boolean isFinished = false;
 
-    public void finish(List<Context> contexts) {
+    public void finish(List<GlobalContext> globalContexts) {
         if (isFinished) return;
         isFinished = true;
 
         for (Import anImport : imports) {
-            anImport.findModule(contexts);
+            anImport.findModule(globalContexts);
         }
+
+        evaluate();
+
+        System.out.println(this + "\n");
     }
 
     public Object evaluate() {
-        return null;
-    }
-
-    protected static Object parseNodeFromNodeTree(ParserNode node) {
-        return null;
+        return super.evaluate(root, this, new HashMap<>(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
     }
 
     @Override

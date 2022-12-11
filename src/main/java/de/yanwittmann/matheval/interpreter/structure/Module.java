@@ -8,10 +8,12 @@ import java.util.List;
 
 public class Module {
 
+    private GlobalContext parentContext;
     private final String name;
     private final List<Object> symbols = new ArrayList<>();
 
-    public Module(ParserNode exportStatement) {
+    public Module(GlobalContext parentContext, ParserNode exportStatement) {
+        this.parentContext = parentContext;
         final ParserNode array = (ParserNode) exportStatement.getChildren().get(0);
         symbols.addAll(array.getChildren());
         name = ((Token) exportStatement.getChildren().get(1)).getValue();
@@ -23,6 +25,10 @@ public class Module {
 
     public List<Object> getSymbols() {
         return symbols;
+    }
+
+    public GlobalContext getParentContext() {
+        return parentContext;
     }
 
     @Override
