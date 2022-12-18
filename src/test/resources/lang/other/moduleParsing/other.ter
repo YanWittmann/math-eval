@@ -1,10 +1,7 @@
 
 import math as ma
-import core
-
-core.print("Hello World", 4)
-core.print(ma.piOp(1))
+import core inline
 
 
-
-
+print("Hello World", 4)
+print(ma.piOp(ma.pi))

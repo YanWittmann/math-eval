@@ -6,5 +6,4 @@ sub(a, b) = a - b
 
 piOp(x) = x + pi
 
-export [add, sub] as math
-
+export [add, sub, piOp, pi] as math

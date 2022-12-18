@@ -1,19 +1,39 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Value {
 
     private Object value;
+    private Value secondaryValue;
 
     public Value(Object value) {
+        this(value, null);
+    }
+
+    public Value(Object value, Value secondaryValue) {
+        if (value instanceof Integer) value = new BigDecimal((Integer) value);
+        else if (value instanceof Long) value = new BigDecimal((Long) value);
+        else if (value instanceof Float) value = BigDecimal.valueOf((Float) value);
+        else if (value instanceof Double) value = BigDecimal.valueOf((Double) value);
+
         this.value = value;
+        this.secondaryValue = secondaryValue;
     }
 
     public Object getValue() {
         return value;
+    }
+
+    public Value getSecondaryValue() {
+        return secondaryValue;
     }
 
     public void inheritValue(Value value) {
@@ -39,34 +59,75 @@ public class Value {
             return PrimitiveValueType.OBJECT.getType();
         } else if (value instanceof List) {
             return PrimitiveValueType.ARRAY.getType();
-        } else if (value instanceof Function) {
+        } else if (value instanceof MFunction) {
             return PrimitiveValueType.FUNCTION.getType();
+        } else if (value instanceof BiFunction) {
+            return PrimitiveValueType.VALUE_FUNCTION.getType();
         } else {
             return "unknown";
         }
     }
 
+    public BigDecimal getNumberValue() {
+        if (Objects.equals(this.getType(), PrimitiveValueType.NUMBER.getType())) {
+            return (BigDecimal) value;
+        } else {
+            return null;
+        }
+    }
+
     public Value access(Value identifier) {
-        if (getType().equals(PrimitiveValueType.OBJECT.getType())) {
+        if (identifier.getValue() == null) {
+            return new Value(null);
+        }
+
+        if (VALUE_FUNCTIONS.containsKey(this.getType()) && VALUE_FUNCTIONS.get(this.getType()).containsKey(String.valueOf(identifier.getValue()))) {
+            return new Value(VALUE_FUNCTIONS.get(this.getType()).get(identifier.getValue().toString()), this);
+        }
+
+        if (this.getType().equals(PrimitiveValueType.OBJECT.getType())) {
             return ((Map<String, Value>) value).get(identifier.getValue());
-        } else if (getType().equals(PrimitiveValueType.ARRAY.getType())) {
-            return ((List<Value>) value).get(Integer.parseInt(identifier.getValue().toString()));
+        } else if (this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
+            return ((List<Value>) value).get(identifier.getNumberValue().intValue());
         }
 
         return null;
     }
 
     public Value create(Value identifier, Value value) {
-        if (getType().equals(PrimitiveValueType.OBJECT.getType())) {
+        if (this.getType().equals(PrimitiveValueType.OBJECT.getType())) {
             ((Map<String, Value>) this.value).put(identifier.getValue().toString(), value);
-        } else if (getType().equals(PrimitiveValueType.ARRAY.getType())) {
+        } else if (this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
             ((List<Value>) this.value).add(value);
         }
         return value;
     }
 
+    private final static Map<String, Map<String, java.util.function.BiFunction<Value, List<Value>, Value>>> VALUE_FUNCTIONS = new HashMap<String, Map<String, java.util.function.BiFunction<Value, List<Value>, Value>>>() {
+        {
+            put(PrimitiveValueType.ARRAY.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {
+                {
+                    put("size", (self, values) -> new Value(((List<?>) self.getValue()).size()));
+                }
+            });
+        }
+    };
+
     @Override
     public String toString() {
         return value + " (" + getType() + ")";
+    }
+
+    public String toDisplayString() {
+        if (value instanceof Value) {
+            return ((Value) value).toDisplayString();
+        } else if (value instanceof List) {
+            return ((List<?>) value).stream()
+                    .map(v -> v instanceof Value ? ((Value) v).toDisplayString() : v)
+                    .collect(Collectors.toList())
+                    .toString();
+        } else {
+            return String.valueOf(value);
+        }
     }
 }

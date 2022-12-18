@@ -15,6 +15,8 @@ public interface ParserRule {
 
     Logger LOG = LogManager.getLogger(ParserRule.class);
 
+    boolean debuggerLogParseProgress = false;
+
     boolean match(List<Object> tokens);
 
     static void replace(List<Object> tokenTree, Object replacement, int startIndex, int endIndex) {
@@ -23,7 +25,7 @@ public interface ParserRule {
         }
         tokenTree.add(startIndex, replacement);
 
-        if (Interpreter.isDebugMode()) {
+        if (debuggerLogParseProgress) {
             tokenTree.forEach(LOG::info);
             LOG.info("");
         }

@@ -1,6 +1,5 @@
 package de.yanwittmann.matheval.parser;
 
-import de.yanwittmann.matheval.interpreter.Interpreter;
 import de.yanwittmann.matheval.lexer.Lexer.TokenType;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operator;
@@ -14,6 +13,8 @@ import java.util.stream.Collectors;
 public class Parser {
 
     private static final Logger LOG = LogManager.getLogger(Parser.class);
+
+    public static boolean debuggerLogParsedTokens = false;
 
     // lru cache for parsing rules using an operator instance as key
     private final static Map<Operators, List<ParserRule>> CACHED_PARSE_RULES = new LinkedHashMap<Operators, List<ParserRule>>() {
@@ -52,7 +53,7 @@ public class Parser {
             }
         }
 
-        if (Interpreter.isDebugMode()) {
+        if (debuggerLogParsedTokens) {
             LOG.info("Parsed tokens:\n" + toString(tokenTree));
         }
 
@@ -398,10 +399,27 @@ public class Parser {
         ));
 
         // accessor using []
-        rules.add(ParserRulePart.createRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, Arrays.asList(
+        /*rules.add(ParserRulePart.createRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, Arrays.asList(
                 new ParserRulePart(1, 1, Parser::isIdentifier, t -> t),
                 new ParserRulePart(1, 1, (t) -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR), t -> ((ParserNode) t).getChildren())
-        )));
+        )));*/
+        // accessor using []
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR), (t, i) -> true,
+                (t, i) -> {
+                    if (isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR)) {
+                        final Object child = ((ParserNode) t).getChildren().get(0);
+                        if (child instanceof ParserNode) {
+                            return makeProperCodeBlock((ParserNode) child);
+                        }
+                        return child;
+                    } else {
+                        return t;
+                    }
+                },
+                Parser::isIdentifier,
+                (t) -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR)
+        ));
+
 
         // after it has been confirmed that there are no more accessors, [] can be converted to arrays
         rules.add(ParserRulePart.createRule(ParserNode.NodeType.ARRAY, Collections.singletonList(

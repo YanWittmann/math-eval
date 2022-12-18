@@ -1,7 +1,6 @@
 package de.yanwittmann.matheval;
 
 import de.yanwittmann.matheval.interpreter.structure.GlobalContext;
-import de.yanwittmann.matheval.interpreter.structure.Value;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operators;
@@ -17,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 public class EvalRuntime {
 
@@ -70,7 +68,6 @@ public class EvalRuntime {
         }
         for (GlobalContext globalContext : globalContexts) {
             globalContext.evaluate();
-            System.out.println(this + "\n");
         }
     }
 

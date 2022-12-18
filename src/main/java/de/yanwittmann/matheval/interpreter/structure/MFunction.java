@@ -6,21 +6,21 @@ import de.yanwittmann.matheval.parser.ParserNode;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Function {
+public class MFunction {
 
     private final GlobalContext parentContext;
     private final List<Object> parameters;
     private final ParserNode body;
     private final boolean isNative;
 
-    public Function(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
+    public MFunction(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
         this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = body;
         this.isNative = false;
     }
 
-    public Function(GlobalContext parentContext, List<Object> parameters) {
+    public MFunction(GlobalContext parentContext, List<Object> parameters) {
         this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = null;
@@ -47,7 +47,7 @@ public class Function {
     public String toString() {
         return "Function{" +
                "parameters=" + parameters +
-               ", body=" + body +
+               ", body=" + (body != null ? body.reconstructCode() : null) +
                '}';
     }
 }

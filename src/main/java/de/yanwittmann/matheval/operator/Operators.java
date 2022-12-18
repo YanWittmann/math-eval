@@ -74,6 +74,14 @@ public class Operators {
         }));
 
         add(Operator.make("*", 120, true, true, (arguments) -> {
+            final Optional<Value> left = getNumericValue(arguments[0]);
+            final Optional<Value> right = getNumericValue(arguments[1]);
+
+            if (left.isPresent() && right.isPresent()) {
+                return new Value(((BigDecimal) left.get().getValue()).multiply((BigDecimal) right.get().getValue()));
+            }
+
+            throwCannotPerformOperationException("*", arguments);
             return null;
         }));
         add(Operator.make("/", 120, true, true, (arguments) -> {
@@ -102,6 +110,14 @@ public class Operators {
             return null;
         }));
         add(Operator.make("-", 110, true, true, (arguments) -> {
+            final Optional<Value> left = getNumericValue(arguments[0]);
+            final Optional<Value> right = getNumericValue(arguments[1]);
+
+            if (left.isPresent() && right.isPresent()) {
+                return new Value(((BigDecimal) left.get().getValue()).subtract((BigDecimal) right.get().getValue()));
+            }
+
+            throwCannotPerformOperationException("-", arguments);
             return null;
         }));
 
@@ -172,9 +188,6 @@ public class Operators {
         add(Operator.make("->", 0, true, true, (arguments) -> {
             return null;
         }, false));
-
-        /*operators.stream().map(Operator::toString).forEach(System.out::println);
-        System.out.println();*/
     }
 
     public void add(Operator operator) {

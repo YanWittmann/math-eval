@@ -1,0 +1,15 @@
+native print(x)
+
+arr = [1, 2, 3]
+length = arr.size()
+last = arr[length - 1]
+
+print(arr, last, length)
+
+mapper = x -> x + 1
+
+usesFunction(funct, other) {
+    return funct(other)
+}
+
+print(usesFunction(x -> x * x, 5))

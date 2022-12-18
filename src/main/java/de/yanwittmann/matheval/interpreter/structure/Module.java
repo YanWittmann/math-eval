@@ -31,6 +31,21 @@ public class Module {
         return parentContext;
     }
 
+    public final static java.util.function.Function<Object, String> ID_TO_KEY_MAPPER = o -> {
+        if (o instanceof Token) {
+            return ((Token) o).getValue();
+        } else if (o instanceof Value) {
+            return ((Value) o).getValue().toString();
+        } else if (o instanceof String) {
+            return (String) o;
+        }
+        return null;
+    };
+
+    public boolean containsSymbol(String symbol) {
+        return symbols.stream().map(ID_TO_KEY_MAPPER).anyMatch(s -> s.equals(symbol));
+    }
+
     @Override
     public String toString() {
         return "Module{" +

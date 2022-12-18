@@ -1,6 +1,7 @@
 package de.yanwittmann.matheval.parser;
 
 import de.yanwittmann.matheval.lexer.Token;
+import de.yanwittmann.matheval.operator.Operator;
 
 import java.util.*;
 
@@ -8,11 +9,18 @@ public class ParserNode {
 
     private final NodeType type;
     private final Object value;
-    private final List<Object> children = new ArrayList<>();
+    private final List<Object> children;
 
     public ParserNode(NodeType type, Object value) {
         this.type = type;
         this.value = value;
+        this.children = new ArrayList<>();
+    }
+
+    public ParserNode(NodeType type, Object value, List<Object> children) {
+        this.type = type;
+        this.value = value;
+        this.children = children;
     }
 
     public NodeType getType() {
@@ -120,39 +128,80 @@ public class ParserNode {
             ParserNode node = (ParserNode) o;
             switch (node.getType()) {
                 case ROOT:
-                case EXPRESSION:
                     for (Object child : node.getChildren()) {
                         reconstructCode(child, sb);
                     }
                     break;
+
+                case EXPRESSION:
+                    if (node.getValue() instanceof Operator) {
+                        Operator operator = (Operator) node.getValue();
+                        if (operator.isLeftAssociative()) {
+                            reconstructCode(node.getChildren().get(0), sb);
+                        }
+                        sb.append(" ").append(operator.getSymbol()).append(" ");
+                        if (operator.isRightAssociative()) {
+                            reconstructCode(node.getChildren().get(1), sb);
+                        }
+                    } else {
+                        for (Object child : node.getChildren()) {
+                            reconstructCode(child, sb);
+                        }
+                    }
+                    break;
+
                 case STATEMENT:
                     for (Object child : node.getChildren()) {
                         reconstructCode(child, sb);
                     }
                     sb.append(";");
                     break;
+
                 case ASSIGNMENT:
                     reconstructCode(node.getChildren().get(0), sb);
                     sb.append(" = ");
                     reconstructCode(node.getChildren().get(1), sb);
                     break;
+
                 case IDENTIFIER_ACCESSED:
                     final Iterator<Object> accessorIterator = node.getChildren().iterator();
+                    boolean isFirstAccessor = true;
                     while (accessorIterator.hasNext()) {
                         Object child = accessorIterator.next();
-                        reconstructCode(child, sb);
-                        if (accessorIterator.hasNext()) {
-                            sb.append(".");
+
+                        boolean wasSpecialCaseAccessor = false;
+                        if (child instanceof ParserNode) {
+                            ParserNode childNode = (ParserNode) child;
+                            if (childNode.getType() == NodeType.CODE_BLOCK) {
+                                reconstructCode(new ParserNode(NodeType.ARRAY, null, childNode.getChildren()), sb);
+                                wasSpecialCaseAccessor = true;
+                            }
                         }
+
+                        if (!wasSpecialCaseAccessor) {
+                            if (!isFirstAccessor) {
+                                sb.append(".");
+                            }
+                            reconstructCode(child, sb);
+                        }
+
+                        isFirstAccessor = false;
                     }
                     break;
+
                 case PARENTHESIS_PAIR:
                     sb.append("(");
+                    boolean isFirstElementOfParenthesisPair = true;
                     for (Object child : node.getChildren()) {
+                        if (!isFirstElementOfParenthesisPair) {
+                            sb.append(", ");
+                        }
                         reconstructCode(child, sb);
+                        isFirstElementOfParenthesisPair = false;
                     }
                     sb.append(")");
                     break;
+
                 case SQUARE_BRACKET_PAIR:
                     sb.append("[");
                     for (Object child : node.getChildren()) {
@@ -160,6 +209,7 @@ public class ParserNode {
                     }
                     sb.append("]");
                     break;
+
                 case CURLY_BRACKET_PAIR:
                     sb.append("{");
                     for (Object child : node.getChildren()) {
@@ -167,6 +217,7 @@ public class ParserNode {
                     }
                     sb.append("}");
                     break;
+
                 case CODE_BLOCK:
                     sb.append("{ ");
                     for (Object child : node.getChildren()) {
@@ -175,20 +226,32 @@ public class ParserNode {
                     }
                     sb.append("}");
                     break;
+
                 case FUNCTION_DECLARATION:
-                    reconstructCode(node.getChildren().get(0), sb);
-                    sb.append(" = ");
-                    reconstructCode(node.getChildren().get(1), sb);
-                    sb.append(" -> ");
-                    reconstructCode(node.getChildren().get(2), sb);
+                    if (Parser.isKeyword(node.getChildren().get(0), "native")) {
+                        sb.append("native ");
+                        reconstructCode(node.getChildren().get(1), sb);
+                        reconstructCode(node.getChildren().get(2), sb);
+                    } else {
+                        reconstructCode(node.getChildren().get(0), sb);
+                        sb.append(" = ");
+                        reconstructCode(node.getChildren().get(1), sb);
+                        sb.append(" -> ");
+                        reconstructCode(node.getChildren().get(2), sb);
+                    }
                     break;
+
                 case FUNCTION_CALL:
                     reconstructCode(node.getChildren().get(0), sb);
                     reconstructCode(node.getChildren().get(1), sb);
                     break;
+
                 case FUNCTION_INLINE:
-                    // TODO
+                    reconstructCode(node.getChildren().get(0), sb);
+                    sb.append(" -> ");
+                    reconstructCode(node.getChildren().get(1), sb);
                     break;
+
                 case ARRAY:
                     final Iterator<Object> arrayIterator = node.getChildren().iterator();
                     sb.append("[");
@@ -201,9 +264,9 @@ public class ParserNode {
                     }
                     sb.append("]");
                     break;
+
                 case CONDITIONAL:
                     boolean first = true;
-                    // if elif else
                     for (Object child : node.getChildren()) {
                         if (child instanceof ParserNode && ((ParserNode) child).getType() == NodeType.CONDITIONAL_BRANCH && ((ParserNode) child).getChildren().size() == 2) {
                             if (first) {
@@ -219,6 +282,7 @@ public class ParserNode {
                         }
                     }
                     break;
+
                 case CONDITIONAL_BRANCH:
                     reconstructCode(node.getChildren().get(0), sb);
                     if (node.getChildren().size() == 2) {
@@ -226,12 +290,14 @@ public class ParserNode {
                         reconstructCode(node.getChildren().get(1), sb);
                     }
                     break;
+
                 case RETURN_STATEMENT:
                     sb.append("return ");
                     for (Object child : node.getChildren()) {
                         reconstructCode(child, sb);
                     }
                     break;
+
                 case IMPORT_STATEMENT:
                 case IMPORT_INLINE_STATEMENT:
                 case IMPORT_AS_STATEMENT:
@@ -240,12 +306,14 @@ public class ParserNode {
                         reconstructCode(child, sb);
                     }
                     break;
+
                 case EXPORT_STATEMENT:
                     sb.append("export ");
                     for (Object child : node.getChildren()) {
                         reconstructCode(child, sb);
                     }
                     break;
+
                 case MAP:
                     final Iterator<Object> mapIterator = node.getChildren().iterator();
                     sb.append("{");
@@ -258,11 +326,13 @@ public class ParserNode {
                     }
                     sb.append("}");
                     break;
+
                 case MAP_ELEMENT:
                     reconstructCode(node.getChildren().get(0), sb);
                     sb.append(": ");
                     reconstructCode(node.getChildren().get(1), sb);
                     break;
+
                 case LISTED_ELEMENTS:
                     final Iterator<Object> listedIterator = node.getChildren().iterator();
                     while (listedIterator.hasNext()) {
@@ -273,6 +343,7 @@ public class ParserNode {
                         }
                     }
                     break;
+
                 default:
                     if (node.getChildren().size() > 0) {
                         for (Object child : node.getChildren()) {

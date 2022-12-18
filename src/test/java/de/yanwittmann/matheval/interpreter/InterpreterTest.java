@@ -12,11 +12,20 @@ class InterpreterTest {
     @Disabled
     public void withFileTest() {
         Interpreter interpreter = new Interpreter(new Operators());
-        // Interpreter.setDebugMode(true);
         interpreter.loadFile(new File("src/test/resources/lang/other/moduleParsing"));
         interpreter.finish();
 
         interpreter.evaluate("import math as ma; ma.add(1, 2);");
+    }
+
+    @Test
+    @Disabled
+    public void assignmentsTest() {
+        Interpreter interpreter = new Interpreter(new Operators());
+        // EvaluationContext.debuggerActivateOn = "";
+        // EvaluationContext.debuggerLogEvaluation = true;
+        interpreter.loadFile(new File("src/test/resources/lang/other/functions.ter"));
+        interpreter.finish();
     }
 
     @Test

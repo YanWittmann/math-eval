@@ -15,6 +15,8 @@ public class Lexer {
 
     private static final Logger LOG = LogManager.getLogger(Lexer.class);
 
+    public static boolean debuggerLogLexedTokens = false;
+
     private final Operators operators;
 
     public Lexer(Operators operators) {
@@ -27,7 +29,7 @@ public class Lexer {
         new TokenIterator(expression, operators).forEach(tokens::add);
         tokens.add(new Token("", TokenType.EOF, expression.length()));
 
-        if (Interpreter.isDebugMode()) {
+        if (debuggerLogLexedTokens) {
             LOG.info("Lexed tokens:");
             for (Token token : tokens) {
                 LOG.info(token);
