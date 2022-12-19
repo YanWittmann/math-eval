@@ -12,11 +12,15 @@ public class Operators {
     private final List<Operator> operators = new ArrayList<>();
 
     private static Optional<Value> getNumericValue(Value value) {
-        if (value.getType().equals(PrimitiveValueType.NUMBER.getType())) {
-            return Optional.of(value);
-        } else if (value.getType().equals(PrimitiveValueType.STRING.getType())) {
-            return Optional.of(new Value(new BigDecimal((String) value.getValue())));
-        } else {
+        try {
+            if (value.getType().equals(PrimitiveValueType.NUMBER.getType())) {
+                return Optional.of(value);
+            } else if (value.getType().equals(PrimitiveValueType.STRING.getType())) {
+                return Optional.of(new Value(new BigDecimal((String) value.getValue())));
+            } else {
+                return Optional.empty();
+            }
+        } catch (Exception e) {
             return Optional.empty();
         }
     }
@@ -79,6 +83,13 @@ public class Operators {
 
             if (left.isPresent() && right.isPresent()) {
                 return new Value(((BigDecimal) left.get().getValue()).multiply((BigDecimal) right.get().getValue()));
+            }
+
+            final Optional<String> leftString = getStringValue(arguments[0]);
+            final Optional<String> rightString = getStringValue(arguments[1]);
+
+            if (leftString.isPresent() && rightString.isPresent()) {
+                return new Value(leftString.get() + rightString.get());
             }
 
             throwCannotPerformOperationException("*", arguments);

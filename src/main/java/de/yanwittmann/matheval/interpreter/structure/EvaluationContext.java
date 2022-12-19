@@ -28,7 +28,7 @@ public abstract class EvaluationContext {
     static {
         nativeFunctions.put(new String[]{"core.ter", "print"}, arguments -> {
             System.out.println(Arrays.stream(arguments)
-                    .map(Value::toDisplayString)
+                    .map(v -> v.toDisplayString())
                     .collect(Collectors.joining(" ")));
             return Value.empty();
         });
@@ -92,6 +92,28 @@ public abstract class EvaluationContext {
                     array.add(evaluate(child, globalContext, localSymbols, symbolCreationMode));
                 }
                 result = new Value(array);
+
+            } else if (node.getType() == ParserNode.NodeType.MAP) {
+                final Map<String, Value> map = new HashMap<>();
+                for (Object child : node.getChildren()) {
+                    final ParserNode childNode = (ParserNode) child;
+
+                    final Object keyNode = childNode.getChildren().get(0);
+                    final String key;
+                    if (keyNode instanceof Value) {
+                        key = ((Value) keyNode).toDisplayString();
+                    } else if (keyNode instanceof Token) {
+                        key = ((Token) keyNode).getValue();
+                    } else if (keyNode instanceof ParserNode) {
+                        key = evaluate(keyNode, globalContext, localSymbols, symbolCreationMode).toDisplayString();
+                    } else {
+                        throw new MenterExecutionException("Invalid map key type: " + keyNode.getClass().getName());
+                    }
+
+                    final Value value = evaluate(childNode.getChildren().get(1), globalContext, localSymbols, symbolCreationMode);
+                    map.put(key, value);
+                }
+                result = new Value(map);
 
             } else if (node.getType() == ParserNode.NodeType.EXPRESSION) {
                 final Object operator = node.getValue();
@@ -239,6 +261,10 @@ public abstract class EvaluationContext {
                 }
             }
 
+            if (result == null) {
+                throw new MenterExecutionException("Node did not evaluate to anything:", node);
+            }
+
         } else if (nodeOrToken instanceof Token) {
             final Token node = (Token) nodeOrToken;
 
@@ -267,13 +293,14 @@ public abstract class EvaluationContext {
     }
 
     private Value resolveSymbol(Object identifier, SymbolCreationMode symbolCreationMode, GlobalContext globalContext, Map<String, Value> localSymbols) {
-        // this might be an IDENTIFIER_ACCESSED, IDENTIFIER, a Value, a string
 
         final List<Object> identifiers = new ArrayList<>();
         if (identifier instanceof ParserNode) {
             final ParserNode node = (ParserNode) identifier;
             if (node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
                 identifiers.addAll(node.getChildren());
+            } else if (Parser.isLiteral(node)) {
+                identifiers.add(evaluate(node, globalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS));
             }
         } else if (identifier instanceof Token) {
             final Token token = (Token) identifier;
@@ -290,6 +317,12 @@ public abstract class EvaluationContext {
                 final ParserNode node = (ParserNode) identifiers.get(i);
                 if (node.getType() == ParserNode.NodeType.CODE_BLOCK || node.getType() == ParserNode.NodeType.EXPRESSION) {
                     final Value value = evaluate(node, globalContext, new HashMap<>(localSymbols), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                    identifiers.set(i, value);
+                }
+            } else if (identifiers.get(i) instanceof Token) {
+                final Token token = (Token) identifiers.get(i);
+                if (Parser.isLiteral(token)) {
+                    final Value value = evaluate(token, globalContext, new HashMap<>(localSymbols), SymbolCreationMode.THROW_IF_NOT_EXISTS);
                     identifiers.set(i, value);
                 }
             }
@@ -359,7 +392,7 @@ public abstract class EvaluationContext {
             }
 
             if (SymbolCreationMode.THROW_IF_NOT_EXISTS == symbolCreationMode) {
-                throw new MenterExecutionException("Cannot resolve symbol '" + stringKey + "' on " + identifier);
+                throw new MenterExecutionException("Cannot resolve symbol '" + stringKey + "' on\n" + identifier);
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {
                 if (isFinalIdentifier) {
                     value = Value.empty();

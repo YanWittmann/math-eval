@@ -105,8 +105,12 @@ public class GlobalContext extends EvaluationContext {
         }
     }
 
-    public Object evaluate() {
-        return super.evaluate(root, this, super.getVariables(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+    public Value evaluate() {
+        return evaluate(root);
+    }
+
+    public Value evaluate(ParserNode node) {
+        return super.evaluate(node, this, super.getVariables(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
     }
 
     @Override

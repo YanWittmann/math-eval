@@ -1,6 +1,7 @@
 package de.yanwittmann.matheval;
 
 import de.yanwittmann.matheval.interpreter.structure.GlobalContext;
+import de.yanwittmann.matheval.interpreter.structure.Value;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operators;
@@ -62,7 +63,7 @@ public class EvalRuntime {
         globalContexts.add(globalContext);
     }
 
-    public void finish() {
+    public void finishLoadingContexts() {
         for (GlobalContext globalContext : globalContexts) {
             globalContext.resolveImports(globalContexts);
         }
@@ -71,11 +72,30 @@ public class EvalRuntime {
         }
     }
 
-    public Object evaluate(String expression) {
+    public Value evaluate(String expression) {
         final List<Token> tokens = lexer.parse(expression);
         final ParserNode tokenTree = parser.parse(tokens);
 
         final GlobalContext context = new GlobalContext(tokenTree, "eval");
+        context.resolveImports(globalContexts);
+        return context.evaluate();
+    }
+
+    public Value evaluateInContextOf(String initialExpressions, String expression, String contextSource) {
+        final List<Token> tokens = lexer.parse(expression);
+        final ParserNode tokenTree = parser.parse(tokens);
+
+        // attempt to find a context with the given source
+        for (GlobalContext globalContext : globalContexts) {
+            if (globalContext.getSource().equals(contextSource)) {
+                return globalContext.evaluate(tokenTree);
+            }
+        }
+
+        // otherwise create a new context
+        final GlobalContext context = new GlobalContext(tokenTree, contextSource);
+        globalContexts.add(context);
+
         context.resolveImports(globalContexts);
         return context.evaluate();
     }

@@ -1,10 +1,10 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
+import de.yanwittmann.matheval.exceptions.MenterExecutionException;
+import de.yanwittmann.matheval.lexer.Token;
+
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -38,6 +38,9 @@ public class Value {
     }
 
     public void inheritValue(Value value) {
+        if (value == null) {
+            throw new MenterExecutionException("Cannot inherit value from null");
+        }
         this.value = value.value;
     }
 
@@ -129,18 +132,47 @@ public class Value {
     }
 
     public String toDisplayString() {
-        if (value instanceof Value) {
-            return ((Value) value).toDisplayString();
-        } else if (value instanceof List) {
-            return ((List<?>) value).stream()
+        return toDisplayString(value);
+    }
+
+    public static String toDisplayString(Object object) {
+        if (object instanceof Value) {
+            return toDisplayString(((Value) object).getValue());
+
+        } else if (object instanceof List) {
+            return ((List<?>) object).stream()
                     .map(v -> v instanceof Value ? ((Value) v).toDisplayString() : v)
                     .collect(Collectors.toList())
                     .toString();
+
+        } else if (object instanceof Map) {
+            final StringJoiner joiner = new StringJoiner(", ", "{", "}");
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) object).entrySet()) {
+                joiner.add(toDisplayString(entry.getKey()) + ": " + toDisplayString(entry.getValue()));
+            }
+            return joiner.toString();
+
+        } else if (object instanceof Token) {
+            return ((Token) object).getValue();
+
+        } else if (object instanceof Pattern) {
+            return ((Pattern) object).pattern();
+
+        } else if (object instanceof BigDecimal) {
+            return ((BigDecimal) object).stripTrailingZeros().toPlainString();
+
+        } else if (object instanceof String) {
+            return "\"" + object + "\"";
+
         } else {
-            return String.valueOf(value);
+            return String.valueOf(object);
         }
     }
-    
+
+    public boolean isEmpty() {
+        return value == null;
+    }
+
     public static Value empty() {
         return new Value(null);
     }

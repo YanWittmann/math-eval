@@ -176,6 +176,12 @@ public class ParserNode {
                                 reconstructCode(new ParserNode(NodeType.ARRAY, null, childNode.getChildren()), sb);
                                 wasSpecialCaseAccessor = true;
                             }
+                        } else if (child instanceof Token) {
+                            Token token = (Token) child;
+                            if (Parser.isLiteral(token)) {
+                                reconstructCode(new ParserNode(NodeType.ARRAY, null, Collections.singletonList(token.getValue())), sb);
+                                wasSpecialCaseAccessor = true;
+                            }
                         }
 
                         if (!wasSpecialCaseAccessor) {
