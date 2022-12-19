@@ -24,18 +24,7 @@ public class GlobalContext extends EvaluationContext {
         this.source = source;
 
         for (Object child : root.getChildren()) {
-            if (child instanceof ParserNode) {
-                final ParserNode childNode = (ParserNode) child;
-
-                if (childNode.getType() == ParserNode.NodeType.EXPORT_STATEMENT) {
-                    modules.add(new Module(this, childNode));
-
-                } else if (childNode.getType() == ParserNode.NodeType.IMPORT_STATEMENT ||
-                           childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
-                           childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
-                    imports.add(new Import(childNode));
-                }
-            }
+            checkForImportStatement(child);
         }
 
         root.getChildren().removeIf(child -> {
@@ -69,6 +58,21 @@ public class GlobalContext extends EvaluationContext {
                         throw new MenterExecutionException("Duplicate import name: " + anImport.getName());
                     }
                 }
+            }
+        }
+    }
+
+    private void checkForImportStatement(Object child) {
+        if (child instanceof ParserNode) {
+            final ParserNode childNode = (ParserNode) child;
+
+            if (childNode.getType() == ParserNode.NodeType.EXPORT_STATEMENT) {
+                modules.add(new Module(this, childNode));
+
+            } else if (childNode.getType() == ParserNode.NodeType.IMPORT_STATEMENT ||
+                       childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
+                       childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
+                imports.add(new Import(childNode));
             }
         }
     }

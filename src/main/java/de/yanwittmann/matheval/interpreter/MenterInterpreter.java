@@ -136,12 +136,12 @@ public class MenterInterpreter extends EvalRuntime {
                     if (input == null || input.equals("exit") || input.equals("quit")) break;
                     if (input.trim().length() == 0) continue;
 
-                    final Value result = interpreter.evaluateInContextOf(null, input, "repl");
+                    final Value result = interpreter.evaluateInContextOf(input, "repl");
                     if (result != null && !result.isEmpty()) {
                         System.out.println(result.toDisplayString());
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("Error: " + e.getMessage());
                     try {
                         Thread.sleep(50);
                     } catch (InterruptedException ignored) {

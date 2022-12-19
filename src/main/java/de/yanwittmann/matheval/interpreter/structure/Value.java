@@ -154,15 +154,19 @@ public class Value {
 
         } else if (object instanceof Token) {
             return ((Token) object).getValue();
-
         } else if (object instanceof Pattern) {
             return ((Pattern) object).pattern();
-
         } else if (object instanceof BigDecimal) {
             return ((BigDecimal) object).stripTrailingZeros().toPlainString();
-
         } else if (object instanceof String) {
             return "\"" + object + "\"";
+
+        } else if (object instanceof Function) {
+            return "<<native function>>";
+        } else if (object instanceof BiFunction) {
+            return "<<instance function>>";
+        } else if (object instanceof MFunction) {
+            return String.valueOf(object);
 
         } else {
             return String.valueOf(object);

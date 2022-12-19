@@ -86,6 +86,9 @@ public abstract class EvaluationContext {
             } else if (node.getType() == ParserNode.NodeType.RETURN_STATEMENT) {
                 result = evaluate(node.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
 
+            } else if (node.getType() == ParserNode.NodeType.IMPORT_STATEMENT) {
+                throw new MenterExecutionException("Import statements are not supported in the interpreter.");
+
             } else if (node.getType() == ParserNode.NodeType.ARRAY) {
                 final List<Value> array = new ArrayList<>();
                 for (Object child : node.getChildren()) {

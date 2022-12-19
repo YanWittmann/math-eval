@@ -82,21 +82,30 @@ public class EvalRuntime {
     }
 
     public Value evaluateInContextOf(String initialExpressions, String expression, String contextSource) {
+        // attempt to find a context with the given source
+        GlobalContext context = globalContexts.stream()
+                .filter(globalContext -> globalContext.getSource().equals(contextSource))
+                .findFirst()
+                .orElse(null);
+
+        // if no context was found, create a new one
+        if (context == null) {
+            final ParserNode tokenTree;
+            if (initialExpressions != null) {
+                final List<Token> tokens = lexer.parse(initialExpressions);
+                tokenTree = parser.parse(tokens);
+            } else {
+                tokenTree = new ParserNode(ParserNode.NodeType.ROOT, null);
+            }
+
+            context = new GlobalContext(tokenTree, contextSource);
+            globalContexts.add(context);
+        }
+
         final List<Token> tokens = lexer.parse(expression);
         final ParserNode tokenTree = parser.parse(tokens);
 
-        // attempt to find a context with the given source
-        for (GlobalContext globalContext : globalContexts) {
-            if (globalContext.getSource().equals(contextSource)) {
-                return globalContext.evaluate(tokenTree);
-            }
-        }
-
-        // otherwise create a new context
-        final GlobalContext context = new GlobalContext(tokenTree, contextSource);
-        globalContexts.add(context);
-
         context.resolveImports(globalContexts);
-        return context.evaluate();
+        return context.evaluate(tokenTree);
     }
 }

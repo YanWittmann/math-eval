@@ -38,9 +38,6 @@ public class MFunction {
 
     @Override
     public String toString() {
-        return "Function{" +
-               "parameters=" + parameters +
-               ", body=" + (body != null ? body.reconstructCode() : null) +
-               '}';
+        return "(" + parameters.stream().map(Value::toDisplayString).collect(Collectors.joining(", ")) + ") -> " + (body != null ? body.reconstructCode() : null);
     }
 }
