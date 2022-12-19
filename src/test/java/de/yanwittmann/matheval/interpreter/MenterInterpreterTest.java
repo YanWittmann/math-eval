@@ -23,8 +23,6 @@ class MenterInterpreterTest {
     public void assignmentsTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
 
-        MenterDebugger.logParseProgress = true;
-
         interpreter.loadFile(new File("src/test/resources/lang/other/functions.ter"));
         interpreter.finish();
     }

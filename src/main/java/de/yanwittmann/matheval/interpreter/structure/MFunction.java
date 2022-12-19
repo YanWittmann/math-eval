@@ -11,20 +11,17 @@ public class MFunction {
     private final GlobalContext parentContext;
     private final List<Object> parameters;
     private final ParserNode body;
-    private final boolean isNative;
 
     public MFunction(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
         this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = body;
-        this.isNative = false;
     }
 
     public MFunction(GlobalContext parentContext, List<Object> parameters) {
         this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = null;
-        this.isNative = true;
     }
 
     public List<String> getArgumentNames() {
@@ -33,10 +30,6 @@ public class MFunction {
 
     public ParserNode getBody() {
         return body;
-    }
-
-    public boolean isNative() {
-        return isNative;
     }
 
     public GlobalContext getParentContext() {

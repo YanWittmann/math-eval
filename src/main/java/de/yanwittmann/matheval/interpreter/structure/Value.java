@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -63,9 +64,18 @@ public class Value {
             return PrimitiveValueType.FUNCTION.getType();
         } else if (value instanceof BiFunction) {
             return PrimitiveValueType.VALUE_FUNCTION.getType();
+        } else if (value instanceof Function) {
+            return PrimitiveValueType.NATIVE_FUNCTION.getType();
         } else {
             return "unknown";
         }
+    }
+
+    public boolean isFunction() {
+        final String type = getType();
+        return type.equals(PrimitiveValueType.FUNCTION.getType()) ||
+               type.equals(PrimitiveValueType.VALUE_FUNCTION.getType()) ||
+               type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType());
     }
 
     public BigDecimal getNumberValue() {
@@ -78,7 +88,7 @@ public class Value {
 
     public Value access(Value identifier) {
         if (identifier.getValue() == null) {
-            return new Value(null);
+            return Value.empty();
         }
 
         if (VALUE_FUNCTIONS.containsKey(this.getType()) && VALUE_FUNCTIONS.get(this.getType()).containsKey(String.valueOf(identifier.getValue()))) {
@@ -129,5 +139,9 @@ public class Value {
         } else {
             return String.valueOf(value);
         }
+    }
+    
+    public static Value empty() {
+        return new Value(null);
     }
 }

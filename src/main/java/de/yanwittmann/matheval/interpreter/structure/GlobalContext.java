@@ -5,6 +5,7 @@ import de.yanwittmann.matheval.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,6 +79,19 @@ public class GlobalContext extends EvaluationContext {
 
     public List<Import> getImports() {
         return imports;
+    }
+
+    public Object getSource() {
+        return source;
+    }
+
+    public String getSourceName() {
+        if (source instanceof String) {
+            return (String) source;
+        } else if (source instanceof File) {
+            return ((File) source).getName();
+        }
+        return null;
     }
 
     private boolean inputsResolved = false;

@@ -1,4 +1,5 @@
-native print(x)
+
+import core inline
 
 arr = [1, 2, 3]
 length = arr.size()

@@ -23,14 +23,14 @@ public abstract class EvaluationContext {
 
     private final EvaluationContext parentContext;
     private final Map<String, Value> variables;
-    protected final static Map<Object, Function<Value[], Value>> nativeFunctions = new HashMap<>(); // TODO: add support for adding the module name to the key
+    protected final static Map<String[], Function<Value[], Value>> nativeFunctions = new HashMap<>();
 
     static {
-        nativeFunctions.put("print", arguments -> {
+        nativeFunctions.put(new String[]{"core.ter", "print"}, arguments -> {
             System.out.println(Arrays.stream(arguments)
                     .map(Value::toDisplayString)
                     .collect(Collectors.joining(" ")));
-            return new Value(null);
+            return Value.empty();
         });
     }
 
@@ -61,10 +61,6 @@ public abstract class EvaluationContext {
             return parentContext.getVariable(name);
         }
         return value;
-    }
-
-    public void registerNativeFunction(MFunction functionInstance, Function<Value[], Value> function) {
-        nativeFunctions.put(functionInstance, function); // TODO: properly write this
     }
 
     public Value evaluate(Object nodeOrToken, GlobalContext globalContext, Map<String, Value> localSymbols, SymbolCreationMode symbolCreationMode) {
@@ -142,14 +138,37 @@ public abstract class EvaluationContext {
                         throw new MenterExecutionException("Function arguments are not a parenthesis pair", node);
                     }
 
-                    final MFunction function = new MFunction(globalContext, functionArguments);
-                    functionValue.setValue(function);
-                    if (nativeFunctions.containsKey(functionName)) {
-                        final Function<Value[], Value> natFunc = nativeFunctions.remove(functionName);
-                        nativeFunctions.put(function, natFunc);
+                    if (!(this instanceof GlobalContext)) {
+                        throw new MenterExecutionException("Native functions can only be declared in the global context", node);
                     }
 
-                    result = functionValue;
+                    final List<String> moduleNameCandidates = new ArrayList<>();
+                    final GlobalContext thisGlobalContext = (GlobalContext) this;
+                    thisGlobalContext.getModules().forEach(module -> moduleNameCandidates.add(module.getName()));
+                    moduleNameCandidates.add(globalContext.getSourceName());
+
+                    boolean foundNativeFunction = false;
+                    for (String moduleNameCandidate : moduleNameCandidates) {
+                        for (Map.Entry<String[], Function<Value[], Value>> nativeFunction : nativeFunctions.entrySet()) {
+                            final String[] functionQualifier = nativeFunction.getKey();
+                            final Function<Value[], Value> nativeFunctionValue = nativeFunction.getValue();
+
+                            if (functionQualifier[0].equals(moduleNameCandidate) && functionQualifier[1].equals(functionName)) {
+                                functionValue.setValue(nativeFunctionValue);
+                                result = functionValue;
+                                foundNativeFunction = true;
+                                break;
+                            }
+                        }
+                        if (foundNativeFunction) {
+                            break;
+                        }
+                    }
+
+                    if (!foundNativeFunction) {
+                        throw new MenterExecutionException("Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates, node);
+                    }
+
                 } else {
                     final Value functionValue = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
                     final List<Object> functionArguments = Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(1)).getChildren() : null;
@@ -178,8 +197,8 @@ public abstract class EvaluationContext {
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
                 final Value function = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
 
-                if (!function.getType().equals(PrimitiveValueType.FUNCTION.getType()) && !function.getType().equals(PrimitiveValueType.VALUE_FUNCTION.getType())) {
-                    throw new MenterExecutionException("Cannot call non-function value " + function, node);
+                if (!function.isFunction()) {
+                    throw new MenterExecutionException("Value is not a function " + function, node);
                 }
 
                 final List<Object> functionArguments = Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(1)).getChildren() : null;
@@ -194,25 +213,26 @@ public abstract class EvaluationContext {
                     final MFunction executableFunction = (MFunction) function.getValue();
                     final List<String> functionArgumentNames = executableFunction.getArgumentNames();
 
-                    if (executableFunction.isNative()) {
-                        result = nativeFunctions.get(executableFunction).apply(evaluatedArguments.toArray(new Value[0]));
-
-                    } else {
-                        if (functionArgumentNames.size() != evaluatedArguments.size()) {
-                            throw new MenterExecutionException("Function " + function + " requires " + functionArgumentNames.size() + " arguments, but " + evaluatedArguments.size() + " were given", node);
-                        }
-
-                        final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);
-                        for (int i = 0; i < functionArgumentNames.size(); i++) {
-                            final String argumentName = functionArgumentNames.get(i);
-                            final Value argumentValue = evaluatedArguments.get(i);
-                            functionLocalSymbols.put(argumentName, argumentValue);
-                        }
-
-                        functionLocalSymbols.putAll(executableFunction.getParentContext().getVariables());
-
-                        result = evaluate(executableFunction.getBody(), globalContext, functionLocalSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                    if (functionArgumentNames.size() != evaluatedArguments.size()) {
+                        throw new MenterExecutionException("Function " + function + " requires " + functionArgumentNames.size() + " arguments, but " + evaluatedArguments.size() + " were given", node);
                     }
+
+                    final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);
+                    for (int i = 0; i < functionArgumentNames.size(); i++) {
+                        final String argumentName = functionArgumentNames.get(i);
+                        final Value argumentValue = evaluatedArguments.get(i);
+                        functionLocalSymbols.put(argumentName, argumentValue);
+                    }
+
+                    functionLocalSymbols.putAll(executableFunction.getParentContext().getVariables());
+
+                    result = evaluate(executableFunction.getBody(), globalContext, functionLocalSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
+
+                } else if (Objects.equals(function.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
+                    final Function<Value[], Value> nativeFunction = (Function<Value[], Value>) function.getValue();
+                    final Value[] nativeFunctionArguments = evaluatedArguments.toArray(new Value[0]);
+                    result = nativeFunction.apply(nativeFunctionArguments);
+
                 } else {
                     final BiFunction<Value, List<Value>, Value> executableFunction = (BiFunction<Value, List<Value>, Value>) function.getValue();
                     result = executableFunction.apply(function.getSecondaryValue(), evaluatedArguments);
@@ -333,7 +353,7 @@ public abstract class EvaluationContext {
                 if (value != null) {
                     continue;
                 } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS.equals(symbolCreationMode)) {
-                    value = previousValue.create(accessAs, new Value(null));
+                    value = previousValue.create(accessAs, Value.empty());
                     continue;
                 }
             }
@@ -342,7 +362,7 @@ public abstract class EvaluationContext {
                 throw new MenterExecutionException("Cannot resolve symbol '" + stringKey + "' on " + identifier);
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {
                 if (isFinalIdentifier) {
-                    value = new Value(null);
+                    value = Value.empty();
                 } else {
                     value = new Value(new HashMap<>());
                 }

@@ -8,6 +8,7 @@ public enum PrimitiveValueType {
     ARRAY("array"),
     FUNCTION("function"),
     VALUE_FUNCTION("value_function"),
+    NATIVE_FUNCTION("native_function"),
     OBJECT("object"),
     REGEX("regex");
 
