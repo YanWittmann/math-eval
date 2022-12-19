@@ -82,14 +82,16 @@ class ParserTest {
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  │  ├─ IDENTIFIER: test\n" +
-                               "   │  │  └─ EXPRESSION: + (110 l r)\n" +
-                               "   │  │     ├─ STRING_LITERAL: \"varname-\"\n" +
-                               "   │  │     └─ IDENTIFIER: test\n" +
-                               "   │  └─ EXPRESSION: + (110 l r)\n" +
-                               "   │     ├─ STRING_LITERAL: \"second\"\n" +
-                               "   │     └─ FUNCTION_CALL\n" +
-                               "   │        ├─ IDENTIFIER: foo\n" +
-                               "   │        └─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ CODE_BLOCK\n" +
+                               "   │  │     └─ EXPRESSION: + (110 l r)\n" +
+                               "   │  │        ├─ STRING_LITERAL: \"varname-\"\n" +
+                               "   │  │        └─ IDENTIFIER: test\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ EXPRESSION: + (110 l r)\n" +
+                               "   │        ├─ STRING_LITERAL: \"second\"\n" +
+                               "   │        └─ FUNCTION_CALL\n" +
+                               "   │           ├─ IDENTIFIER: foo\n" +
+                               "   │           └─ PARENTHESIS_PAIR\n" +
                                "   └─ EXPRESSION: + (110 l r)\n" +
                                "      ├─ PARENTHESIS_PAIR\n" +
                                "      │  ├─ NUMBER_LITERAL: 3\n" +
@@ -430,14 +432,16 @@ class ParserTest {
                                "   └─ EXPRESSION: + (110 l r)\n" +
                                "      ├─ IDENTIFIER_ACCESSED\n" +
                                "      │  ├─ IDENTIFIER: fib\n" +
-                               "      │  └─ EXPRESSION: - (110 l r)\n" +
-                               "      │     ├─ IDENTIFIER: n\n" +
-                               "      │     └─ NUMBER_LITERAL: 1\n" +
+                               "      │  └─ CODE_BLOCK\n" +
+                               "      │     └─ EXPRESSION: - (110 l r)\n" +
+                               "      │        ├─ IDENTIFIER: n\n" +
+                               "      │        └─ NUMBER_LITERAL: 1\n" +
                                "      └─ IDENTIFIER_ACCESSED\n" +
                                "         ├─ IDENTIFIER: fib\n" +
-                               "         └─ EXPRESSION: - (110 l r)\n" +
-                               "            ├─ IDENTIFIER: n\n" +
-                               "            └─ NUMBER_LITERAL: 2",
+                               "         └─ CODE_BLOCK\n" +
+                               "            └─ EXPRESSION: - (110 l r)\n" +
+                               "               ├─ IDENTIFIER: n\n" +
+                               "               └─ NUMBER_LITERAL: 2",
                 "fib[n] = fib[n - 1] + fib[n - 2];");
 
         assertParsedTreeEquals("",
@@ -746,14 +750,16 @@ class ParserTest {
                 "               │  └─ EXPRESSION: + (110 l r)\n" +
                 "               │     ├─ IDENTIFIER_ACCESSED\n" +
                 "               │     │  ├─ IDENTIFIER: fib\n" +
-                "               │     │  └─ EXPRESSION: - (110 l r)\n" +
-                "               │     │     ├─ IDENTIFIER: n\n" +
-                "               │     │     └─ NUMBER_LITERAL: 1\n" +
+                "               │     │  └─ CODE_BLOCK\n" +
+                "               │     │     └─ EXPRESSION: - (110 l r)\n" +
+                "               │     │        ├─ IDENTIFIER: n\n" +
+                "               │     │        └─ NUMBER_LITERAL: 1\n" +
                 "               │     └─ IDENTIFIER_ACCESSED\n" +
                 "               │        ├─ IDENTIFIER: fib\n" +
-                "               │        └─ EXPRESSION: - (110 l r)\n" +
-                "               │           ├─ IDENTIFIER: n\n" +
-                "               │           └─ NUMBER_LITERAL: 2\n" +
+                "               │        └─ CODE_BLOCK\n" +
+                "               │           └─ EXPRESSION: - (110 l r)\n" +
+                "               │              ├─ IDENTIFIER: n\n" +
+                "               │              └─ NUMBER_LITERAL: 2\n" +
                 "               └─ RETURN_STATEMENT\n" +
                 "                  └─ IDENTIFIER: fib",
                 parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.ter")).getChildren()));

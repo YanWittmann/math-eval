@@ -1,6 +1,7 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
+import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operator;
@@ -19,9 +20,6 @@ import java.util.stream.Collectors;
 public abstract class EvaluationContext {
 
     private static final Logger LOG = LogManager.getLogger(EvaluationContext.class);
-
-    public static String debuggerActivateOn = null;
-    public static boolean debuggerLogEvaluation = false;
 
     private final EvaluationContext parentContext;
     private final Map<String, Value> variables;
@@ -84,10 +82,10 @@ public abstract class EvaluationContext {
     private Value evaluate(ParserNode node, GlobalContext globalContext, Map<String, Value> localSymbols, SymbolCreationMode symbolCreationMode) {
         Value result = null;
 
-        if (debuggerLogEvaluation) {
+        if (MenterDebugger.logInterpreterEvaluation) {
             LOG.info(node.reconstructCode());
         }
-        if (debuggerActivateOn != null && node.reconstructCode().equals(debuggerActivateOn)) {
+        if (MenterDebugger.breakpointActivationCode != null && node.reconstructCode().equals(MenterDebugger.breakpointActivationCode)) {
             LOG.info("Found debugger breakpoint, place a breakpoint here to debug: {}.java:{}\nBreakpoint code: {}", EvaluationContext.class.getName(), new Throwable().getStackTrace()[0].getLineNumber(), node.reconstructCode());
         }
 

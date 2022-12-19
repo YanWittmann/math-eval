@@ -10,11 +10,3 @@ An interpreted language for evaluating expressions with functions and variables 
 Check out the [loose specification](doc/requirements.md) for the language.
 
 ![Menter Thumbnail](doc/thumbnail.png)
-
-## Debugging switches
-
-ParserRule.debuggerLogParseProgress
-Parser.debuggerLogParsedTokens
-Lexer.debuggerLogLexedTokens
-EvaluationContext.debuggerLogEvaluation
-EvaluationContext.debuggerActivateOn

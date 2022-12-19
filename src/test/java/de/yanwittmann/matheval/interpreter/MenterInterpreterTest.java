@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-class InterpreterTest {
+class MenterInterpreterTest {
 
     @Test
     @Disabled
     public void withFileTest() {
-        Interpreter interpreter = new Interpreter(new Operators());
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.loadFile(new File("src/test/resources/lang/other/moduleParsing"));
         interpreter.finish();
 
@@ -21,9 +21,10 @@ class InterpreterTest {
     @Test
     @Disabled
     public void assignmentsTest() {
-        Interpreter interpreter = new Interpreter(new Operators());
-        // EvaluationContext.debuggerActivateOn = "";
-        // EvaluationContext.debuggerLogEvaluation = true;
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+
+        MenterDebugger.logParseProgress = true;
+
         interpreter.loadFile(new File("src/test/resources/lang/other/functions.ter"));
         interpreter.finish();
     }
@@ -31,8 +32,7 @@ class InterpreterTest {
     @Test
     @Disabled
     public void smallTest() {
-        Interpreter interpreter = new Interpreter(new Operators());
-        // Interpreter.setDebugMode(true);
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finish();
 
         // interpreter.evaluate("1 + 4;");

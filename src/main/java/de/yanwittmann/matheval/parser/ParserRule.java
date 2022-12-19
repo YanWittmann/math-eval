@@ -1,21 +1,21 @@
 package de.yanwittmann.matheval.parser;
 
-import de.yanwittmann.matheval.Functions;
-import de.yanwittmann.matheval.interpreter.Interpreter;
+import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.lexer.Token;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @FunctionalInterface
 public interface ParserRule {
 
     Logger LOG = LogManager.getLogger(ParserRule.class);
-
-    boolean debuggerLogParseProgress = false;
 
     boolean match(List<Object> tokens);
 
@@ -25,13 +25,13 @@ public interface ParserRule {
         }
         tokenTree.add(startIndex, replacement);
 
-        if (debuggerLogParseProgress) {
+        if (MenterDebugger.logParseProgress) {
             tokenTree.forEach(LOG::info);
-            LOG.info("");
+            LOG.info(IntStream.range(0, 20).mapToObj(i -> "-").collect(Collectors.joining(" ")));
         }
     }
 
-    static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, Functions.Function2<Object, Integer, Boolean> keepValue, Functions.Function2<Object, Integer, Boolean> replacePadding, Functions.Function2<Object, Integer, Object> replaceChildMapper, Function<Object, Boolean>... expected) {
+    static ParserRule inOrderRule(ParserNode.NodeType type, Function<Object, Object> replaceValue, int replaceValueObjectIndex, BiFunction<Object, Integer, Boolean> keepValue, BiFunction<Object, Integer, Boolean> replacePadding, BiFunction<Object, Integer, Object> replaceChildMapper, Function<Object, Boolean>... expected) {
         return tokens -> {
             int currentMatchLength = 0;
             for (int i = 0; i < tokens.size(); i++) {

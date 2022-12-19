@@ -1,5 +1,6 @@
 package de.yanwittmann.matheval.parser;
 
+import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.lexer.Lexer.TokenType;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operator;
@@ -13,8 +14,6 @@ import java.util.stream.Collectors;
 public class Parser {
 
     private static final Logger LOG = LogManager.getLogger(Parser.class);
-
-    public static boolean debuggerLogParsedTokens = false;
 
     // lru cache for parsing rules using an operator instance as key
     private final static Map<Operators, List<ParserRule>> CACHED_PARSE_RULES = new LinkedHashMap<Operators, List<ParserRule>>() {
@@ -53,7 +52,7 @@ public class Parser {
             }
         }
 
-        if (debuggerLogParsedTokens) {
+        if (MenterDebugger.logParsedTokens) {
             LOG.info("Parsed tokens:\n" + toString(tokenTree));
         }
 

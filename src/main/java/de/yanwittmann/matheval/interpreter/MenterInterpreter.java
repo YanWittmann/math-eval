@@ -3,9 +3,9 @@ package de.yanwittmann.matheval.interpreter;
 import de.yanwittmann.matheval.EvalRuntime;
 import de.yanwittmann.matheval.operator.Operators;
 
-public class Interpreter extends EvalRuntime {
+public class MenterInterpreter extends EvalRuntime {
 
-    public Interpreter(Operators operators) {
+    public MenterInterpreter(Operators operators) {
         super(operators);
     }
 }
