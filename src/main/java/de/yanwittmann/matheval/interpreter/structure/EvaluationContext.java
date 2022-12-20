@@ -409,6 +409,18 @@ public abstract class EvaluationContext {
                     continue;
                 }
 
+                if (id instanceof ParserNode) {
+                    final ParserNode node = (ParserNode) id;
+                    if (node.getType() == ParserNode.NodeType.MAP || node.getType() == ParserNode.NodeType.CODE_BLOCK ||
+                        node.getType() == ParserNode.NodeType.ARRAY) {
+                        value = evaluate(node, globalContext, localSymbols, symbolCreationMode);
+                        if (MenterDebugger.logInterpreterResolveSymbols) {
+                            LOG.info("Symbol resolve: [{}] from evaluated node", value);
+                        }
+                        continue;
+                    }
+                }
+
             } else {
                 final Value accessAs = id instanceof Value ? (Value) id : new Value(getTokenOrNodeValue(id));
                 value = value.access(accessAs);

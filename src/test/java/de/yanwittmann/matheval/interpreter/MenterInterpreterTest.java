@@ -47,7 +47,7 @@ class MenterInterpreterTest {
     }
 
     @Test
-    public void inlineFunctionAccessViaArrayTest() {
+    public void inlineFunctionAccessOnDifferentObjectsTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
@@ -55,6 +55,7 @@ class MenterInterpreterTest {
         Assertions.assertEquals("4", interpreter.evaluate("test.t = [x -> x + x]; test.t[0](2)").toDisplayString());
         Assertions.assertEquals("4", interpreter.evaluate("test.t.t = 4; test.t.t;").toDisplayString());
         Assertions.assertEquals("2", interpreter.evaluate("test = {t:1,z:0}; test.keys().size();").toDisplayString());
+        Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.size();").toDisplayString());
     }
 
     @Test
@@ -63,9 +64,11 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        MenterDebugger.logParsedTokens = true;
+        MenterDebugger.logParseProgress = true;
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
+        Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
+        //Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
     }
 
 }

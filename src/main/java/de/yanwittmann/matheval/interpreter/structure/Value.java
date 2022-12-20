@@ -20,22 +20,7 @@ public class Value {
     }
 
     public Value(Object value, Value secondaryValue) {
-        if (value instanceof Integer) value = new BigDecimal((Integer) value);
-        else if (value instanceof Long) value = new BigDecimal((Long) value);
-        else if (value instanceof Float) value = BigDecimal.valueOf((Float) value);
-        else if (value instanceof Double) value = BigDecimal.valueOf((Double) value);
-        else if (value instanceof List) {
-            final Map<BigDecimal, Value> map = new HashMap<>();
-            int i = 0;
-            for (Object o : (List<?>) value) {
-                map.put(new BigDecimal(i++), new Value(o));
-            }
-            value = map;
-        } else if (value instanceof Value) {
-            value = ((Value) value).getValue();
-        }
-
-        this.value = value;
+        setValue(value);
         this.secondaryValue = secondaryValue;
     }
 
@@ -55,7 +40,22 @@ public class Value {
     }
 
     public void setValue(Object value) {
-        this.value = value;
+        if (value instanceof Integer) this.value = new BigDecimal((Integer) value);
+        else if (value instanceof Long) this.value = new BigDecimal((Long) value);
+        else if (value instanceof Float) this.value = BigDecimal.valueOf((Float) value);
+        else if (value instanceof Double) this.value = BigDecimal.valueOf((Double) value);
+        else if (value instanceof List) {
+            final Map<BigDecimal, Value> map = new HashMap<>();
+            int i = 0;
+            for (Object o : (List<?>) value) {
+                map.put(new BigDecimal(i++), new Value(o));
+            }
+            this.value = map;
+        } else if (value instanceof Value) {
+            this.value = ((Value) value).getValue();
+        } else {
+            this.value = value;
+        }
     }
 
     public String getType() {
@@ -80,7 +80,7 @@ public class Value {
         } else if (value instanceof Function) {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
         } else {
-            return "unknown";
+            return PrimitiveValueType.UNKNOWN.getType();
         }
     }
 
@@ -137,6 +137,8 @@ public class Value {
                         put("key", new Value(entry.getKey()));
                         put("value", ((Value) entry.getValue()));
                     }})).collect(Collectors.toList())));
+                    put("containsKey", (self, values) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
+                    put("containsValue", (self, values) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
                 }
             });
             put(PrimitiveValueType.UNKNOWN.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {

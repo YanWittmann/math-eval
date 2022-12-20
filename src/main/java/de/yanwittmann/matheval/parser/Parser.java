@@ -403,7 +403,7 @@ public class Parser {
                     }
                 },
                 Parser::isIdentifier,
-                (t) -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR)
+                t -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR)
         ));
 
 
@@ -413,9 +413,12 @@ public class Parser {
         )));
 
         // function calls
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_CALL, (t) -> null, 0, (t, i) -> true, (t, i) -> true, (t, i) -> t,
+        rules.add(ParserRule.inOrderWithoutPrefixRule(ParserNode.NodeType.FUNCTION_CALL,
+                (pp, p) -> isType(p, TokenType.DOT),
+                (t, i) -> true,
+
                 Parser::isIdentifier,
-                (t) -> isType(t, ParserNode.NodeType.PARENTHESIS_PAIR)
+                t -> isType(t, ParserNode.NodeType.PARENTHESIS_PAIR)
         ));
 
         // accessor using . for literals and functions/identifiers
