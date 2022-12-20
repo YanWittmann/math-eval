@@ -34,7 +34,6 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        // interpreter.evaluate("1 + 4;");
         interpreter.evaluate("a.test(x) = x + 1; a.test(5);");
     }
 
@@ -53,6 +52,8 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         Assertions.assertEquals("4", interpreter.evaluate("test.t = []; test.t[0] = x -> x + x; test.t[0](2);").toDisplayString());
+        Assertions.assertEquals("4", interpreter.evaluate("test.t = [x -> x + x]; test.t[0](2)").toDisplayString());
+        Assertions.assertEquals("4", interpreter.evaluate("test.t.t = 4; test.t.t;").toDisplayString());
     }
 
 }

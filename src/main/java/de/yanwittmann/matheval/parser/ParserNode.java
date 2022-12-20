@@ -123,7 +123,13 @@ public class ParserNode {
         return sb.toString();
     }
 
-    private static String reconstructCode(Object o, StringBuilder sb) {
+    public static String reconstructCode(Object o) {
+        final StringBuilder sb = new StringBuilder();
+        reconstructCode(o, sb);
+        return sb.toString();
+    }
+
+    public static String reconstructCode(Object o, StringBuilder sb) {
         if (o instanceof ParserNode) {
             ParserNode node = (ParserNode) o;
             switch (node.getType()) {

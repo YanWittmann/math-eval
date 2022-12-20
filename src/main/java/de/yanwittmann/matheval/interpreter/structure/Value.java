@@ -24,6 +24,14 @@ public class Value {
         else if (value instanceof Long) value = new BigDecimal((Long) value);
         else if (value instanceof Float) value = BigDecimal.valueOf((Float) value);
         else if (value instanceof Double) value = BigDecimal.valueOf((Double) value);
+        else if (value instanceof List) {
+            final Map<BigDecimal, Value> map = new HashMap<>();
+            int i = 0;
+            for (Object o : (List<?>) value) {
+                map.put(new BigDecimal(i++), new Value(o));
+            }
+            value = map;
+        }
 
         this.value = value;
         this.secondaryValue = secondaryValue;
@@ -59,10 +67,10 @@ public class Value {
             return PrimitiveValueType.BOOLEAN.getType();
         } else if (value instanceof Pattern) {
             return PrimitiveValueType.REGEX.getType();
-        } else if (value instanceof Map) {
+        } else if (value instanceof LinkedHashMap) {
             return PrimitiveValueType.OBJECT.getType();
-        } else if (value instanceof List) {
-            return PrimitiveValueType.ARRAY.getType();
+        } else if (value instanceof HashMap) {
+            return PrimitiveValueType.OBJECT.getType();
         } else if (value instanceof MFunction) {
             return PrimitiveValueType.FUNCTION.getType();
         } else if (value instanceof BiFunction) {
@@ -97,30 +105,41 @@ public class Value {
         if (VALUE_FUNCTIONS.containsKey(this.getType()) && VALUE_FUNCTIONS.get(this.getType()).containsKey(String.valueOf(identifier.getValue()))) {
             return new Value(VALUE_FUNCTIONS.get(this.getType()).get(identifier.getValue().toString()), this);
         }
+        if (VALUE_FUNCTIONS.get(PrimitiveValueType.UNKNOWN.getType()).containsKey(String.valueOf(identifier.getValue()))) {
+            return new Value(VALUE_FUNCTIONS.get(PrimitiveValueType.UNKNOWN.getType()).get(identifier.getValue().toString()), this);
+        }
 
-        if (this.getType().equals(PrimitiveValueType.OBJECT.getType())) {
-            return ((Map<String, Value>) value).get(identifier.getValue());
-        } else if (this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
-            return ((List<Value>) value).get(identifier.getNumberValue().intValue());
+        if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
+            return ((Map<Object, Value>) value).get(identifier.getValue());
         }
 
         return null;
     }
 
     public Value create(Value identifier, Value value) {
-        if (this.getType().equals(PrimitiveValueType.OBJECT.getType())) {
-            ((Map<String, Value>) this.value).put(identifier.getValue().toString(), value);
-        } else if (this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
-            ((List<Value>) this.value).add(value);
+        if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
+            ((Map<Object, Value>) this.value).put(identifier.getValue(), value);
         }
+
         return value;
     }
 
     private final static Map<String, Map<String, java.util.function.BiFunction<Value, List<Value>, Value>>> VALUE_FUNCTIONS = new HashMap<String, Map<String, java.util.function.BiFunction<Value, List<Value>, Value>>>() {
         {
-            put(PrimitiveValueType.ARRAY.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {
+            put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {
                 {
-                    put("size", (self, values) -> new Value(((List<?>) self.getValue()).size()));
+                    put("size", (self, values) -> new Value(((Map<?, ?>) self.getValue()).size()));
+                    put("keys", (self, values) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
+                    put("values", (self, values) -> new Value(((Map<?, ?>) self.getValue()).values().stream().map(Value::new).collect(Collectors.toList())));
+                    put("entries", (self, values) -> new Value(((Map<?, ?>) self.getValue()).entrySet().stream().map(entry -> new Value(new LinkedHashMap<Object, Value>() {{
+                        put("key", new Value(entry.getKey()));
+                        put("value", ((Value) entry.getValue()));
+                    }})).collect(Collectors.toList())));
+                }
+            });
+            put(PrimitiveValueType.UNKNOWN.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {
+                {
+                    put("type", (self, values) -> new Value(self.getType()));
                 }
             });
         }
@@ -146,11 +165,16 @@ public class Value {
                     .toString();
 
         } else if (object instanceof Map) {
-            final StringJoiner joiner = new StringJoiner(", ", "{", "}");
-            for (Map.Entry<?, ?> entry : ((Map<?, ?>) object).entrySet()) {
-                joiner.add(toDisplayString(entry.getKey()) + ": " + toDisplayString(entry.getValue()));
+            final Map<?, ?> map = (Map<?, ?>) object;
+            if (map.keySet().stream().allMatch(k -> k instanceof BigDecimal)) {
+                return toDisplayString(map.values().stream().map(v -> v instanceof Value ? ((Value) v).toDisplayString() : v).collect(Collectors.toList()));
+            } else {
+                final StringJoiner joiner = new StringJoiner(", ", "{", "}");
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    joiner.add(toDisplayString(entry.getKey()) + ": " + toDisplayString(entry.getValue()));
+                }
+                return joiner.toString();
             }
-            return joiner.toString();
 
         } else if (object instanceof Token) {
             return ((Token) object).getValue();

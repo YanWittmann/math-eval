@@ -10,7 +10,8 @@ public enum PrimitiveValueType {
     VALUE_FUNCTION("value_function"),
     NATIVE_FUNCTION("native_function"),
     OBJECT("object"),
-    REGEX("regex");
+    REGEX("regex"),
+    UNKNOWN("unknown");
 
     private final String type;
 

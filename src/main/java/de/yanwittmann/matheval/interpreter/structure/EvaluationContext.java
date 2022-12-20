@@ -90,14 +90,15 @@ public abstract class EvaluationContext {
                 throw new MenterExecutionException("Import statements are not supported in the interpreter.");
 
             } else if (node.getType() == ParserNode.NodeType.ARRAY) {
-                final List<Value> array = new ArrayList<>();
-                for (Object child : node.getChildren()) {
-                    array.add(evaluate(child, globalContext, localSymbols, symbolCreationMode));
+                final Map<Object, Value> array = new LinkedHashMap<>();
+                final List<Object> children = node.getChildren();
+                for (int i = 0; i < children.size(); i++) {
+                    array.put(new BigDecimal(i), evaluate(children.get(i), globalContext, localSymbols, symbolCreationMode));
                 }
                 result = new Value(array);
 
             } else if (node.getType() == ParserNode.NodeType.MAP) {
-                final Map<String, Value> map = new HashMap<>();
+                final Map<String, Value> map = new LinkedHashMap<>();
                 for (Object child : node.getChildren()) {
                     final ParserNode childNode = (ParserNode) child;
 
@@ -296,6 +297,9 @@ public abstract class EvaluationContext {
     }
 
     private Value resolveSymbol(Object identifier, SymbolCreationMode symbolCreationMode, GlobalContext globalContext, Map<String, Value> localSymbols) {
+        if (MenterDebugger.logInterpreterResolveSymbols) {
+            LOG.info("Symbol resolve start: {}", ParserNode.reconstructCode(identifier));
+        }
 
         final List<Object> identifiers = new ArrayList<>();
         if (identifier instanceof ParserNode) {
@@ -334,9 +338,11 @@ public abstract class EvaluationContext {
         if (identifiers.isEmpty()) {
             throw new MenterExecutionException("Cannot resolve symbol from " + identifier);
         }
+        if (MenterDebugger.logInterpreterResolveSymbols) {
+            LOG.info("Symbol resolve: Split into identifiers: {}", identifiers);
+        }
 
         Value value = null;
-
 
         for (int i = 0; i < identifiers.size(); i++) {
             final Object id = identifiers.get(i);
@@ -350,12 +356,18 @@ public abstract class EvaluationContext {
             if (value == null) {
                 if (localSymbols.containsKey(stringKey)) {
                     value = localSymbols.get(stringKey);
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        LOG.info("Symbol resolve: [{}] from local symbols", stringKey);
+                    }
                     continue;
                 }
 
                 final Value variable = this.getVariable(stringKey);
                 if (variable != null) {
                     value = variable;
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        LOG.info("Symbol resolve: [{}] from global variables", stringKey);
+                    }
                     continue;
                 }
 
@@ -368,6 +380,9 @@ public abstract class EvaluationContext {
                             localSymbols = globalContext.getVariables();
                             value = null;
                             foundImport = true;
+                            if (MenterDebugger.logInterpreterResolveSymbols) {
+                                LOG.info("Symbol resolve: [{}] from import: {}; switching to module context", stringKey, anImport);
+                            }
                             break;
                         }
                     } else if (anImport.isInline() && anImport.getModule().containsSymbol(stringKey)) {
@@ -377,6 +392,9 @@ public abstract class EvaluationContext {
                             localSymbols = globalContext.getVariables();
                             value = module.getParentContext().getVariable(stringKey);
                             foundImport = true;
+                            if (MenterDebugger.logInterpreterResolveSymbols) {
+                                LOG.info("Symbol resolve: [{}] from inline import: {}; switching to module context", stringKey, anImport);
+                            }
                             break;
                         }
                     }
@@ -386,23 +404,39 @@ public abstract class EvaluationContext {
             } else {
                 final Value accessAs = id instanceof Value ? (Value) id : new Value(getTokenOrNodeValue(id));
                 value = value.access(accessAs);
+
                 if (value != null) {
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        LOG.info("Symbol resolve: [{}] from accessing previous value: {}", stringKey, previousValue);
+                    }
                     continue;
+
                 } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS.equals(symbolCreationMode)) {
-                    value = previousValue.create(accessAs, Value.empty());
+                    if (isFinalIdentifier) {
+                        value = Value.empty();
+                    } else {
+                        value = new Value(new LinkedHashMap<>());
+                    }
+                    value = previousValue.create(accessAs, value);
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        LOG.info("Symbol resolve: [{}] from creating new value on previous value: {}", stringKey, previousValue);
+                    }
                     continue;
                 }
             }
 
             if (SymbolCreationMode.THROW_IF_NOT_EXISTS == symbolCreationMode) {
-                throw new MenterExecutionException("Cannot resolve symbol '" + stringKey + "' on\n" + identifier);
+                throw new MenterExecutionException("Cannot resolve symbol '" + stringKey + "' on\n" + ParserNode.reconstructCode(identifier));
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {
                 if (isFinalIdentifier) {
                     value = Value.empty();
                 } else {
-                    value = new Value(new HashMap<>());
+                    value = new Value(new LinkedHashMap<>());
                 }
                 localSymbols.put(stringKey, value);
+                if (MenterDebugger.logInterpreterResolveSymbols) {
+                    LOG.info("Symbol resolve: [{}] from creating new value", stringKey);
+                }
             }
         }
 

@@ -16,4 +16,5 @@ public abstract class MenterDebugger {
      * Place your debugger there and set a breakpoint to debug the evaluation.
      */
     public static String breakpointActivationCode = null;
+    public static boolean logInterpreterResolveSymbols = false;
 }
