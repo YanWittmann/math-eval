@@ -43,7 +43,7 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         Assertions.assertEquals("{\"test\": 4, \"z\": \"test\"}", interpreter.evaluate("hello = 4; {test: hello, z: \"test\"}").toDisplayString());
-        Assertions.assertEquals("{\"singlestring\": \"val 1\", \"hmm\": 3, \"string concat\": \"val 2\"}", interpreter.evaluate("map.hmm = 3; map[\"singlestring\"] = \"val 1\"; map[\"string\" + \" concat\"] = \"val 2\"; map").toDisplayString());
+        Assertions.assertEquals("{\"hmm\": 3, \"singlestring\": \"val 1\", \"string concat\": \"val 2\"}", interpreter.evaluate("map.hmm = 3; map[\"singlestring\"] = \"val 1\"; map[\"string\" + \" concat\"] = \"val 2\"; map").toDisplayString());
     }
 
     @Test
@@ -54,6 +54,18 @@ class MenterInterpreterTest {
         Assertions.assertEquals("4", interpreter.evaluate("test.t = []; test.t[0] = x -> x + x; test.t[0](2);").toDisplayString());
         Assertions.assertEquals("4", interpreter.evaluate("test.t = [x -> x + x]; test.t[0](2)").toDisplayString());
         Assertions.assertEquals("4", interpreter.evaluate("test.t.t = 4; test.t.t;").toDisplayString());
+        Assertions.assertEquals("2", interpreter.evaluate("test = {t:1,z:0}; test.keys().size();").toDisplayString());
+    }
+
+    @Test
+    @Disabled
+    public void currentTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        MenterDebugger.logParsedTokens = true;
+        MenterDebugger.logInterpreterEvaluation = true;
+        MenterDebugger.logInterpreterResolveSymbols = true;
     }
 
 }

@@ -322,7 +322,7 @@ public abstract class EvaluationContext {
         for (int i = 0; i < identifiers.size(); i++) {
             if (identifiers.get(i) instanceof ParserNode) {
                 final ParserNode node = (ParserNode) identifiers.get(i);
-                if (node.getType() == ParserNode.NodeType.CODE_BLOCK || node.getType() == ParserNode.NodeType.EXPRESSION) {
+                if (node.getType() == ParserNode.NodeType.CODE_BLOCK || node.getType() == ParserNode.NodeType.EXPRESSION || node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
                     final Value value = evaluate(node, globalContext, new HashMap<>(localSymbols), SymbolCreationMode.THROW_IF_NOT_EXISTS);
                     identifiers.set(i, value);
                 }
@@ -400,6 +400,14 @@ public abstract class EvaluationContext {
                     }
                 }
                 if (foundImport) continue;
+
+                if (id instanceof Value) {
+                    value = (Value) id;
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        LOG.info("Symbol resolve: [{}] from value", stringKey);
+                    }
+                    continue;
+                }
 
             } else {
                 final Value accessAs = id instanceof Value ? (Value) id : new Value(getTokenOrNodeValue(id));

@@ -110,21 +110,13 @@ public class MenterInterpreter extends EvalRuntime {
         interpreter.addAutoImport("import core inline");
 
         final boolean isRepl = MenterInterpreter.isAnyOf(args, "-r", "--repl", "repl");
-        final boolean isDebug = MenterInterpreter.isAnyOf(args, "-d", "--debug", "debug");
-        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || (!isRepl && !isDebug);
+        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || !isRepl;
 
         if (isHelp) {
             System.out.println("Menter Interpreter");
             System.out.println("  -r, --repl, repl:   Start REPL");
-            System.out.println("  -d, --debug, debug: Activate debug mode");
             System.out.println("  -h, --help:         Show this help");
             return;
-        }
-
-        if (isDebug) {
-            MenterDebugger.logInterpreterEvaluation = true;
-            MenterDebugger.logParsedTokens = true;
-            MenterDebugger.logLexedTokens = true;
         }
 
         if (isRepl) {
@@ -135,6 +127,28 @@ public class MenterInterpreter extends EvalRuntime {
                     final String input = reader.readLine();
                     if (input == null || input.equals("exit") || input.equals("quit")) break;
                     if (input.trim().length() == 0) continue;
+
+                    if (input.startsWith("debug")) {
+                        if (input.endsWith("interpreter")) {
+                            MenterDebugger.logInterpreterEvaluation = !MenterDebugger.logInterpreterEvaluation;
+                        } else if (input.endsWith("lexer")) {
+                            MenterDebugger.logLexedTokens = !MenterDebugger.logLexedTokens;
+                        } else if (input.endsWith("parser")) {
+                            MenterDebugger.logParsedTokens = !MenterDebugger.logParsedTokens;
+                        } else if (input.endsWith("parser progress")) {
+                            MenterDebugger.logParseProgress = !MenterDebugger.logParseProgress;
+                        } else if (input.endsWith("interpreter resolve")) {
+                            MenterDebugger.logInterpreterResolveSymbols = !MenterDebugger.logInterpreterResolveSymbols;
+                        } else {
+                            System.out.println("Unknown debug target: " + input.substring(5));
+                            System.out.println("  interpreter         " + MenterDebugger.logInterpreterEvaluation + "\n" +
+                                               "  interpreter resolve " + MenterDebugger.logInterpreterResolveSymbols + "\n" +
+                                               "  parser              " + MenterDebugger.logParsedTokens + "\n" +
+                                               "  parser progress     " + MenterDebugger.logParseProgress + "\n" +
+                                               "  lexer               " + MenterDebugger.logLexedTokens);
+                        }
+                        continue;
+                    }
 
                     final Value result = interpreter.evaluateInContextOf(input, "repl");
                     if (result != null && !result.isEmpty()) {

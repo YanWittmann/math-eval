@@ -383,16 +383,10 @@ public class Parser {
         ));
 
         // accessor using . for literals and functions/identifiers
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT), (t, i) -> true,
-                (t, i) -> t, Parser::isLiteral,
-                (t) -> isType(t, TokenType.DOT),
-                (t) -> isType(t, ParserNode.NodeType.FUNCTION_CALL) || isIdentifier(t)
-        ));
-        // accessor using . for identifiers
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT), (t, i) -> true, (t, i) -> t,
-                Parser::isIdentifier,
+                t -> isIdentifier(t) || isLiteral(t) || isType(t, ParserNode.NodeType.FUNCTION_CALL),
                 (t) -> isType(t, TokenType.DOT),
-                Parser::isIdentifier
+                t -> isType(t, ParserNode.NodeType.FUNCTION_CALL) || isIdentifier(t)
         ));
 
         // accessor using []
@@ -422,6 +416,13 @@ public class Parser {
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_CALL, (t) -> null, 0, (t, i) -> true, (t, i) -> true, (t, i) -> t,
                 Parser::isIdentifier,
                 (t) -> isType(t, ParserNode.NodeType.PARENTHESIS_PAIR)
+        ));
+
+        // accessor using . for literals and functions/identifiers
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, TokenType.DOT), (t, i) -> true, (t, i) -> t,
+                Parser::isEvaluableToValue,
+                (t) -> isType(t, TokenType.DOT),
+                t -> isType(t, ParserNode.NodeType.FUNCTION_CALL) || isIdentifier(t)
         ));
 
         for (Operator operator : operators.getOperatorsDoubleAssociative()) {

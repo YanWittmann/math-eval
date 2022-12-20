@@ -31,6 +31,8 @@ public class Value {
                 map.put(new BigDecimal(i++), new Value(o));
             }
             value = map;
+        } else if (value instanceof Value) {
+            value = ((Value) value).getValue();
         }
 
         this.value = value;

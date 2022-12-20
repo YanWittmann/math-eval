@@ -633,6 +633,33 @@ class ParserTest {
     }
 
     @Test
+    public void accessFunctionTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ FUNCTION_CALL\n" +
+                               "   │  │  ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │  │  ├─ IDENTIFIER: test\n" +
+                               "   │  │  │  └─ IDENTIFIER: keys\n" +
+                               "   │  │  └─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER: size\n" +
+                               "   └─ PARENTHESIS_PAIR",
+                "test.keys().size()");
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ FUNCTION_CALL\n" +
+                               "   │  │     ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │     │  ├─ IDENTIFIER: test\n" +
+                               "   │  │     │  └─ IDENTIFIER: keys\n" +
+                               "   │  │     └─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER: size\n" +
+                               "   └─ PARENTHESIS_PAIR",
+                "(test.keys()).size()");
+    }
+
+    @Test
     public void inlineFunctionTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ FUNCTION_INLINE: -> (0 l r)\n" +
