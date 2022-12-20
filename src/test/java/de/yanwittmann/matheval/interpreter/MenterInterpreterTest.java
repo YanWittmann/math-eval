@@ -47,4 +47,12 @@ class MenterInterpreterTest {
         Assertions.assertEquals("{\"singlestring\": \"val 1\", \"hmm\": 3, \"string concat\": \"val 2\"}", interpreter.evaluate("map.hmm = 3; map[\"singlestring\"] = \"val 1\"; map[\"string\" + \" concat\"] = \"val 2\"; map").toDisplayString());
     }
 
+    @Test
+    public void inlineFunctionAccessViaArrayTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        Assertions.assertEquals("4", interpreter.evaluate("test.t = []; test.t[0] = x -> x + x; test.t[0](2);").toDisplayString());
+    }
+
 }

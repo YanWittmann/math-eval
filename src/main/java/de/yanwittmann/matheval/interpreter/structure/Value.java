@@ -180,4 +180,9 @@ public class Value {
     public static Value empty() {
         return new Value(null);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
 }

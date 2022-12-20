@@ -236,6 +236,26 @@ public class Parser {
             return false;
         });
 
+        // flatten successive identifier accesses
+        rules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                if (isType(currentToken, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+                    final ParserNode currentNode = (ParserNode) currentToken;
+
+                    for (Object child : currentNode.getChildren()) {
+                        if (isType(child, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+                            final ParserNode childNode = (ParserNode) child;
+                            currentNode.getChildren().addAll(currentNode.getChildren().indexOf(child), childNode.getChildren());
+                            currentNode.getChildren().remove(child);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        });
+
         // check for curly bracket pairs with only map elements inside to transform into a map
         rules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
@@ -275,30 +295,8 @@ public class Parser {
             return false;
         });
 
-        // detect inline function declaration assignments and transform them into a regular function declaration
-        // FUNCTION_DECLARATION: = (10 l r)
-        // ├─ IDENTIFIER: test
-        // └─ FUNCTION_INLINE: -> (0 l r)
-        //    ├─ PARENTHESIS_PAIR
-        //    │  └─ IDENTIFIER: x
-        //    └─ CODE_BLOCK
-        //       └─ EXPRESSION: + (110 l r)
-        //          ├─ IDENTIFIER: x
-        //          └─ NUMBER_LITERAL: 1
-        // to:
-        // FUNCTION_DECLARATION: = (10 l r)
-        // ├─ IDENTIFIER: test
-        // ├─ PARENTHESIS_PAIR
-        // │  └─ IDENTIFIER: x
-        // └─ CODE_BLOCK
-        //    └─ RETURN_STATEMENT
-        //       └─ EXPRESSION: + (110 l r)
-        //          ├─ IDENTIFIER: x
-        //          └─ NUMBER_LITERAL: 1
         rules.add(tokens -> {
-            for (int i = 0; i < tokens.size(); i++) {
-                final Object currentToken = tokens.get(i);
-
+            for (final Object currentToken : tokens) {
                 if (isType(currentToken, ParserNode.NodeType.FUNCTION_DECLARATION)) {
                     final ParserNode node = (ParserNode) currentToken;
                     final Object functionInline = node.getChildren().get(1);
@@ -397,11 +395,6 @@ public class Parser {
                 Parser::isIdentifier
         ));
 
-        // accessor using []
-        /*rules.add(ParserRulePart.createRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, Arrays.asList(
-                new ParserRulePart(1, 1, Parser::isIdentifier, t -> t),
-                new ParserRulePart(1, 1, (t) -> isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR), t -> ((ParserNode) t).getChildren())
-        )));*/
         // accessor using []
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.IDENTIFIER_ACCESSED, (t) -> null, 0, (t, i) -> !isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR), (t, i) -> true,
                 (t, i) -> {
