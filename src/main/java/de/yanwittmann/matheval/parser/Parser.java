@@ -85,7 +85,7 @@ public class Parser {
                isType(token, ParserNode.NodeType.EXPRESSION) || isType(token, ParserNode.NodeType.FUNCTION_CALL) ||
                isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
-               isType(token, ParserNode.NodeType.CONDITIONAL);
+               isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE);
     }
 
     public static boolean isListable(Object token) {
