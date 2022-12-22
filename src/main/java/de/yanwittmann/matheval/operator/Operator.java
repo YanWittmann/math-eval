@@ -66,16 +66,26 @@ public interface Operator {
                         final boolean leftMatches = (isLeftAssociative() && hasBefore) || (!isLeftAssociative() && !hasBefore);
                         final boolean rightMatches = (isRightAssociative() && hasAfter) || (!isRightAssociative() && !hasAfter);
 
-                        if (leftMatches && rightMatches) {
-                            final ParserNode operatorParentNode = new ParserNode(ParserNode.NodeType.EXPRESSION, this);
-                            if (isLeftAssociative()) operatorParentNode.addChild(before);
-                            if (isRightAssociative()) operatorParentNode.addChild(after);
-
-                            final int leftIndex = isLeftAssociative() ? i - 1 : i;
-                            final int rightIndex = isRightAssociative() ? i + 1 : i;
-                            ParserRule.replace(tokens, operatorParentNode, leftIndex, rightIndex);
-                            return true;
+                        if (!leftMatches || !rightMatches) {
+                            continue;
                         }
+
+                        final Object beforeBefore = i > 1 ? tokens.get(i - 2) : null;
+                        final Object afterAfter = i < tokens.size() - 2 ? tokens.get(i + 2) : null;
+
+                        if (Parser.isType(beforeBefore, Lexer.TokenType.DOT) || Parser.isType(afterAfter, Lexer.TokenType.DOT)) {
+                            continue;
+                        }
+
+                        // all criteria met
+                        final ParserNode operatorParentNode = new ParserNode(ParserNode.NodeType.EXPRESSION, this);
+                        if (isLeftAssociative()) operatorParentNode.addChild(before);
+                        if (isRightAssociative()) operatorParentNode.addChild(after);
+
+                        final int leftIndex = isLeftAssociative() ? i - 1 : i;
+                        final int rightIndex = isRightAssociative() ? i + 1 : i;
+                        ParserRule.replace(tokens, operatorParentNode, leftIndex, rightIndex);
+                        return true;
                     }
                 }
             }

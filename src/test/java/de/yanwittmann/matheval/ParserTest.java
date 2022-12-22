@@ -1,10 +1,12 @@
 package de.yanwittmann.matheval;
 
+import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.io.ExpressionFileReader;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.operator.Operators;
 import de.yanwittmann.matheval.parser.Parser;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -15,7 +17,32 @@ class ParserTest {
     private final static Operators DEFAULT_OPERATORS = new Operators();
 
     @Test
+    @Disabled
+    public void customTest() {
+        MenterDebugger.logParseProgress = true;
+        MenterDebugger.logParsedTokens = true;
+        MenterDebugger.logInterpreterEvaluation = true;
+        MenterDebugger.logInterpreterResolveSymbols = true;
+
+        // assertParsedTreeEquals("",
+        //        "test = (x) -> return x + 1");
+    }
+
+    @Test
     public void jonasExpressionParseTreeTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: foo\n" +
+                               "   │  ├─ IDENTIFIER: bar\n" +
+                               "   │  └─ FUNCTION_CALL\n" +
+                               "   │     └─ PARENTHESIS_PAIR\n" +
+                               "   │        └─ EXPRESSION: + (110 l r)\n" +
+                               "   │           ├─ NUMBER_LITERAL: 1\n" +
+                               "   │           └─ NUMBER_LITERAL: 2\n" +
+                               "   └─ NUMBER_LITERAL: 3",
+                "(foo.bar(1 + 2), 3)");
+
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ PARENTHESIS_PAIR\n" +
                                "   ├─ EXPRESSION: + (110 l r)\n" +
@@ -25,14 +52,14 @@ class ParserTest {
                                "   │  │     └─ EXPRESSION: + (110 l r)\n" +
                                "   │  │        ├─ NUMBER_LITERAL: 2\n" +
                                "   │  │        └─ NUMBER_LITERAL: 3\n" +
-                               "   │  └─ FUNCTION_CALL\n" +
-                               "   │     ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │     │  ├─ IDENTIFIER: foo\n" +
-                               "   │     │  └─ IDENTIFIER: bar\n" +
-                               "   │     └─ PARENTHESIS_PAIR\n" +
-                               "   │        └─ EXPRESSION: + (110 l r)\n" +
-                               "   │           ├─ NUMBER_LITERAL: 1\n" +
-                               "   │           └─ NUMBER_LITERAL: 2\n" +
+                               "   │  └─ IDENTIFIER_ACCESSED\n" +
+                               "   │     ├─ IDENTIFIER: foo\n" +
+                               "   │     ├─ IDENTIFIER: bar\n" +
+                               "   │     └─ FUNCTION_CALL\n" +
+                               "   │        └─ PARENTHESIS_PAIR\n" +
+                               "   │           └─ EXPRESSION: + (110 l r)\n" +
+                               "   │              ├─ NUMBER_LITERAL: 1\n" +
+                               "   │              └─ NUMBER_LITERAL: 2\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      ├─ IDENTIFIER: hallo\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
@@ -54,19 +81,19 @@ class ParserTest {
     @Test
     public void subsequentFunctionCallParseTreeTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ IDENTIFIER: a\n" +
-                               "   │  ├─ IDENTIFIER: b\n" +
-                               "   │  ├─ IDENTIFIER: c\n" +
-                               "   │  ├─ IDENTIFIER: d\n" +
-                               "   │  ├─ IDENTIFIER: e\n" +
-                               "   │  ├─ IDENTIFIER: f\n" +
-                               "   │  ├─ STRING_LITERAL: \"g\"\n" +
-                               "   │  └─ IDENTIFIER: h\n" +
-                               "   └─ PARENTHESIS_PAIR\n" +
-                               "      └─ IDENTIFIER: i",
-                "a[b].c.d[e].f.\"g\".h(i)");
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: a\n" +
+                               "   ├─ IDENTIFIER: b\n" +
+                               "   ├─ IDENTIFIER: c\n" +
+                               "   ├─ IDENTIFIER: d\n" +
+                               "   ├─ IDENTIFIER: e\n" +
+                               "   ├─ IDENTIFIER: f\n" +
+                               "   ├─ STRING_LITERAL: \"g\"\n" +
+                               "   ├─ IDENTIFIER: h\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ IDENTIFIER: i",
+                "a[b].c.d[e].f[\"g\"].h(i)");
     }
 
     @Test
@@ -107,18 +134,17 @@ class ParserTest {
                                "      │                    └─ IDENTIFIER: mapper\n" +
                                "      └─ ARRAY\n" +
                                "         ├─ NUMBER_LITERAL: 34\n" +
-                               "         └─ FUNCTION_CALL\n" +
-                               "            ├─ IDENTIFIER_ACCESSED\n" +
-                               "            │  ├─ IDENTIFIER: foo\n" +
-                               "            │  └─ IDENTIFIER: bar\n" +
-                               "            └─ PARENTHESIS_PAIR\n" +
-                               "               └─ IDENTIFIER: x",
+                               "         └─ IDENTIFIER_ACCESSED\n" +
+                               "            ├─ IDENTIFIER: foo\n" +
+                               "            ├─ IDENTIFIER: bar\n" +
+                               "            └─ FUNCTION_CALL\n" +
+                               "               └─ PARENTHESIS_PAIR\n" +
+                               "                  └─ IDENTIFIER: x",
                 "test[\"varname-\" + test][\"second\" + foo()] = (3, (5, PI * 4 + sum(map([5, 6, 7], mapper)))) + [34, foo.bar(x)]");
     }
 
     @Test
     public void minorStatementsTest() {
-
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ EXPRESSION: + (110 l r)\n" +
                                "   ├─ EXPRESSION: + (110 l r)\n" +
@@ -181,26 +207,26 @@ class ParserTest {
                 "1 * (3 + 4)");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ STRING_LITERAL: \"a\"\n" +
-                               "   │  ├─ IDENTIFIER: b\n" +
-                               "   │  └─ IDENTIFIER: c\n" +
-                               "   └─ PARENTHESIS_PAIR\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ STRING_LITERAL: \"a\"\n" +
+                               "   ├─ IDENTIFIER: b\n" +
+                               "   ├─ IDENTIFIER: c\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ IDENTIFIER: a\n" +
-                               "   │  ├─ IDENTIFIER: b\n" +
-                               "   │  └─ IDENTIFIER: c\n" +
-                               "   └─ PARENTHESIS_PAIR\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: a\n" +
+                               "   ├─ IDENTIFIER: b\n" +
+                               "   ├─ IDENTIFIER: c\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ IDENTIFIER: a\n" +
-                               "   │  ├─ IDENTIFIER: b\n" +
-                               "   │  └─ IDENTIFIER: c\n" +
-                               "   └─ PARENTHESIS_PAIR",
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: a\n" +
+                               "   ├─ IDENTIFIER: b\n" +
+                               "   ├─ IDENTIFIER: c\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
                 "\"a\".b.c();a.b.c();a[b].c()");
 
         assertParsedTreeEquals("STATEMENT\n" +
@@ -232,30 +258,30 @@ class ParserTest {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ ARRAY\n" +
                                "   ├─ NUMBER_LITERAL: 34\n" +
-                               "   └─ FUNCTION_CALL\n" +
-                               "      ├─ IDENTIFIER_ACCESSED\n" +
-                               "      │  ├─ IDENTIFIER: foo\n" +
-                               "      │  └─ IDENTIFIER: bar\n" +
-                               "      └─ PARENTHESIS_PAIR\n" +
-                               "         └─ IDENTIFIER: x",
+                               "   └─ IDENTIFIER_ACCESSED\n" +
+                               "      ├─ IDENTIFIER: foo\n" +
+                               "      ├─ IDENTIFIER: bar\n" +
+                               "      └─ FUNCTION_CALL\n" +
+                               "         └─ PARENTHESIS_PAIR\n" +
+                               "            └─ IDENTIFIER: x",
                 "[34, foo.bar(x)]");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ IDENTIFIER: foo\n" +
-                               "   │  └─ IDENTIFIER: bar\n" +
-                               "   └─ PARENTHESIS_PAIR\n" +
-                               "      ├─ NUMBER_LITERAL: 1\n" +
-                               "      ├─ NUMBER_LITERAL: 2\n" +
-                               "      └─ EXPRESSION: * (120 l r)\n" +
-                               "         ├─ FUNCTION_CALL\n" +
-                               "         │  ├─ IDENTIFIER: test\n" +
-                               "         │  └─ PARENTHESIS_PAIR\n" +
-                               "         │     └─ EXPRESSION: + (110 l r)\n" +
-                               "         │        ├─ NUMBER_LITERAL: 3\n" +
-                               "         │        └─ NUMBER_LITERAL: 6\n" +
-                               "         └─ NUMBER_LITERAL: 4",
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: foo\n" +
+                               "   ├─ IDENTIFIER: bar\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         ├─ NUMBER_LITERAL: 1\n" +
+                               "         ├─ NUMBER_LITERAL: 2\n" +
+                               "         └─ EXPRESSION: * (120 l r)\n" +
+                               "            ├─ FUNCTION_CALL\n" +
+                               "            │  ├─ IDENTIFIER: test\n" +
+                               "            │  └─ PARENTHESIS_PAIR\n" +
+                               "            │     └─ EXPRESSION: + (110 l r)\n" +
+                               "            │        ├─ NUMBER_LITERAL: 3\n" +
+                               "            │        └─ NUMBER_LITERAL: 6\n" +
+                               "            └─ NUMBER_LITERAL: 4",
                 "foo.bar(1, 2, test(3 + 6) * 4)");
 
         assertParsedTreeEquals("STATEMENT\n" +
@@ -320,16 +346,17 @@ class ParserTest {
                 "var = {test: 5, hmm: \"wow\" * 3, rec: {arr: [9, 2]}}");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ IDENTIFIER: TestModule\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: TestModule\n" +
+                               "   ├─ SQUARE_BRACKET_PAIR\n" +
                                "   │  └─ STRING_LITERAL: \"myFunction\"\n" +
-                               "   └─ PARENTHESIS_PAIR\n" +
-                               "      ├─ IDENTIFIER_ACCESSED\n" +
-                               "      │  ├─ IDENTIFIER: TestModule\n" +
-                               "      │  └─ STRING_LITERAL: \"myVariable\"\n" +
-                               "      ├─ NUMBER_LITERAL: 3\n" +
-                               "      └─ NUMBER_LITERAL: 6",
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         ├─ IDENTIFIER_ACCESSED\n" +
+                               "         │  ├─ IDENTIFIER: TestModule\n" +
+                               "         │  └─ STRING_LITERAL: \"myVariable\"\n" +
+                               "         ├─ NUMBER_LITERAL: 3\n" +
+                               "         └─ NUMBER_LITERAL: 6",
                 "TestModule[\"myFunction\"](TestModule[\"myVariable\"], 3, 6)");
 
         assertParsedTreeEquals("IMPORT_STATEMENT\n" +
@@ -635,27 +662,27 @@ class ParserTest {
     @Test
     public void accessFunctionTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ FUNCTION_CALL\n" +
-                               "   │  │  ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  │  │  ├─ IDENTIFIER: test\n" +
-                               "   │  │  │  └─ IDENTIFIER: keys\n" +
-                               "   │  │  └─ PARENTHESIS_PAIR\n" +
-                               "   │  └─ IDENTIFIER: size\n" +
-                               "   └─ PARENTHESIS_PAIR",
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: keys\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER: size\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
                 "test.keys().size()");
+
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_CALL\n" +
-                               "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ FUNCTION_CALL\n" +
-                               "   │  │     ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  │     │  ├─ IDENTIFIER: test\n" +
-                               "   │  │     │  └─ IDENTIFIER: keys\n" +
-                               "   │  │     └─ PARENTHESIS_PAIR\n" +
-                               "   │  └─ IDENTIFIER: size\n" +
-                               "   └─ PARENTHESIS_PAIR",
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER_ACCESSED\n" +
+                               "   │     ├─ IDENTIFIER: test\n" +
+                               "   │     ├─ IDENTIFIER: keys\n" +
+                               "   │     └─ FUNCTION_CALL\n" +
+                               "   │        └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER: size\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
                 "(test.keys()).size()");
     }
 
@@ -699,6 +726,225 @@ class ParserTest {
                 "(x) -> { return x + 1; }\n" +
                 "x -> x + 1\n" +
                 "x -> { return x + 1; }");
+    }
+
+    @Test
+    public void newAccessorTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ ARRAY\n" +
+                               "   │  └─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: foo\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ IDENTIFIER: bar",
+                "[test].foo(bar)");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: keys\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   │     ├─ NUMBER_LITERAL: 1\n" +
+                               "   │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │        ├─ IDENTIFIER: test\n" +
+                               "   │        ├─ IDENTIFIER: foo\n" +
+                               "   │        └─ FUNCTION_CALL\n" +
+                               "   │           └─ PARENTHESIS_PAIR\n" +
+                               "   │              └─ IDENTIFIER: bar\n" +
+                               "   ├─ IDENTIFIER: size\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "keys(1, test.foo(bar)).size()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ MAP\n" +
+                               "   │  ├─ MAP_ELEMENT\n" +
+                               "   │  │  ├─ NUMBER_LITERAL: 1\n" +
+                               "   │  │  └─ ARRAY\n" +
+                               "   │  │     ├─ NUMBER_LITERAL: 2\n" +
+                               "   │  │     └─ NUMBER_LITERAL: 4\n" +
+                               "   │  └─ MAP_ELEMENT\n" +
+                               "   │     ├─ NUMBER_LITERAL: 2\n" +
+                               "   │     └─ NUMBER_LITERAL: 3\n" +
+                               "   ├─ IDENTIFIER: keys\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER: size\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "{1: [2, 4], 2: 3}.keys().size()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: keys\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER: size\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "test.keys().size();");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER: x\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ IDENTIFIER_ACCESSED\n" +
+                               "         ├─ MAP\n" +
+                               "         │  ├─ MAP_ELEMENT\n" +
+                               "         │  │  ├─ IDENTIFIER: x\n" +
+                               "         │  │  └─ IDENTIFIER: x\n" +
+                               "         │  └─ MAP_ELEMENT\n" +
+                               "         │     ├─ IDENTIFIER: y\n" +
+                               "         │     └─ NUMBER_LITERAL: 23\n" +
+                               "         ├─ IDENTIFIER: keys\n" +
+                               "         ├─ FUNCTION_CALL\n" +
+                               "         │  └─ PARENTHESIS_PAIR\n" +
+                               "         │     └─ IDENTIFIER: mapper\n" +
+                               "         ├─ IDENTIFIER: collect\n" +
+                               "         ├─ FUNCTION_CALL\n" +
+                               "         │  └─ PARENTHESIS_PAIR\n" +
+                               "         │     └─ FUNCTION_CALL\n" +
+                               "         │        ├─ IDENTIFIER: toList\n" +
+                               "         │        └─ PARENTHESIS_PAIR\n" +
+                               "         ├─ IDENTIFIER: attr\n" +
+                               "         ├─ IDENTIFIER: size\n" +
+                               "         └─ FUNCTION_CALL\n" +
+                               "            └─ PARENTHESIS_PAIR",
+                "x -> {x: x, y: 23}.keys(mapper).collect(toList()).attr.size()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   └─ NUMBER_LITERAL: 3",
+                "test[3]");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ EXPRESSION: * (120 l r)\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: test\n" +
+                               "   │  └─ NUMBER_LITERAL: 3\n" +
+                               "   └─ NUMBER_LITERAL: 2",
+                "test[3] * 2");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ CODE_BLOCK\n" +
+                               "   │  └─ EXPRESSION: + (110 l r)\n" +
+                               "   │     ├─ EXPRESSION: + (110 l r)\n" +
+                               "   │     │  ├─ NUMBER_LITERAL: 1\n" +
+                               "   │     │  └─ NUMBER_LITERAL: 2\n" +
+                               "   │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │        ├─ ARRAY\n" +
+                               "   │        │  ├─ NUMBER_LITERAL: 3\n" +
+                               "   │        │  └─ NUMBER_LITERAL: 4\n" +
+                               "   │        └─ IDENTIFIER: foo\n" +
+                               "   ├─ IDENTIFIER: bar\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "test[1 + 2 + [3, 4].foo].bar()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ EXPRESSION: + (110 l r)\n" +
+                               "   ├─ EXPRESSION: * (120 l r)\n" +
+                               "   │  ├─ NUMBER_LITERAL: 1\n" +
+                               "   │  └─ IDENTIFIER_ACCESSED\n" +
+                               "   │     ├─ IDENTIFIER: test\n" +
+                               "   │     ├─ CODE_BLOCK\n" +
+                               "   │     │  └─ EXPRESSION: + (110 l r)\n" +
+                               "   │     │     ├─ EXPRESSION: + (110 l r)\n" +
+                               "   │     │     │  ├─ NUMBER_LITERAL: 1\n" +
+                               "   │     │     │  └─ NUMBER_LITERAL: 2\n" +
+                               "   │     │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │     │        ├─ ARRAY\n" +
+                               "   │     │        │  ├─ NUMBER_LITERAL: 3\n" +
+                               "   │     │        │  └─ NUMBER_LITERAL: 4\n" +
+                               "   │     │        └─ IDENTIFIER: foo\n" +
+                               "   │     ├─ IDENTIFIER: bar\n" +
+                               "   │     └─ FUNCTION_CALL\n" +
+                               "   │        └─ PARENTHESIS_PAIR\n" +
+                               "   └─ NUMBER_LITERAL: 2",
+                "1 * test[1 + 2 + [3, 4].foo].bar() + 2");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: call\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   └─ NUMBER_LITERAL: 7",
+                "test.call()[7]");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: call\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER: call\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "test.call().call()");
+    }
+
+    @Test
+    public void accessorNightmareTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ MAP\n" +
+                               "   │  └─ MAP_ELEMENT\n" +
+                               "   │     ├─ NUMBER_LITERAL: 1\n" +
+                               "   │     └─ EXPRESSION: * (120 l r)\n" +
+                               "   │        ├─ NUMBER_LITERAL: 2\n" +
+                               "   │        └─ IDENTIFIER_ACCESSED\n" +
+                               "   │           ├─ IDENTIFIER: core\n" +
+                               "   │           ├─ IDENTIFIER: systemprop\n" +
+                               "   │           └─ FUNCTION_CALL\n" +
+                               "   │              └─ PARENTHESIS_PAIR\n" +
+                               "   │                 └─ EXPRESSION: * (120 l r)\n" +
+                               "   │                    ├─ NUMBER_LITERAL: 4\n" +
+                               "   │                    └─ IDENTIFIER_ACCESSED\n" +
+                               "   │                       ├─ STRING_LITERAL: \"key\"\n" +
+                               "   │                       ├─ IDENTIFIER: lower\n" +
+                               "   │                       ├─ FUNCTION_CALL\n" +
+                               "   │                       │  └─ PARENTHESIS_PAIR\n" +
+                               "   │                       ├─ IDENTIFIER: do\n" +
+                               "   │                       ├─ FUNCTION_CALL\n" +
+                               "   │                       │  └─ PARENTHESIS_PAIR\n" +
+                               "   │                       │     └─ EXPRESSION: * (120 l r)\n" +
+                               "   │                       │        ├─ MAP\n" +
+                               "   │                       │        │  ├─ MAP_ELEMENT\n" +
+                               "   │                       │        │  │  ├─ IDENTIFIER: myMap\n" +
+                               "   │                       │        │  │  └─ NUMBER_LITERAL: 3\n" +
+                               "   │                       │        │  └─ MAP_ELEMENT\n" +
+                               "   │                       │        │     ├─ NUMBER_LITERAL: 4\n" +
+                               "   │                       │        │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │                       │        │        ├─ IDENTIFIER: foo\n" +
+                               "   │                       │        │        └─ NUMBER_LITERAL: 0\n" +
+                               "   │                       │        └─ NUMBER_LITERAL: 2\n" +
+                               "   │                       ├─ IDENTIFIER: replace\n" +
+                               "   │                       └─ FUNCTION_CALL\n" +
+                               "   │                          └─ PARENTHESIS_PAIR\n" +
+                               "   │                             ├─ STRING_LITERAL: \" \"\n" +
+                               "   │                             └─ STRING_LITERAL: \"_\"\n" +
+                               "   ├─ IDENTIFIER: call\n" +
+                               "   ├─ FUNCTION_CALL\n" +
+                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   │     └─ EXPRESSION: * (120 l r)\n" +
+                               "   │        ├─ STRING_LITERAL: \"key\"\n" +
+                               "   │        └─ IDENTIFIER_ACCESSED\n" +
+                               "   │           ├─ ARRAY\n" +
+                               "   │           │  ├─ NUMBER_LITERAL: 2\n" +
+                               "   │           │  └─ NUMBER_LITERAL: 3\n" +
+                               "   │           ├─ IDENTIFIER: size\n" +
+                               "   │           └─ FUNCTION_CALL\n" +
+                               "   │              └─ PARENTHESIS_PAIR\n" +
+                               "   └─ NUMBER_LITERAL: 7",
+                "{1: 2 * core.systemprop(4 * \"key\".lower().do({myMap: 3, 4: foo[0]} * 2).replace(\" \", \"_\"))}.call(\"key\" * [2, 3].size())[7]");
     }
 
     @Test

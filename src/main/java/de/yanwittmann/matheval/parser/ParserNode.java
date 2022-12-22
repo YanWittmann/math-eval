@@ -254,8 +254,9 @@ public class ParserNode {
                     break;
 
                 case FUNCTION_CALL:
-                    reconstructCode(node.getChildren().get(0), sb);
-                    reconstructCode(node.getChildren().get(1), sb);
+                    //reconstructCode(node.getChildren().get(0), sb);
+                    //reconstructCode(node.getChildren().get(1), sb);
+                    sb.append("<!function calls cannot be reconstructed right now!>");
                     break;
 
                 case FUNCTION_INLINE:
@@ -368,6 +369,10 @@ public class ParserNode {
             }
         } else if (o instanceof Token) {
             sb.append(((Token) o).getValue());
+        } else if (o instanceof Collection) {
+            for (Object child : (Collection) o) {
+                reconstructCode(child, sb);
+            }
         } else {
             sb.append(o);
         }

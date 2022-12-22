@@ -67,8 +67,10 @@ class MenterInterpreterTest {
         MenterDebugger.logParseProgress = true;
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
-        Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
-        //Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
+
+        Assertions.assertEquals("2", interpreter.evaluate("test={a:1, b:0};test.keys().size();").toDisplayString());
+        // Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
+        // Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
     }
 
 }
