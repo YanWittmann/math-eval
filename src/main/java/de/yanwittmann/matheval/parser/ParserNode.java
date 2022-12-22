@@ -181,6 +181,9 @@ public class ParserNode {
                             if (childNode.getType() == NodeType.CODE_BLOCK) {
                                 reconstructCode(new ParserNode(NodeType.ARRAY, null, childNode.getChildren()), sb);
                                 wasSpecialCaseAccessor = true;
+                            } else if (childNode.getType() == NodeType.FUNCTION_CALL) {
+                                reconstructCode(child, sb);
+                                wasSpecialCaseAccessor = true;
                             }
                         } else if (child instanceof Token) {
                             Token token = (Token) child;
@@ -255,7 +258,6 @@ public class ParserNode {
 
                 case FUNCTION_CALL:
                     reconstructCode(node.getChildren().get(0), sb);
-                    reconstructCode(node.getChildren().get(1), sb);
                     break;
 
                 case FUNCTION_INLINE:
@@ -368,6 +370,10 @@ public class ParserNode {
             }
         } else if (o instanceof Token) {
             sb.append(((Token) o).getValue());
+        } else if (o instanceof Collection) {
+            for (Object child : (Collection) o) {
+                reconstructCode(child, sb);
+            }
         } else {
             sb.append(o);
         }
