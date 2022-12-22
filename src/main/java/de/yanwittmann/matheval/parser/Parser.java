@@ -237,7 +237,6 @@ public class Parser {
         });
 
         // flatten successive identifier accesses
-        // TODO: This should be redundant now
         rules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
@@ -474,8 +473,13 @@ public class Parser {
                         for (int j = function.getChildren().size() - 1; j >= 0; j--) {
                             final Object childToken = function.getChildren().get(j);
                             if (!isType(childToken, ParserNode.NodeType.PARENTHESIS_PAIR) && !isType(childToken, TokenType.KEYWORD)) {
-                                node.addChild(childToken);
                                 function.getChildren().remove(j);
+
+                                if (isType(childToken, ParserNode.NodeType.SQUARE_BRACKET_PAIR) && ((ParserNode) childToken).getChildren().size() == 1) {
+                                    node.addChild(((ParserNode) childToken).getChildren().get(0));
+                                } else {
+                                    node.addChild(childToken);
+                                }
                             }
                         }
                         node.addChild(function);

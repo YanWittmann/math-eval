@@ -10,13 +10,13 @@ import java.io.File;
 class MenterInterpreterTest {
 
     @Test
-    @Disabled
-    public void withFileTest() {
+    public void multiModulesTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.loadFile(new File("src/test/resources/lang/other/moduleParsing"));
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluate("import math as ma; ma.add(1, 2);");
+        Assertions.assertEquals("6.282", interpreter.evaluate("import other; import core inline; print(other.myAttribute); other.myAttribute;").toDisplayString());
+        Assertions.assertEquals("3", interpreter.evaluate("import math as ma; ma.add(1, 2);").toDisplayString());
     }
 
     @Test
@@ -29,12 +29,11 @@ class MenterInterpreterTest {
     }
 
     @Test
-    @Disabled
-    public void smallTest() {
+    public void inlineFunctionTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluate("a.test(x) = x + 1; a.test(5);");
+        Assertions.assertEquals("6", interpreter.evaluate("a.test = x -> x + 1; a.test(5);").toDisplayString());
     }
 
     @Test
@@ -51,11 +50,20 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
+        MenterDebugger.logParsedTokens = true;
+        MenterDebugger.logInterpreterEvaluation = true;
+        MenterDebugger.logInterpreterResolveSymbols = true;
+        MenterDebugger.breakpointActivationCode = "test.t.[0](2)";
+
         Assertions.assertEquals("4", interpreter.evaluate("test.t = []; test.t[0] = x -> x + x; test.t[0](2);").toDisplayString());
         Assertions.assertEquals("4", interpreter.evaluate("test.t = [x -> x + x]; test.t[0](2)").toDisplayString());
         Assertions.assertEquals("4", interpreter.evaluate("test.t.t = 4; test.t.t;").toDisplayString());
         Assertions.assertEquals("2", interpreter.evaluate("test = {t:1,z:0}; test.keys().size();").toDisplayString());
         Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.size();").toDisplayString());
+
+        Assertions.assertEquals("2", interpreter.evaluate("test={a:1, b:0};test.keys().size();").toDisplayString());
+        Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
+        Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
     }
 
     @Test
@@ -68,9 +76,7 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
 
-        Assertions.assertEquals("2", interpreter.evaluate("test={a:1, b:0};test.keys().size();").toDisplayString());
-        // Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
-        // Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
+        Assertions.assertEquals("", interpreter.evaluate("").toDisplayString());
     }
 
 }

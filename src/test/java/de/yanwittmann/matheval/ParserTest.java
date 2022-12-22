@@ -348,8 +348,7 @@ class ParserTest {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
                                "   ├─ IDENTIFIER: TestModule\n" +
-                               "   ├─ SQUARE_BRACKET_PAIR\n" +
-                               "   │  └─ STRING_LITERAL: \"myFunction\"\n" +
+                               "   ├─ STRING_LITERAL: \"myFunction\"\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
                                "         ├─ IDENTIFIER_ACCESSED\n" +
@@ -684,6 +683,16 @@ class ParserTest {
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR",
                 "(test.keys()).size()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: t\n" +
+                               "   ├─ NUMBER_LITERAL: 0\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ NUMBER_LITERAL: 2",
+                "test.t[0](2);");
     }
 
     @Test

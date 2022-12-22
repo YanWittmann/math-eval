@@ -181,6 +181,9 @@ public class ParserNode {
                             if (childNode.getType() == NodeType.CODE_BLOCK) {
                                 reconstructCode(new ParserNode(NodeType.ARRAY, null, childNode.getChildren()), sb);
                                 wasSpecialCaseAccessor = true;
+                            } else if (childNode.getType() == NodeType.FUNCTION_CALL) {
+                                reconstructCode(child, sb);
+                                wasSpecialCaseAccessor = true;
                             }
                         } else if (child instanceof Token) {
                             Token token = (Token) child;
@@ -254,9 +257,7 @@ public class ParserNode {
                     break;
 
                 case FUNCTION_CALL:
-                    //reconstructCode(node.getChildren().get(0), sb);
-                    //reconstructCode(node.getChildren().get(1), sb);
-                    sb.append("<!function calls cannot be reconstructed right now!>");
+                    reconstructCode(node.getChildren().get(0), sb);
                     break;
 
                 case FUNCTION_INLINE:

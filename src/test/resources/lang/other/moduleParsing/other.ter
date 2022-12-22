@@ -4,4 +4,8 @@ import core inline
 
 
 print("Hello World", 4)
-print(ma.piOp(ma.pi))
+
+myAttribute = ma.piOp(ma.pi)
+print(myAttribute)
+
+export [myAttribute] as other
