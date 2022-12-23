@@ -7,12 +7,15 @@ import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.parser.Parser;
 import de.yanwittmann.matheval.parser.ParserNode;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -26,12 +29,27 @@ public abstract class EvaluationContext {
     protected final static Map<String[], Function<Value[], Value>> nativeFunctions = new HashMap<>();
 
     static {
-        nativeFunctions.put(new String[]{"core.ter", "print"}, arguments -> {
+        nativeFunctions.put(new String[]{"common.ter", "print"}, arguments -> {
             System.out.println(Arrays.stream(arguments)
                     .map(v -> v.toDisplayString())
                     .collect(Collectors.joining(" ")));
             return Value.empty();
         });
+
+        nativeFunctions.put(new String[]{"inputOutput.ter", "read"}, arguments -> {
+            try {
+                return new Value(FileUtils.readLines(new File(arguments[0].getValue().toString()), StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new MenterExecutionException("Could not read file '" + arguments[0].toString() + "'.");
+            }
+        });
+
+        nativeFunctions.put(new String[]{"system.ter", "getProperty"}, arguments -> new Value(System.getProperty(arguments[0].toString())));
+        nativeFunctions.put(new String[]{"system.ter", "getEnv"}, arguments -> new Value(System.getenv(arguments[0].toString())));
+    }
+
+    public static void putNativeFunction(String[] path, Function<Value[], Value> function) {
+        nativeFunctions.put(path, function);
     }
 
     public EvaluationContext(EvaluationContext parentContext) {
@@ -203,7 +221,7 @@ public abstract class EvaluationContext {
                     }
                     final ParserNode functionCode = (ParserNode) node.getChildren().get(2);
 
-                    final MFunction function = new MFunction(globalContext, functionArguments, functionCode);
+                    final MNodeFunction function = new MNodeFunction(globalContext, functionArguments, functionCode);
                     functionValue.setValue(function);
 
                     result = functionValue;
@@ -217,7 +235,7 @@ public abstract class EvaluationContext {
                 }
 
                 final ParserNode functionCode = (ParserNode) node.getChildren().get(1);
-                final MFunction function = new MFunction(globalContext, functionArguments, functionCode);
+                final MNodeFunction function = new MNodeFunction(globalContext, functionArguments, functionCode);
                 result = new Value(function);
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
@@ -226,7 +244,8 @@ public abstract class EvaluationContext {
                     throw new MenterExecutionException(globalContext, "Function arguments are not a parenthesis pair", node);
                 }
 
-                result = evaluateFunction(function, (ParserNode) node.getChildren().get(1), globalContext, globalContext, localSymbols);
+                final List<Value> functionParameters = makeFunctionArguments(node, globalContext, localSymbols);
+                result = evaluateFunction(function, functionParameters, globalContext, localSymbols);
             }
 
             if (result == null) {
@@ -255,31 +274,23 @@ public abstract class EvaluationContext {
         return result;
     }
 
-    private Value evaluateFunction(Value functionValue, ParserNode functionParameters, GlobalContext globalContext, GlobalContext parameterGlobalContext, Map<String, Value> localSymbols) {
+    protected Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, Map<String, Value> localSymbols) {
         if (!functionValue.isFunction()) {
             throw new MenterExecutionException(globalContext, "Value is not a function " + functionValue);
         }
 
-        final List<Object> functionArguments = Parser.isType(functionParameters, ParserNode.NodeType.PARENTHESIS_PAIR) ? functionParameters.getChildren() : null;
-        if (functionArguments == null) {
-            throw new MenterExecutionException(globalContext, "Function arguments are not a parenthesis pair", functionParameters);
-        }
-        final List<Value> evaluatedArguments = functionArguments.stream()
-                .map(argument -> evaluate(argument, parameterGlobalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS))
-                .collect(Collectors.toList());
-
-        if (functionValue.getValue() instanceof MFunction) {
-            final MFunction executableFunction = (MFunction) functionValue.getValue();
+        if (functionValue.getValue() instanceof MNodeFunction) {
+            final MNodeFunction executableFunction = (MNodeFunction) functionValue.getValue();
             final List<String> functionArgumentNames = executableFunction.getArgumentNames();
 
-            if (functionArgumentNames.size() != evaluatedArguments.size()) {
-                throw new MenterExecutionException(globalContext, "Function " + functionValue + " requires " + functionArgumentNames.size() + " arguments, but " + evaluatedArguments.size() + " were given");
+            if (functionArgumentNames.size() != functionParameters.size()) {
+                throw new MenterExecutionException(globalContext, "Function " + functionValue + " requires " + functionArgumentNames.size() + " arguments, but " + functionParameters.size() + " were given");
             }
 
             final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);
             for (int i = 0; i < functionArgumentNames.size(); i++) {
                 final String argumentName = functionArgumentNames.get(i);
-                final Value argumentValue = evaluatedArguments.get(i);
+                final Value argumentValue = functionParameters.get(i);
                 functionLocalSymbols.put(argumentName, argumentValue);
             }
 
@@ -287,15 +298,44 @@ public abstract class EvaluationContext {
 
             return evaluate(executableFunction.getBody(), globalContext, functionLocalSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
 
-        } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
+        } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) { // native functions
             final Function<Value[], Value> nativeFunction = (Function<Value[], Value>) functionValue.getValue();
-            final Value[] nativeFunctionArguments = evaluatedArguments.toArray(new Value[0]);
+            final Value[] nativeFunctionArguments = functionParameters.toArray(new Value[0]);
             return nativeFunction.apply(nativeFunctionArguments);
 
-        } else {
-            final BiFunction<Value, List<Value>, Value> executableFunction = (BiFunction<Value, List<Value>, Value>) functionValue.getValue();
-            return executableFunction.apply(functionValue.getSecondaryValue(), evaluatedArguments);
+        } else { // otherwise it must be a value function
+            final MValueFunction executableFunction = (MValueFunction) functionValue.getValue();
+            return executableFunction.apply(globalContext, functionValue.getSecondaryValue(), functionParameters, localSymbols);
         }
+    }
+
+    private List<Value> makeFunctionArguments(Object functionParameters, GlobalContext parameterGlobalContext, Map<String, Value> localSymbols) {
+        if (!(functionParameters instanceof ParserNode)) {
+            throw new MenterExecutionException(parameterGlobalContext, "Function parameters are not a parenthesis pair\n" + functionParameters);
+        }
+
+        final ParserNode functionParametersNode = (ParserNode) functionParameters;
+
+        final ParserNode parenthesisPair;
+        if (Parser.isType(functionParametersNode, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+            parenthesisPair = functionParametersNode;
+        } else {
+            // check all child nodes
+            parenthesisPair = functionParametersNode.getChildren().stream()
+                    .filter(child -> Parser.isType(child, ParserNode.NodeType.PARENTHESIS_PAIR))
+                    .map(child -> (ParserNode) child)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+
+        final List<Object> functionArguments = Parser.isType(parenthesisPair, ParserNode.NodeType.PARENTHESIS_PAIR) ? parenthesisPair.getChildren() : null;
+        if (functionArguments == null) {
+            throw new MenterExecutionException(parameterGlobalContext, "Function arguments are not a parenthesis pair", functionParametersNode);
+        }
+        return functionArguments.stream()
+                .map(argument -> evaluate(argument, parameterGlobalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS))
+                .collect(Collectors.toList());
     }
 
     enum SymbolCreationMode {
@@ -431,11 +471,8 @@ public abstract class EvaluationContext {
 
             } else {
                 if (Parser.isType(id, ParserNode.NodeType.FUNCTION_CALL)) {
-                    final List<Object> parameterBrackets = ((ParserNode) id).getChildren();
-                    if (parameterBrackets.size() == 0 || !(parameterBrackets.get(0) instanceof ParserNode)) {
-                        throw new MenterExecutionException(globalContext, "Invalid function call parameters", ((ParserNode) id));
-                    }
-                    value = evaluateFunction(value, ((ParserNode) parameterBrackets.get(0)), globalContext, originalGlobalContext, localSymbols);
+                    final List<Value> functionParameters = makeFunctionArguments(id, originalGlobalContext, localSymbols);
+                    value = evaluateFunction(value, functionParameters, globalContext, localSymbols);
                     continue;
 
                 } else {

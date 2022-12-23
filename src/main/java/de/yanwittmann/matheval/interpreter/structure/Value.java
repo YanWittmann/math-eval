@@ -10,7 +10,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class Value {
+public class Value implements Comparable<Value> {
 
     private Object value;
     private Value secondaryValue;
@@ -52,7 +52,7 @@ public class Value {
             }
             this.value = map;
         } else if (value instanceof Value) {
-            this.value = ((Value) value).getValue();
+            inheritValue((Value) value);
         } else {
             this.value = value;
         }
@@ -73,9 +73,9 @@ public class Value {
             return PrimitiveValueType.OBJECT.getType();
         } else if (value instanceof HashMap) {
             return PrimitiveValueType.OBJECT.getType();
-        } else if (value instanceof MFunction) {
+        } else if (value instanceof MNodeFunction) {
             return PrimitiveValueType.FUNCTION.getType();
-        } else if (value instanceof BiFunction) {
+        } else if (value instanceof MValueFunction) {
             return PrimitiveValueType.VALUE_FUNCTION.getType();
         } else if (value instanceof Function) {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
@@ -97,6 +97,25 @@ public class Value {
         } else {
             return null;
         }
+    }
+
+    private boolean isTrue() {
+        if (value == null) {
+            return false;
+        } else if (value instanceof Boolean) {
+            return (Boolean) value;
+        } else if (value instanceof Number) {
+            return ((Number) value).doubleValue() != 0;
+        } else if (value instanceof String) {
+            return !((String) value).isEmpty();
+        } else if (value instanceof LinkedHashMap) {
+            return !((LinkedHashMap<?, ?>) value).isEmpty();
+        } else if (value instanceof HashMap) {
+            return !((HashMap<?, ?>) value).isEmpty();
+        }
+
+        return value instanceof MNodeFunction || value instanceof MValueFunction ||
+               value instanceof Function || value instanceof Pattern;
     }
 
     public Value access(Value identifier) {
@@ -126,28 +145,177 @@ public class Value {
         return value;
     }
 
-    private final static Map<String, Map<String, java.util.function.BiFunction<Value, List<Value>, Value>>> VALUE_FUNCTIONS = new HashMap<String, Map<String, java.util.function.BiFunction<Value, List<Value>, Value>>>() {
+    private final static Map<String, Map<String, MValueFunction>> VALUE_FUNCTIONS = new HashMap<String, Map<String, MValueFunction>>() {
         {
-            put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {
+            put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, MValueFunction>() {
                 {
-                    put("size", (self, values) -> new Value(((Map<?, ?>) self.getValue()).size()));
-                    put("keys", (self, values) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
-                    put("values", (self, values) -> new Value(((Map<?, ?>) self.getValue()).values().stream().map(Value::new).collect(Collectors.toList())));
-                    put("entries", (self, values) -> new Value(((Map<?, ?>) self.getValue()).entrySet().stream().map(entry -> new Value(new LinkedHashMap<Object, Value>() {{
+                    put("size", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).size()));
+                    put("keys", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
+                    put("values", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).values().stream().map(Value::new).collect(Collectors.toList())));
+                    put("entries", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).entrySet().stream().map(entry -> new Value(new LinkedHashMap<Object, Value>() {{
                         put("key", new Value(entry.getKey()));
                         put("value", ((Value) entry.getValue()));
                     }})).collect(Collectors.toList())));
-                    put("containsKey", (self, values) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
-                    put("containsValue", (self, values) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
+
+                    put("containsKey", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
+                    put("containsValue", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
+
+                    put("forEach", (context, self, values, localSymbols) -> {
+                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localSymbols);
+                        }
+                        return Value.empty();
+                    });
+
+                    put("map", (context, self, values, localSymbols) -> {
+                        final Map<Object, Value> map = new LinkedHashMap<>();
+                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            map.put(entry.getKey(), applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols));
+                        }
+                        return new Value(map);
+                    });
+                    put("mapKeys", (context, self, values, localSymbols) -> {
+                        final Map<Object, Value> map = new LinkedHashMap<>();
+                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            map.put(applyFunction(toList(entry.getKey()), values.get(0), context, localSymbols).getValue(), entry.getValue());
+                        }
+                        return new Value(map);
+                    });
+
+                    put("filter", (context, self, values, localSymbols) -> {
+                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                            final List<Value> mapped = new ArrayList<>();
+                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                                if (applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols).isTrue()) {
+                                    mapped.add(entry.getValue());
+                                }
+                            }
+                            return new Value(mapped);
+
+                        } else {
+                            final Map<Object, Value> map = new LinkedHashMap<>();
+                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                                if (applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols).isTrue()) {
+                                    map.put(entry.getKey(), entry.getValue());
+                                }
+                            }
+                            return new Value(map);
+                        }
+                    });
+                    put("filterKeys", (context, self, values, localSymbols) -> {
+                        final Map<Object, Value> map = new LinkedHashMap<>();
+                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            if (applyFunction(toList(entry.getKey()), values.get(0), context, localSymbols).isTrue()) {
+                                map.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        return new Value(map);
+                    });
+
+                    put("distinct", (context, self, values, localSymbols) -> {
+                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                            final List<Value> mapped = new ArrayList<>();
+                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                                if (!mapped.contains(entry.getValue())) {
+                                    mapped.add(entry.getValue());
+                                }
+                            }
+                            return new Value(mapped);
+
+                        } else {
+                            final Map<Object, Value> map = new LinkedHashMap<>();
+                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                                if (!map.containsValue(entry.getValue())) {
+                                    map.put(entry.getKey(), entry.getValue());
+                                }
+                            }
+                            return new Value(map);
+                        }
+                    });
+
+                    put("sort", (context, self, values, localSymbols) -> {
+                        final Comparator<Value> comparator;
+                        if (values.size() > 0) {
+                            final List<String> parameterList = getParameterList(values.get(0));
+                            if (parameterList == null || parameterList.size() == 2) {
+                                comparator = (a, b) -> {
+                                    final Value result = applyFunction(toList(a, b), values.get(0), context, localSymbols);
+                                    if (result.getType().equals(PrimitiveValueType.NUMBER.getType())) {
+                                        return ((Number) result.getValue()).intValue();
+                                    }
+                                    return 0;
+                                };
+                            } else {
+                                comparator = Value::compareTo;
+                            }
+                        } else {
+                            comparator = Value::compareTo;
+                        }
+
+                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                            return new Value(((Map<Object, Value>) self.getValue()).values().stream()
+                                    .sorted(comparator)
+                                    .collect(Collectors.toList()));
+                        } else {
+                            return new Value(((Map<Object, Value>) self.getValue()).entrySet().stream()
+                                    .sorted((a, b) -> comparator.compare(a.getValue(), b.getValue()))
+                                    .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
+                        }
+                    });
+
+                    put("join", (context, self, values, localSymbols) -> {
+                        final String separator = values.size() > 0 ? values.get(0).toDisplayString() : "";
+                        final String prefix = values.size() > 1 ? values.get(1).toDisplayString() : "";
+                        final String suffix = values.size() > 2 ? values.get(2).toDisplayString() : "";
+                        final StringBuilder sb = new StringBuilder();
+                        sb.append(prefix);
+                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            if (sb.length() > prefix.length()) {
+                                sb.append(separator);
+                            }
+                            sb.append(entry.getValue().toDisplayString());
+                        }
+                        sb.append(suffix);
+                        return new Value(sb.toString());
+                    });
                 }
             });
-            put(PrimitiveValueType.UNKNOWN.getType(), new HashMap<String, java.util.function.BiFunction<Value, List<Value>, Value>>() {
+            put(PrimitiveValueType.STRING.getType(), new HashMap<String, MValueFunction>() {
                 {
-                    put("type", (self, values) -> new Value(self.getType()));
+                }
+            });
+            put(PrimitiveValueType.UNKNOWN.getType(), new HashMap<String, MValueFunction>() {
+                {
+                    put("type", (context, self, values, localSymbols) -> new Value(self.getType()));
                 }
             });
         }
     };
+
+    private static Value applyFunction(List<Value> value, Value function, GlobalContext context, Map<String, Value> localSymbols) {
+        return context.evaluateFunction(function, value, context, localSymbols);
+    }
+
+    private static List<String> getParameterList(Value value) {
+        if (!value.isFunction()) {
+            throw new MenterExecutionException("Value is not a function " + value);
+        }
+
+        if (value.getValue() instanceof MNodeFunction) {
+            final MNodeFunction executableFunction = (MNodeFunction) value.getValue();
+            return executableFunction.getArgumentNames();
+        } else {
+            return null;
+        }
+    }
+
+    private static List<Value> toList(Object... value) {
+        final List<Value> list = new ArrayList<>();
+        for (Object object : value) {
+            list.add(new Value(object));
+        }
+        return list;
+    }
 
     @Override
     public String toString() {
@@ -170,7 +338,7 @@ public class Value {
 
         } else if (object instanceof Map) {
             final Map<?, ?> map = (Map<?, ?>) object;
-            if (map.keySet().stream().allMatch(k -> k instanceof BigDecimal)) {
+            if (isMapAnArray(map)) {
                 return toDisplayString(map.values().stream().map(v -> v instanceof Value ? ((Value) v).toDisplayString() : v).collect(Collectors.toList()));
             } else {
                 final StringJoiner joiner = new StringJoiner(", ", "{", "}");
@@ -186,19 +354,29 @@ public class Value {
             return ((Pattern) object).pattern();
         } else if (object instanceof BigDecimal) {
             return ((BigDecimal) object).stripTrailingZeros().toPlainString();
-        } else if (object instanceof String) {
-            return "\"" + object + "\"";
 
         } else if (object instanceof Function) {
             return "<<native function>>";
         } else if (object instanceof BiFunction) {
             return "<<instance function>>";
-        } else if (object instanceof MFunction) {
+        } else if (object instanceof MNodeFunction) {
             return String.valueOf(object);
 
         } else {
             return String.valueOf(object);
         }
+    }
+
+    private static boolean isMapAnArray(Map<?, ?> map) {
+        if (!map.keySet().stream().allMatch(k -> k instanceof BigDecimal)) {
+            return false;
+        }
+
+        if (!map.containsKey(BigDecimal.ZERO)) {
+            return false;
+        }
+
+        return map.keySet().stream().map(k -> (BigDecimal) k).max(BigDecimal::compareTo).get().intValue() == map.size() - 1;
     }
 
     public boolean isEmpty() {
@@ -207,6 +385,43 @@ public class Value {
 
     public static Value empty() {
         return new Value(null);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Value)) {
+            return false;
+        }
+
+        final Value other = (Value) obj;
+        if (!this.getType().equals(other.getType())) {
+            return false;
+        }
+
+        if (this.getType().equals(PrimitiveValueType.NUMBER.getType())) {
+            return this.getNumberValue().compareTo(other.getNumberValue()) == 0;
+        } else if (this.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
+            return this.isTrue() == other.isTrue();
+        }
+
+        return this.getValue().equals(other.getValue());
+    }
+
+    @Override
+    public int compareTo(Value o) {
+        if (this.getType().equals(PrimitiveValueType.NUMBER.getType())) {
+            return this.getNumberValue().compareTo(o.getNumberValue());
+        } else if (this.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
+            return Boolean.compare(this.isTrue(), o.isTrue());
+        } else if (this.getType().equals(PrimitiveValueType.STRING.getType())) {
+            return this.getValue().toString().compareTo(o.getValue().toString());
+        } else if (this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
+            return Integer.compare(((Map<?, ?>) this.getValue()).size(), ((Map<?, ?>) o.getValue()).size());
+        } else if (this.getType().equals(PrimitiveValueType.OBJECT.getType())) {
+            return Integer.compare(((Map<?, ?>) this.getValue()).size(), ((Map<?, ?>) o.getValue()).size());
+        } else {
+            return Integer.compare(this.getValue().hashCode(), o.getValue().hashCode());
+        }
     }
 
     @Override

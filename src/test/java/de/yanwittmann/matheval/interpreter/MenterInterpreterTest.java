@@ -15,8 +15,8 @@ class MenterInterpreterTest {
         interpreter.loadFile(new File("src/test/resources/lang/other/moduleParsing"));
         interpreter.finishLoadingContexts();
 
-        Assertions.assertEquals("6.282", interpreter.evaluate("import other; import core inline; print(other.myAttribute); other.myAttribute;").toDisplayString());
-        Assertions.assertEquals("3", interpreter.evaluate("import math as ma; ma.add(1, 2);").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "6.282", "import other; import common inline; print(other.myAttribute); other.myAttribute;");
+        evaluateAndAssertEqual(interpreter, "3", "import math as ma; ma.add(1, 2);");
     }
 
     @Test
@@ -33,7 +33,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        Assertions.assertEquals("6", interpreter.evaluate("a.test = x -> x + 1; a.test(5);").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "6", "a.test = x -> x + 1; a.test(5);");
     }
 
     @Test
@@ -41,8 +41,8 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        Assertions.assertEquals("{\"test\": 4, \"z\": \"test\"}", interpreter.evaluate("hello = 4; {test: hello, z: \"test\"}").toDisplayString());
-        Assertions.assertEquals("{\"hmm\": 3, \"singlestring\": \"val 1\", \"string concat\": \"val 2\"}", interpreter.evaluate("map.hmm = 3; map[\"singlestring\"] = \"val 1\"; map[\"string\" + \" concat\"] = \"val 2\"; map").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "{test: 4, z: test}", "hello = 4; {test: hello, z: \"test\"}");
+        evaluateAndAssertEqual(interpreter, "{hmm: 3, singlestring: val 1, string concat: val 2}", "map.hmm = 3; map[\"singlestring\"] = \"val 1\"; map[\"string\" + \" concat\"] = \"val 2\"; map");
     }
 
     @Test
@@ -50,17 +50,17 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        Assertions.assertEquals("4", interpreter.evaluate("test.t = []; test.t[0] = x -> x + x; test.t[0](2);").toDisplayString());
-        Assertions.assertEquals("4", interpreter.evaluate("test.t = [x -> x + x]; test.t[0](2)").toDisplayString());
-        Assertions.assertEquals("4", interpreter.evaluate("test.t.t = 4; test.t.t;").toDisplayString());
-        Assertions.assertEquals("2", interpreter.evaluate("test = {t:1,z:0}; test.keys().size();").toDisplayString());
-        Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.size();").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "4", "test.t = []; test.t[0] = x -> x + x; test.t[0](2);");
+        evaluateAndAssertEqual(interpreter, "4", "test.t = [x -> x + x]; test.t[0](2)");
+        evaluateAndAssertEqual(interpreter, "4", "test.t.t = 4; test.t.t;");
+        evaluateAndAssertEqual(interpreter, "2", "test = {t:1,z:0}; test.keys().size();");
+        evaluateAndAssertEqual(interpreter, "2", "{a:1, b:0}.size();");
 
-        Assertions.assertEquals("2", interpreter.evaluate("test={a:1, b:0};test.keys().size();").toDisplayString());
-        Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
-        Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "2", "test={a:1, b:0};test.keys().size();");
+        evaluateAndAssertEqual(interpreter, "2", "{a:1, b:0}.keys().size();");
+        evaluateAndAssertEqual(interpreter, "2", "[2, 3].keys().size()");
 
-        Assertions.assertEquals("[0]", interpreter.evaluate("foo(x) = x + x; mapper(f, val) = f(val); [mapper(foo, 3)].keys()").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "[0]", "foo(x) = x + x; mapper(f, val) = f(val); [mapper(foo, 3)].keys()");
     }
 
     @Test
@@ -68,7 +68,22 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        Assertions.assertEquals("[{\"key\": 0, \"value\": 0}, {\"key\": 1, \"value\": 1}, {\"key\": 2, \"value\": 2}]", interpreter.evaluate("[0, 1, 2].entries()").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "[{key: 0, value: 0}, {key: 1, value: 1}, {key: 2, value: 2}]", "[0, 1, 2].entries()");
+    }
+
+    @Test
+    public void objectFunctionsTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "[3, 2, 1]", "[1, 2, 3].sort((a, b) -> b - a)");
+        evaluateAndAssertEqual(interpreter, "[1, 2, 3]", "[1, 2, 3].sort((a, b) -> a - b)");
+
+        evaluateAndAssertEqual(interpreter, "~ 8 - 7 ~", "[1, 2, 3, 3].map(x -> x + 5).filter(x -> x > 6).sort((a, b) -> b - a).distinct().join(\" - \", \"~ \", \" ~\")");
+    }
+
+    private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
+        Assertions.assertEquals(expected, interpreter.evaluate(expression).toDisplayString());
     }
 
     @Test
@@ -82,7 +97,7 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
 
-        Assertions.assertEquals("", interpreter.evaluate("").toDisplayString());
+        evaluateAndAssertEqual(interpreter, "", "import core as c; c.print(\"f\")");
     }
 
 }

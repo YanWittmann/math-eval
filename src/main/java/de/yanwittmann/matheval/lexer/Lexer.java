@@ -149,7 +149,26 @@ public class Lexer {
                 final char c = this.stringIterator.next();
 
                 if (c == '\\') {
-                    buffer.append(this.stringIterator.next());
+                    final char next = this.stringIterator.next();
+                    if (next == 'n') {
+                        buffer.append('\n');
+                    } else if (next == 'r') {
+                        buffer.append('\r');
+                    } else if (next == 't') {
+                        buffer.append('\t');
+                    } else if (next == 'b') {
+                        buffer.append('\b');
+                    } else if (next == 'f') {
+                        buffer.append('\f');
+                    } else if (next == 'u') {
+                        final char[] unicode = new char[4];
+                        for (int i = 0; i < 4; i++) {
+                            unicode[i] = this.stringIterator.next();
+                        }
+                        buffer.append((char) Integer.parseInt(new String(unicode), 16));
+                    } else {
+                        buffer.append(next);
+                    }
                     continue;
                 }
 

@@ -138,28 +138,32 @@ public class Operators {
         add(Operator.make(">>", 100, true, true, (arguments) -> {
             return null;
         }));
-        add(Operator.make(">>>", 100, true, true, (arguments) -> {
-            return null;
-        })); // TODO: more than 2 character operators are not supported yet
 
         add(Operator.make("<", 90, true, true, (arguments) -> {
-            return null;
+            final int cmp = arguments[0].compareTo(arguments[1]);
+            return new Value(cmp < 0);
         }));
         add(Operator.make("<=", 90, true, true, (arguments) -> {
-            return null;
+            final int cmp = arguments[0].compareTo(arguments[1]);
+            return new Value(cmp <= 0);
         }));
         add(Operator.make(">", 90, true, true, (arguments) -> {
-            return null;
+            final int cmp = arguments[0].compareTo(arguments[1]);
+            return new Value(cmp > 0);
         }));
         add(Operator.make(">=", 90, true, true, (arguments) -> {
-            return null;
+            final int cmp = arguments[0].compareTo(arguments[1]);
+            return new Value(cmp >= 0);
         }));
-        add(Operator.make("instanceof", 90, true, true, (arguments) -> {
-            return null;
-        })); // TODO: more than 2 character operators are not supported yet
 
         add(Operator.make("==", 80, true, true, (arguments) -> {
-            return null;
+            final Value left = arguments[0];
+            final Value right = arguments[1];
+            if (left.equals(right)) {
+                return new Value(left.getValue().equals(right.getValue()));
+            } else {
+                return new Value(false);
+            }
         }));
         add(Operator.make("!=", 80, true, true, (arguments) -> {
             return null;

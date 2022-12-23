@@ -1,6 +1,6 @@
 
 import math as ma
-import core inline
+import common inline
 
 
 print("Hello World", 4)

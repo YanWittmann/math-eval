@@ -1,0 +1,5 @@
+
+native getProperty(x)
+native getEnv(x)
+
+export [getProperty, getEnv] as system

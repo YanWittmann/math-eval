@@ -543,6 +543,8 @@ public class Parser {
                         }
                     } else if (i == 2 && t instanceof ParserNode) {
                         return makeProperCodeBlock((ParserNode) t);
+                    } else if (i == 2 && t instanceof Token) {
+                        return new ParserNode(ParserNode.NodeType.CODE_BLOCK, null, Collections.singletonList(t));
                     } else {
                         return t;
                     }

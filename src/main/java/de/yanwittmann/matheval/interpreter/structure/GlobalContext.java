@@ -6,10 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class GlobalContext extends EvaluationContext {
 
@@ -52,15 +49,12 @@ public class GlobalContext extends EvaluationContext {
         }
         {
             final Set<String> importNames = new HashSet<>();
-            for (Import anImport : imports) {
-                if (anImport.getAlias() != null) {
-                    if (!importNames.add(anImport.getAlias())) {
-                        throw new MenterExecutionException("Duplicate import alias: " + anImport.getAlias());
-                    }
-                } else if (anImport.getName() != null) {
-                    if (!importNames.add(anImport.getName())) {
-                        throw new MenterExecutionException("Duplicate import name: " + anImport.getName());
-                    }
+            for (int i = imports.size() - 1; i >= 0; i--) {
+                Import anImport = imports.get(i);
+                final String name = firstNonNull(anImport.getAlias(), anImport.getName());
+                if (!importNames.add(name)) {
+                    imports.remove(anImport);
+                    throw new MenterExecutionException("Duplicate import: " + anImport.getAlias());
                 }
             }
         }
@@ -77,6 +71,7 @@ public class GlobalContext extends EvaluationContext {
                        childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
                        childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
                 imports.add(new Import(childNode));
+                inputsResolved = false;
             }
         }
     }
@@ -108,8 +103,14 @@ public class GlobalContext extends EvaluationContext {
         if (inputsResolved) return;
         inputsResolved = true;
 
-        for (Import anImport : imports) {
-            anImport.findModule(globalContexts);
+        for (int i = imports.size() - 1; i >= 0; i--) {
+            final Import anImport = imports.get(i);
+            try {
+                anImport.findModule(globalContexts);
+            } catch (Exception e) {
+                imports.remove(anImport);
+                throw e;
+            }
         }
     }
 
@@ -122,5 +123,12 @@ public class GlobalContext extends EvaluationContext {
         return "Context '" + source + "':\n" +
                "  modules: " + modules + "\n" +
                "  imports: " + imports;
+    }
+
+    private <T> T firstNonNull(T... values) {
+        for (T value : values) {
+            if (value != null) return value;
+        }
+        return null;
     }
 }

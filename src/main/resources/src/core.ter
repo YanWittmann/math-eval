@@ -1,4 +1,0 @@
-
-native print(x)
-
-export [print] as core

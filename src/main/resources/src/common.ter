@@ -1,0 +1,4 @@
+
+native print(x)
+
+export [print] as common

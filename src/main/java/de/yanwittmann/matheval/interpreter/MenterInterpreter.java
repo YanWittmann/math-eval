@@ -63,7 +63,9 @@ public class MenterInterpreter extends EvalRuntime {
     }
 
     private final static String[] MENTER_SOURCE_FILES = {
-            "core.ter"
+            "common.ter",
+            "inputOutput.ter",
+            "system.ter",
     };
 
     private void loadMenterCoreFiles() {
@@ -117,7 +119,7 @@ public class MenterInterpreter extends EvalRuntime {
 
     public static void main(String[] args) {
         final MenterInterpreter interpreter = new MenterInterpreter(new Operators());
-        interpreter.addAutoImport("import core inline");
+        interpreter.addAutoImport("import common inline");
 
         final boolean isRepl = MenterInterpreter.isAnyOf(args, "-r", "--repl", "repl");
 
@@ -144,6 +146,7 @@ public class MenterInterpreter extends EvalRuntime {
 
         if (isRepl) {
             final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            boolean debugShowEntireStackTrace = false;
             while (true) {
                 try {
                     System.out.print(">> ");
@@ -162,13 +165,19 @@ public class MenterInterpreter extends EvalRuntime {
                             MenterDebugger.logParseProgress = !MenterDebugger.logParseProgress;
                         } else if (input.endsWith("interpreter resolve")) {
                             MenterDebugger.logInterpreterResolveSymbols = !MenterDebugger.logInterpreterResolveSymbols;
+                        } else if (input.endsWith("import order")) {
+                            MenterDebugger.logInterpreterEvaluationOrder = !MenterDebugger.logInterpreterEvaluationOrder;
+                        } else if (input.endsWith("stack trace")) {
+                            debugShowEntireStackTrace = !debugShowEntireStackTrace;
                         } else {
                             System.out.println("Unknown debug target: " + input.substring(5));
                             System.out.println("  interpreter         " + MenterDebugger.logInterpreterEvaluation + "\n" +
                                                "  interpreter resolve " + MenterDebugger.logInterpreterResolveSymbols + "\n" +
                                                "  parser              " + MenterDebugger.logParsedTokens + "\n" +
                                                "  parser progress     " + MenterDebugger.logParseProgress + "\n" +
-                                               "  lexer               " + MenterDebugger.logLexedTokens);
+                                               "  lexer               " + MenterDebugger.logLexedTokens + "\n" +
+                                               "  import order        " + MenterDebugger.logInterpreterEvaluationOrder + "\n" +
+                                               "  stack trace         " + debugShowEntireStackTrace);
                         }
                         continue;
                     }
@@ -178,7 +187,11 @@ public class MenterInterpreter extends EvalRuntime {
                         System.out.println(result.toDisplayString());
                     }
                 } catch (Exception e) {
-                    System.out.println("Error: " + e.getMessage());
+                    if (debugShowEntireStackTrace) {
+                        e.printStackTrace();
+                    } else {
+                        System.out.println("Error: " + e.getMessage());
+                    }
                     try {
                         Thread.sleep(50);
                     } catch (InterruptedException ignored) {

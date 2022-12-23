@@ -1,0 +1,4 @@
+
+native read(file)
+
+export [read] as io
