@@ -401,7 +401,8 @@ public class Parser {
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
 
-                final boolean isArrayAccess = isType(currentToken, ParserNode.NodeType.SQUARE_BRACKET_PAIR) && ((ParserNode) currentToken).getChildren().size() == 1;
+                final boolean isSquareBracketPair = isType(currentToken, ParserNode.NodeType.SQUARE_BRACKET_PAIR);
+                final boolean isArrayAccess = isSquareBracketPair && ((ParserNode) currentToken).getChildren().size() == 1;
                 final boolean isValidAccessorValue = isType(currentToken, ParserNode.NodeType.FUNCTION_CALL) || isIdentifier(currentToken) ||
                                                      isArrayAccess;
                 final boolean isValidInitialValue = isEvaluableToValue(currentToken);
@@ -413,7 +414,7 @@ public class Parser {
                 // states:
                 // 0: start, no identifier found yet
                 //    isValidAccessorValue || isValidInitialValue --> state 1
-                //    isValidSeparator --> thisChainIsInvalid = true
+                //    isValidSeparator || isSquareBracketPair --> thisChainIsInvalid = true
                 // 1: initial identifier value found
                 //    isValidSeparator --> state 2
                 // 2: found a separator
@@ -425,11 +426,11 @@ public class Parser {
                 //    else --> state 4
                 // 4: done
 
-                if (state == 0 && (isValidAccessorValue || isValidInitialValue)) {
+                if (state == 0 && (isValidSeparator || isSquareBracketPair)) {
+                    thisChainIsInvalid = true;
+                } else if (state == 0 && (isValidAccessorValue || isValidInitialValue)) {
                     state = 1;
                     start = i;
-                } else if (state == 0 && isValidSeparator) {
-                    thisChainIsInvalid = true;
                 } else if (state == 1 && isValidSeparator) {
                     state = 2;
                 } else if (state == 1 && isArrayAccess) {
@@ -445,7 +446,7 @@ public class Parser {
                     state = 2;
                 } else if (state == 3 && isInvalidFollowUpValue) {
                     state = 0;
-                } else if (state == 3 && !isValidSeparator) {
+                } else if (state == 3) { //  && !isValidSeparator  is already implied
                     if (thisChainIsInvalid) {
                         state = 0;
                         start = -1;

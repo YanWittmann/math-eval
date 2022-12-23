@@ -6,23 +6,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class GlobalContext extends EvaluationContext {
 
     private static final Logger LOG = LogManager.getLogger(GlobalContext.class);
 
     private final Object source;
-    private final ParserNode root;
     private final List<Module> modules = new ArrayList<>();
     private final List<Import> imports = new ArrayList<>();
 
     public GlobalContext(ParserNode root, Object source) {
         super(null);
-        this.root = root;
         this.source = source;
 
+        this.findImportExportStatements(root);
+    }
+
+    public void findImportExportStatements(ParserNode root) {
         for (Object child : root.getChildren()) {
             checkForImportStatement(child);
         }
@@ -109,20 +113,14 @@ public class GlobalContext extends EvaluationContext {
         }
     }
 
-    public Value evaluate() {
-        return evaluate(root);
-    }
-
     public Value evaluate(ParserNode node) {
         return super.evaluate(node, this, super.getVariables(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
     }
 
     @Override
     public String toString() {
-        final String rootChildren = root.getChildren().stream().map(e -> e instanceof ParserNode ? ((ParserNode) e).getType() : e).collect(Collectors.toList()).toString();
         return "Context '" + source + "':\n" +
                "  modules: " + modules + "\n" +
-               "  imports: " + imports + "\n" +
-               "  children: " + rootChildren;
+               "  imports: " + imports;
     }
 }

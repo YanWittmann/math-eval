@@ -46,14 +46,9 @@ class MenterInterpreterTest {
     }
 
     @Test
-    public void inlineFunctionAccessOnDifferentObjectsTest() {
+    public void newAccessorTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
-
-        MenterDebugger.logParsedTokens = true;
-        MenterDebugger.logInterpreterEvaluation = true;
-        MenterDebugger.logInterpreterResolveSymbols = true;
-        MenterDebugger.breakpointActivationCode = "test.t.[0](2)";
 
         Assertions.assertEquals("4", interpreter.evaluate("test.t = []; test.t[0] = x -> x + x; test.t[0](2);").toDisplayString());
         Assertions.assertEquals("4", interpreter.evaluate("test.t = [x -> x + x]; test.t[0](2)").toDisplayString());
@@ -64,6 +59,16 @@ class MenterInterpreterTest {
         Assertions.assertEquals("2", interpreter.evaluate("test={a:1, b:0};test.keys().size();").toDisplayString());
         Assertions.assertEquals("2", interpreter.evaluate("{a:1, b:0}.keys().size();").toDisplayString());
         Assertions.assertEquals("2", interpreter.evaluate("[2, 3].keys().size()").toDisplayString());
+
+        Assertions.assertEquals("[0]", interpreter.evaluate("foo(x) = x + x; mapper(f, val) = f(val); [mapper(foo, 3)].keys()").toDisplayString());
+    }
+
+    @Test
+    public void correctMapElementOrder() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        Assertions.assertEquals("[{\"key\": 0, \"value\": 0}, {\"key\": 1, \"value\": 1}, {\"key\": 2, \"value\": 2}]", interpreter.evaluate("[0, 1, 2].entries()").toDisplayString());
     }
 
     @Test
@@ -73,6 +78,7 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         MenterDebugger.logParseProgress = true;
+        MenterDebugger.logParsedTokens = true;
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
 

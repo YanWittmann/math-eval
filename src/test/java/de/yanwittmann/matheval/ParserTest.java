@@ -898,6 +898,19 @@ class ParserTest {
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR",
                 "test.call().call()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ ARRAY\n" +
+                               "   │  └─ FUNCTION_CALL\n" +
+                               "   │     ├─ IDENTIFIER: mapper\n" +
+                               "   │     └─ PARENTHESIS_PAIR\n" +
+                               "   │        ├─ NUMBER_LITERAL: 1\n" +
+                               "   │        └─ NUMBER_LITERAL: 2\n" +
+                               "   ├─ IDENTIFIER: keys\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "[mapper(1, 2)].keys()");
     }
 
     @Test

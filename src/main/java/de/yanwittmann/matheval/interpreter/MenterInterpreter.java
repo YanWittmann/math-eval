@@ -40,16 +40,26 @@ public class MenterInterpreter extends EvalRuntime {
 
     @Override
     public Value evaluate(String expression) {
-        return super.evaluate((autoImports.size() > 0 ? String.join(";", autoImports) + ";" : "") + expression);
+        return super.evaluate(getAutoImportsAsString() + expression);
     }
 
     public Value evaluateInContextOf(String expression, String contextSource) {
-        return super.evaluateInContextOf((autoImports.size() > 0 ? String.join(";", autoImports) : ""), expression, contextSource);
+        return super.evaluateInContextOf(getAutoImportsAsString(), expression, contextSource);
     }
 
     @Override
     public Value evaluateInContextOf(String initialExpressions, String expression, String contextSource) {
         return this.evaluateInContextOf(expression, contextSource);
+    }
+
+    @Override
+    public void loadContext(List<String> str, String source) {
+        str.add(0, getAutoImportsAsString());
+        super.loadContext(str, source);
+    }
+
+    private String getAutoImportsAsString() {
+        return autoImports.size() > 0 ? String.join(";", autoImports) + ";" : "";
     }
 
     private final static String[] MENTER_SOURCE_FILES = {
@@ -110,13 +120,26 @@ public class MenterInterpreter extends EvalRuntime {
         interpreter.addAutoImport("import core inline");
 
         final boolean isRepl = MenterInterpreter.isAnyOf(args, "-r", "--repl", "repl");
-        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || !isRepl;
+
+        final List<File> files = MenterInterpreter.getFiles(args);
+        final boolean hasFiles = files.size() > 0;
+
+        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || (!isRepl && !hasFiles);
 
         if (isHelp) {
             System.out.println("Menter Interpreter");
+            System.out.println("  -ef [filename]      Evaluate file");
             System.out.println("  -r, --repl, repl:   Start REPL");
             System.out.println("  -h, --help:         Show this help");
             return;
+        }
+
+        if (hasFiles) {
+            for (File file : files) {
+                interpreter.loadFile(file);
+            }
+            interpreter.finishLoadingContexts();
+
         }
 
         if (isRepl) {
@@ -163,6 +186,28 @@ public class MenterInterpreter extends EvalRuntime {
                 }
             }
         }
+    }
+
+    private static List<File> getFiles(String[] args) {
+        final List<File> files = new ArrayList<>();
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("-ef")) {
+                if (i + 1 >= args.length) {
+                    throw new MenterExecutionException("Menter Interpreter: Expected file name after -ef");
+                }
+                files.add(new File(args[i + 1]));
+                i++;
+            }
+        }
+
+        for (File file : files) {
+            if (!file.exists()) {
+                throw new MenterExecutionException("Menter Interpreter: File does not exist: " + file);
+            }
+        }
+
+        return files;
     }
 
     private static boolean isAnyOf(String[] args, String... values) {

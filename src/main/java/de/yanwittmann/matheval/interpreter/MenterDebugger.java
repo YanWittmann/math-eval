@@ -17,4 +17,5 @@ public abstract class MenterDebugger {
      */
     public static String breakpointActivationCode = null;
     public static boolean logInterpreterResolveSymbols = false;
+    public static boolean logInterpreterEvaluationOrder = false;
 }

@@ -45,7 +45,7 @@ public class Value {
         else if (value instanceof Float) this.value = BigDecimal.valueOf((Float) value);
         else if (value instanceof Double) this.value = BigDecimal.valueOf((Double) value);
         else if (value instanceof List) {
-            final Map<BigDecimal, Value> map = new HashMap<>();
+            final Map<BigDecimal, Value> map = new LinkedHashMap<>();
             int i = 0;
             for (Object o : (List<?>) value) {
                 map.put(new BigDecimal(i++), new Value(o));
