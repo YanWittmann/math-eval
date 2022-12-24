@@ -36,7 +36,7 @@ public abstract class EvaluationContext {
             return Value.empty();
         });
 
-        nativeFunctions.put(new String[]{"inputOutput.ter", "read"}, arguments -> {
+        nativeFunctions.put(new String[]{"io.ter", "read"}, arguments -> {
             try {
                 return new Value(FileUtils.readLines(new File(arguments[0].getValue().toString()), StandardCharsets.UTF_8));
             } catch (IOException e) {
@@ -168,10 +168,18 @@ public abstract class EvaluationContext {
                 variable.inheritValue(value);
                 result = value;
 
+                if (MenterDebugger.logInterpreterAssignments) {
+                    LOG.info("Assigned value [{}] to variable [{}] from: {}", value, ParserNode.reconstructCode(node.getChildren().get(0)), node.reconstructCode());
+                }
+
             } else if (node.getType() == ParserNode.NodeType.PARENTHESIS_PAIR) {
-                result = new Value(node.getChildren().stream()
-                        .map(child -> evaluate(child, globalContext, localSymbols, symbolCreationMode))
-                        .collect(Collectors.toList()));
+                if (node.getChildren().size() == 1) {
+                    result = evaluate(node.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                } else {
+                    result = new Value(node.getChildren().stream()
+                            .map(child -> evaluate(child, globalContext, localSymbols, symbolCreationMode))
+                            .collect(Collectors.toList()));
+                }
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_DECLARATION) {
                 if (Parser.isKeyword(node.getChildren().get(0), "native")) {
@@ -246,6 +254,33 @@ public abstract class EvaluationContext {
 
                 final List<Value> functionParameters = makeFunctionArguments(node, globalContext, localSymbols);
                 result = evaluateFunction(function, functionParameters, globalContext, localSymbols);
+
+            } else if (node.getType() == ParserNode.NodeType.CONDITIONAL) {
+                final List<ParserNode> branches = node.getChildren().stream()
+                        .filter(child -> Parser.isType(child, ParserNode.NodeType.CONDITIONAL_BRANCH))
+                        .map(c -> (ParserNode) c)
+                        .collect(Collectors.toList());
+
+                boolean foundMatchingBranch = false;
+                for (ParserNode branch : branches) {
+                    if (branch.getChildren().size() == 1) { // else
+                        result = evaluate(branch.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                        foundMatchingBranch = true;
+                        break;
+
+                    } else {
+                        final Value condition = evaluate(branch.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                        if (condition.isTrue()) {
+                            result = evaluate(branch.getChildren().get(1), globalContext, localSymbols, symbolCreationMode);
+                            foundMatchingBranch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundMatchingBranch) {
+                    result = Value.empty();
+                }
             }
 
             if (result == null) {

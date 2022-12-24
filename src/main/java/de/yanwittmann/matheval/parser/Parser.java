@@ -1,5 +1,6 @@
 package de.yanwittmann.matheval.parser;
 
+import de.yanwittmann.matheval.exceptions.ParsingException;
 import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.lexer.Lexer.TokenType;
 import de.yanwittmann.matheval.lexer.Token;
@@ -400,6 +401,7 @@ public class Parser {
 
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
+                final Object previousToken = i > 0 ? tokens.get(i - 1) : null;
 
                 final boolean isSquareBracketPair = isType(currentToken, ParserNode.NodeType.SQUARE_BRACKET_PAIR);
                 final boolean isArrayAccess = isSquareBracketPair && ((ParserNode) currentToken).getChildren().size() == 1;
@@ -409,6 +411,7 @@ public class Parser {
                 final boolean isInvalidFollowUpValue = isType(currentToken, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(currentToken, ParserNode.NodeType.ARRAY) ||
                                                        isType(currentToken, TokenType.DOT) || isType(currentToken, TokenType.OPEN_PARENTHESIS) ||
                                                        isType(currentToken, TokenType.OPEN_SQUARE_BRACKET);// || isType(currentToken, TokenType.COMMA);
+                final boolean isInvalidPreviousValue = isKeyword(previousToken, "if");
                 final boolean isValidSeparator = isType(currentToken, TokenType.DOT);
 
                 // states:
@@ -428,6 +431,9 @@ public class Parser {
 
                 if (state == 0 && (isValidSeparator || isSquareBracketPair)) {
                     thisChainIsInvalid = true;
+                } else if (isInvalidPreviousValue) {
+                    state = 0;
+                    start = -1;
                 } else if (state == 0 && (isValidAccessorValue || isValidInitialValue)) {
                     state = 1;
                     start = i;
@@ -490,8 +496,10 @@ public class Parser {
                         final Object child = ((ParserNode) token).getChildren().get(0);
                         if (child instanceof ParserNode) {
                             node.addChild(makeProperCodeBlock((ParserNode) child));
+                        } else if (child instanceof Token) {
+                            node.addChild(makeProperCodeBlock((Token) child));
                         } else {
-                            node.addChild(child);
+                            throw new ParsingException("Invalid child token type on accessed identifier: " + child.getClass().getName());
                         }
                     }
                 }
@@ -764,7 +772,11 @@ public class Parser {
                     }
 
                     if (isEvaluableToValue(bodyToken) || isType(bodyToken, ParserNode.NodeType.CODE_BLOCK) || isType(bodyToken, ParserNode.NodeType.RETURN_STATEMENT)) {
-                        branch.addChild(makeProperCodeBlock((ParserNode) bodyToken));
+                        if (bodyToken instanceof ParserNode) {
+                            branch.addChild(makeProperCodeBlock((ParserNode) bodyToken));
+                        } else {
+                            branch.addChild(bodyToken);
+                        }
                         end = isElse ? i + 1 : i + 2;
                         i = end;
                     } else {
@@ -774,6 +786,11 @@ public class Parser {
                     }
 
                     node.addChild(branch);
+
+                    if (isElse) {
+                        ParserRule.replace(tokens, node, start, end);
+                        return true;
+                    }
                 }
             }
 
@@ -896,6 +913,12 @@ public class Parser {
             }
         }
 
+        return blockNode;
+    }
+
+    private static ParserNode makeProperCodeBlock(Token node) {
+        final ParserNode blockNode = new ParserNode(ParserNode.NodeType.CODE_BLOCK, null);
+        blockNode.addChild(node);
         return blockNode;
     }
 }

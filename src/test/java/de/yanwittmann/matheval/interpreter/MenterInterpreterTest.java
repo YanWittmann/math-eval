@@ -82,6 +82,41 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "~ 8 - 7 ~", "[1, 2, 3, 3].map(x -> x + 5).filter(x -> x > 6).sort((a, b) -> b - a).distinct().join(\" - \", \"~ \", \" ~\")");
     }
 
+    @Test
+    public void conditionalBranchesTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "6", "if (2 == 3) { 5 } else if (2 > 1) { 6 } else { 7 }");
+        evaluateAndAssertEqual(interpreter, "7", "if (2 == 3) { 5 } else if (2 < 1) { 6 } else { 7 }");
+
+        evaluateAndAssertEqual(interpreter, "6", "if (2 == 2) if (3 > 4) 5 else 6 else 7");
+        evaluateAndAssertEqual(interpreter, "7", "if (1 == 2) if (3 < 4) 5 else 6 else 7");
+    }
+
+    @Test
+    public void operatorsTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "false", "!true");
+        evaluateAndAssertEqual(interpreter, "true", "!1 == 2");
+    }
+
+    @Test
+    public void fibonacciTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "832040", "" +
+                                                  "fibstorage = {};" +
+                                                  "fib(n) = {" +
+                                                  "  if (!fibstorage.containsKey(n)) { fibstorage[n] = if (n == 0) 0 else if (n == 1) 1 else fib(n - 1) + fib(n - 2) };" +
+                                                  "  fibstorage[n];" +
+                                                  "};" +
+                                                  "fib(30);");
+    }
+
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
         Assertions.assertEquals(expected, interpreter.evaluate(expression).toDisplayString());
     }
@@ -97,7 +132,7 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "", "import core as c; c.print(\"f\")");
+        evaluateAndAssertEqual(interpreter, "false", "!true");
     }
 
 }

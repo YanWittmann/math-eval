@@ -64,7 +64,7 @@ public class MenterInterpreter extends EvalRuntime {
 
     private final static String[] MENTER_SOURCE_FILES = {
             "common.ter",
-            "inputOutput.ter",
+            "io.ter",
             "system.ter",
     };
 
@@ -86,7 +86,7 @@ public class MenterInterpreter extends EvalRuntime {
 
             if (externalMenterHomeDir != null) {
                 LOG.debug("Loading Menter core files from external Menter home directory: {}", externalMenterHomeDir);
-                loadFile(new File(externalMenterHomeDir, "src"));
+                loadFile(externalMenterHomeDir);
             }
         } catch (Exception e) {
             throw new MenterExecutionException("Failed to load additional Menter files. Additional files have been attempted to be loaded from:\n" +

@@ -83,12 +83,15 @@ class ParserTest {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
                                "   ├─ IDENTIFIER: a\n" +
-                               "   ├─ IDENTIFIER: b\n" +
+                               "   ├─ CODE_BLOCK\n" +
+                               "   │  └─ IDENTIFIER: b\n" +
                                "   ├─ IDENTIFIER: c\n" +
                                "   ├─ IDENTIFIER: d\n" +
-                               "   ├─ IDENTIFIER: e\n" +
+                               "   ├─ CODE_BLOCK\n" +
+                               "   │  └─ IDENTIFIER: e\n" +
                                "   ├─ IDENTIFIER: f\n" +
-                               "   ├─ STRING_LITERAL: \"g\"\n" +
+                               "   ├─ CODE_BLOCK\n" +
+                               "   │  └─ STRING_LITERAL: \"g\"\n" +
                                "   ├─ IDENTIFIER: h\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
@@ -223,7 +226,8 @@ class ParserTest {
                                "STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
                                "   ├─ IDENTIFIER: a\n" +
-                               "   ├─ IDENTIFIER: b\n" +
+                               "   ├─ CODE_BLOCK\n" +
+                               "   │  └─ IDENTIFIER: b\n" +
                                "   ├─ IDENTIFIER: c\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR",
@@ -353,7 +357,8 @@ class ParserTest {
                                "      └─ PARENTHESIS_PAIR\n" +
                                "         ├─ IDENTIFIER_ACCESSED\n" +
                                "         │  ├─ IDENTIFIER: TestModule\n" +
-                               "         │  └─ STRING_LITERAL: \"myVariable\"\n" +
+                               "         │  └─ CODE_BLOCK\n" +
+                               "         │     └─ STRING_LITERAL: \"myVariable\"\n" +
                                "         ├─ NUMBER_LITERAL: 3\n" +
                                "         └─ NUMBER_LITERAL: 6",
                 "TestModule[\"myFunction\"](TestModule[\"myVariable\"], 3, 6)");
@@ -423,7 +428,8 @@ class ParserTest {
                                "└─ ASSIGNMENT: = (10 l r)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: fib\n" +
-                               "   │  └─ IDENTIFIER: n\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ IDENTIFIER: n\n" +
                                "   └─ EXPRESSION: + (110 l r)\n" +
                                "      ├─ IDENTIFIER_ACCESSED\n" +
                                "      │  ├─ IDENTIFIER: fib\n" +
@@ -512,6 +518,44 @@ class ParserTest {
 
     @Test
     public void conditionTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      ├─ PARENTHESIS_PAIR\n" +
+                               "      │  └─ IDENTIFIER_ACCESSED\n" +
+                               "      │     ├─ IDENTIFIER: fibstorage\n" +
+                               "      │     ├─ IDENTIFIER: containsKey\n" +
+                               "      │     └─ FUNCTION_CALL\n" +
+                               "      │        └─ PARENTHESIS_PAIR\n" +
+                               "      │           └─ IDENTIFIER: n\n" +
+                               "      └─ CODE_BLOCK\n" +
+                               "         └─ IDENTIFIER_ACCESSED\n" +
+                               "            ├─ IDENTIFIER: fibstorage\n" +
+                               "            └─ CODE_BLOCK\n" +
+                               "               └─ IDENTIFIER: n",
+                "if (fibstorage.containsKey(n)) fibstorage[n];");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │     ├─ NUMBER_LITERAL: 1\n" +
+                               "   │  │     └─ NUMBER_LITERAL: 2\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ CONDITIONAL\n" +
+                               "   │        ├─ CONDITIONAL_BRANCH\n" +
+                               "   │        │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │        │  │  └─ EXPRESSION: < (90 l r)\n" +
+                               "   │        │  │     ├─ NUMBER_LITERAL: 3\n" +
+                               "   │        │  │     └─ NUMBER_LITERAL: 4\n" +
+                               "   │        │  └─ NUMBER_LITERAL: 5\n" +
+                               "   │        └─ CONDITIONAL_BRANCH\n" +
+                               "   │           └─ NUMBER_LITERAL: 6\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      └─ NUMBER_LITERAL: 7",
+                "if (1 == 2) if (3 < 4) 5 else 6 else 7");
+
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ CONDITIONAL\n" +
                                "   ├─ CONDITIONAL_BRANCH\n" +
@@ -614,7 +658,8 @@ class ParserTest {
                                "   │  │     │     ├─ NUMBER_LITERAL: 34\n" +
                                "   │  │     │     └─ IDENTIFIER_ACCESSED\n" +
                                "   │  │     │        ├─ IDENTIFIER: foo\n" +
-                               "   │  │     │        └─ STRING_LITERAL: \"acc\"\n" +
+                               "   │  │     │        └─ CODE_BLOCK\n" +
+                               "   │  │     │           └─ STRING_LITERAL: \"acc\"\n" +
                                "   │  │     └─ EXPRESSION: == (80 l r)\n" +
                                "   │  │        ├─ NUMBER_LITERAL: 3\n" +
                                "   │  │        └─ NUMBER_LITERAL: 1\n" +
@@ -632,7 +677,8 @@ class ParserTest {
                                "   │           │  │     └─ ARRAY\n" +
                                "   │           │  │        └─ IDENTIFIER_ACCESSED\n" +
                                "   │           │  │           ├─ IDENTIFIER: bar\n" +
-                               "   │           │  │           └─ IDENTIFIER: foo\n" +
+                               "   │           │  │           └─ CODE_BLOCK\n" +
+                               "   │           │  │              └─ IDENTIFIER: foo\n" +
                                "   │           │  └─ CODE_BLOCK\n" +
                                "   │           │     └─ RETURN_STATEMENT\n" +
                                "   │           │        └─ NUMBER_LITERAL: 3\n" +
@@ -741,6 +787,13 @@ class ParserTest {
     public void newAccessorTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: fibstorage\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ IDENTIFIER: n",
+                "fibstorage[n]");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
                                "   ├─ ARRAY\n" +
                                "   │  └─ IDENTIFIER: test\n" +
                                "   ├─ IDENTIFIER: foo\n" +
@@ -828,14 +881,16 @@ class ParserTest {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
                                "   ├─ IDENTIFIER: test\n" +
-                               "   └─ NUMBER_LITERAL: 3",
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ NUMBER_LITERAL: 3",
                 "test[3]");
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ EXPRESSION: * (120 l r)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: test\n" +
-                               "   │  └─ NUMBER_LITERAL: 3\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ NUMBER_LITERAL: 3\n" +
                                "   └─ NUMBER_LITERAL: 2",
                 "test[3] * 2");
 
@@ -885,7 +940,8 @@ class ParserTest {
                                "   ├─ IDENTIFIER: call\n" +
                                "   ├─ FUNCTION_CALL\n" +
                                "   │  └─ PARENTHESIS_PAIR\n" +
-                               "   └─ NUMBER_LITERAL: 7",
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ NUMBER_LITERAL: 7",
                 "test.call()[7]");
 
         assertParsedTreeEquals("STATEMENT\n" +
@@ -946,7 +1002,8 @@ class ParserTest {
                                "   │                       │        │     ├─ NUMBER_LITERAL: 4\n" +
                                "   │                       │        │     └─ IDENTIFIER_ACCESSED\n" +
                                "   │                       │        │        ├─ IDENTIFIER: foo\n" +
-                               "   │                       │        │        └─ NUMBER_LITERAL: 0\n" +
+                               "   │                       │        │        └─ CODE_BLOCK\n" +
+                               "   │                       │        │           └─ NUMBER_LITERAL: 0\n" +
                                "   │                       │        └─ NUMBER_LITERAL: 2\n" +
                                "   │                       ├─ IDENTIFIER: replace\n" +
                                "   │                       └─ FUNCTION_CALL\n" +
@@ -965,7 +1022,8 @@ class ParserTest {
                                "   │           ├─ IDENTIFIER: size\n" +
                                "   │           └─ FUNCTION_CALL\n" +
                                "   │              └─ PARENTHESIS_PAIR\n" +
-                               "   └─ NUMBER_LITERAL: 7",
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ NUMBER_LITERAL: 7",
                 "{1: 2 * core.systemprop(4 * \"key\".lower().do({myMap: 3, 4: foo[0]} * 2).replace(\" \", \"_\"))}.call(\"key\" * [2, 3].size())[7]");
     }
 
@@ -974,62 +1032,62 @@ class ParserTest {
         Parser parser = new Parser(ParserTest.DEFAULT_OPERATORS);
         ExpressionFileReader reader = new ExpressionFileReader(DEFAULT_OPERATORS);
 
-        Assertions.assertEquals(
-                "STATEMENT\n" +
-                "└─ FUNCTION_DECLARATION\n" +
-                "   ├─ IDENTIFIER: fibonacci\n" +
-                "   ├─ PARENTHESIS_PAIR\n" +
-                "   │  └─ IDENTIFIER: n\n" +
-                "   └─ CODE_BLOCK\n" +
-                "      └─ CONDITIONAL\n" +
-                "         ├─ CONDITIONAL_BRANCH\n" +
-                "         │  ├─ PARENTHESIS_PAIR\n" +
-                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
-                "         │  │     ├─ IDENTIFIER: n\n" +
-                "         │  │     └─ NUMBER_LITERAL: 0\n" +
-                "         │  └─ CODE_BLOCK\n" +
-                "         │     └─ RETURN_STATEMENT\n" +
-                "         │        └─ ARRAY\n" +
-                "         │           └─ NUMBER_LITERAL: 0\n" +
-                "         ├─ CONDITIONAL_BRANCH\n" +
-                "         │  ├─ PARENTHESIS_PAIR\n" +
-                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
-                "         │  │     ├─ IDENTIFIER: n\n" +
-                "         │  │     └─ NUMBER_LITERAL: 1\n" +
-                "         │  └─ CODE_BLOCK\n" +
-                "         │     └─ RETURN_STATEMENT\n" +
-                "         │        └─ ARRAY\n" +
-                "         │           ├─ NUMBER_LITERAL: 0\n" +
-                "         │           └─ NUMBER_LITERAL: 1\n" +
-                "         └─ CONDITIONAL_BRANCH\n" +
-                "            └─ CODE_BLOCK\n" +
-                "               ├─ ASSIGNMENT: = (10 l r)\n" +
-                "               │  ├─ IDENTIFIER: fib\n" +
-                "               │  └─ FUNCTION_CALL\n" +
-                "               │     ├─ IDENTIFIER: fibonacci\n" +
-                "               │     └─ PARENTHESIS_PAIR\n" +
-                "               │        └─ EXPRESSION: - (110 l r)\n" +
-                "               │           ├─ IDENTIFIER: n\n" +
-                "               │           └─ NUMBER_LITERAL: 1\n" +
-                "               ├─ ASSIGNMENT: = (10 l r)\n" +
-                "               │  ├─ IDENTIFIER_ACCESSED\n" +
-                "               │  │  ├─ IDENTIFIER: fib\n" +
-                "               │  │  └─ IDENTIFIER: n\n" +
-                "               │  └─ EXPRESSION: + (110 l r)\n" +
-                "               │     ├─ IDENTIFIER_ACCESSED\n" +
-                "               │     │  ├─ IDENTIFIER: fib\n" +
-                "               │     │  └─ CODE_BLOCK\n" +
-                "               │     │     └─ EXPRESSION: - (110 l r)\n" +
-                "               │     │        ├─ IDENTIFIER: n\n" +
-                "               │     │        └─ NUMBER_LITERAL: 1\n" +
-                "               │     └─ IDENTIFIER_ACCESSED\n" +
-                "               │        ├─ IDENTIFIER: fib\n" +
-                "               │        └─ CODE_BLOCK\n" +
-                "               │           └─ EXPRESSION: - (110 l r)\n" +
-                "               │              ├─ IDENTIFIER: n\n" +
-                "               │              └─ NUMBER_LITERAL: 2\n" +
-                "               └─ RETURN_STATEMENT\n" +
-                "                  └─ IDENTIFIER: fib",
+        Assertions.assertEquals("STATEMENT\n" +
+                                "└─ FUNCTION_DECLARATION\n" +
+                                "   ├─ IDENTIFIER: fibonacci\n" +
+                                "   ├─ PARENTHESIS_PAIR\n" +
+                                "   │  └─ IDENTIFIER: n\n" +
+                                "   └─ CODE_BLOCK\n" +
+                                "      └─ CONDITIONAL\n" +
+                                "         ├─ CONDITIONAL_BRANCH\n" +
+                                "         │  ├─ PARENTHESIS_PAIR\n" +
+                                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
+                                "         │  │     ├─ IDENTIFIER: n\n" +
+                                "         │  │     └─ NUMBER_LITERAL: 0\n" +
+                                "         │  └─ CODE_BLOCK\n" +
+                                "         │     └─ RETURN_STATEMENT\n" +
+                                "         │        └─ ARRAY\n" +
+                                "         │           └─ NUMBER_LITERAL: 0\n" +
+                                "         ├─ CONDITIONAL_BRANCH\n" +
+                                "         │  ├─ PARENTHESIS_PAIR\n" +
+                                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
+                                "         │  │     ├─ IDENTIFIER: n\n" +
+                                "         │  │     └─ NUMBER_LITERAL: 1\n" +
+                                "         │  └─ CODE_BLOCK\n" +
+                                "         │     └─ RETURN_STATEMENT\n" +
+                                "         │        └─ ARRAY\n" +
+                                "         │           ├─ NUMBER_LITERAL: 0\n" +
+                                "         │           └─ NUMBER_LITERAL: 1\n" +
+                                "         └─ CONDITIONAL_BRANCH\n" +
+                                "            └─ CODE_BLOCK\n" +
+                                "               ├─ ASSIGNMENT: = (10 l r)\n" +
+                                "               │  ├─ IDENTIFIER: fib\n" +
+                                "               │  └─ FUNCTION_CALL\n" +
+                                "               │     ├─ IDENTIFIER: fibonacci\n" +
+                                "               │     └─ PARENTHESIS_PAIR\n" +
+                                "               │        └─ EXPRESSION: - (110 l r)\n" +
+                                "               │           ├─ IDENTIFIER: n\n" +
+                                "               │           └─ NUMBER_LITERAL: 1\n" +
+                                "               ├─ ASSIGNMENT: = (10 l r)\n" +
+                                "               │  ├─ IDENTIFIER_ACCESSED\n" +
+                                "               │  │  ├─ IDENTIFIER: fib\n" +
+                                "               │  │  └─ CODE_BLOCK\n" +
+                                "               │  │     └─ IDENTIFIER: n\n" +
+                                "               │  └─ EXPRESSION: + (110 l r)\n" +
+                                "               │     ├─ IDENTIFIER_ACCESSED\n" +
+                                "               │     │  ├─ IDENTIFIER: fib\n" +
+                                "               │     │  └─ CODE_BLOCK\n" +
+                                "               │     │     └─ EXPRESSION: - (110 l r)\n" +
+                                "               │     │        ├─ IDENTIFIER: n\n" +
+                                "               │     │        └─ NUMBER_LITERAL: 1\n" +
+                                "               │     └─ IDENTIFIER_ACCESSED\n" +
+                                "               │        ├─ IDENTIFIER: fib\n" +
+                                "               │        └─ CODE_BLOCK\n" +
+                                "               │           └─ EXPRESSION: - (110 l r)\n" +
+                                "               │              ├─ IDENTIFIER: n\n" +
+                                "               │              └─ NUMBER_LITERAL: 2\n" +
+                                "               └─ RETURN_STATEMENT\n" +
+                                "                  └─ IDENTIFIER: fib",
                 parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.ter")).getChildren()));
 
         Assertions.assertEquals(

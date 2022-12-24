@@ -142,12 +142,13 @@ public class ParserNode {
                 case EXPRESSION:
                     if (node.getValue() instanceof Operator) {
                         Operator operator = (Operator) node.getValue();
+                        int i = 0;
                         if (operator.isLeftAssociative()) {
-                            reconstructCode(node.getChildren().get(0), sb);
+                            reconstructCode(node.getChildren().get(i++), sb);
                         }
                         sb.append(" ").append(operator.getSymbol()).append(" ");
                         if (operator.isRightAssociative()) {
-                            reconstructCode(node.getChildren().get(1), sb);
+                            reconstructCode(node.getChildren().get(i), sb);
                         }
                     } else {
                         for (Object child : node.getChildren()) {

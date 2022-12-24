@@ -99,7 +99,7 @@ public class Value implements Comparable<Value> {
         }
     }
 
-    private boolean isTrue() {
+    public boolean isTrue() {
         if (value == null) {
             return false;
         } else if (value instanceof Boolean) {

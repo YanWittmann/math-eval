@@ -68,6 +68,15 @@ public class Operators {
             return null;
         }));
         add(Operator.make("!", 140, false, true, (arguments) -> {
+            final Value value = arguments[0];
+            if (value.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
+                return new Value(!(boolean) value.getValue());
+            } else {
+                throwCannotPerformOperationException("!", value);
+                return null;
+            }
+        }));
+        add(Operator.make("!", 140, true, false, (arguments) -> {
             return null;
         }));
         add(Operator.make("~", 140, false, true, (arguments) -> {
