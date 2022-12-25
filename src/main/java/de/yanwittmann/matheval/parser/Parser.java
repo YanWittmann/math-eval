@@ -797,6 +797,68 @@ public class Parser {
             return false;
         });
 
+// for loop
+/*
+for (e : list) {
+    print(i)
+}
+for ([i, e] : list) {
+    print(i)
+}
+for (e : list) print(i)
+for ([i, e] : list) print(i)
+*/
+        rules.add(tokens -> {
+            int state = 0;
+            int start = -1;
+            int end = -1;
+
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object token = tokens.get(i);
+
+                if (state == 0 && isKeyword(token, "for")) {
+                    state = 1;
+                    start = i;
+                } else if (state == 1 && isType(token, TokenType.OPEN_PARENTHESIS)) {
+                    state = 2;
+                } else if (state == 2 && (isIdentifier(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.SQUARE_BRACKET_PAIR))) {
+                    state = 3;
+                } else if (state == 3 && isOperator(token, ":")) {
+                    // state = 3; // the : is optional
+                } else if (state == 3 && isEvaluableToValue(token)) {
+                    state = 4;
+                } else if (state == 4 && isType(token, TokenType.CLOSE_PARENTHESIS)) {
+                    state = 5;
+                } else if (state == 5 && (isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK))) {
+                    state = 6;
+                    end = i;
+                    break;
+                } else {
+                    state = 0;
+                }
+            }
+
+            if (state == 6) {
+                final ParserNode node = new ParserNode(ParserNode.NodeType.LOOP_FOR, null);
+
+                for (int i = start; i <= end; i++) {
+                    final Object token = tokens.get(i);
+
+                    if (isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(token, ParserNode.NodeType.ARRAY) ||
+                        isType(token, ParserNode.NodeType.SQUARE_BRACKET_PAIR) || isIdentifier(token) ||
+                        isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK)) {
+
+                        node.addChild(token);
+                    }
+                }
+
+                ParserRule.replace(tokens, node, start, end);
+                return true;
+            }
+
+            return false;
+        });
+
         // function declaration via assignment of a code block
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_DECLARATION, (t) -> null, 1, (t, i) -> !isOperator(t, "="), (t, i) -> true,
                 (t, i) -> {

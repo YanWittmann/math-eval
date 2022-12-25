@@ -11,7 +11,8 @@ public enum PrimitiveValueType {
     NATIVE_FUNCTION("native_function"),
     OBJECT("object"),
     REGEX("regex"),
-    UNKNOWN("unknown");
+    ITERATOR("iterator"),
+    ANY("unknown");
 
     private final String type;
 

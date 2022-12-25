@@ -29,6 +29,80 @@ class ParserTest {
     }
 
     @Test
+    public void forLoopsTest() {
+        assertParsedTreeEquals("LOOP_FOR\n" +
+                               "├─ IDENTIFIER: e\n" +
+                               "├─ IDENTIFIER: list\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      ├─ IDENTIFIER: print\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ IDENTIFIER: i",
+                "for (e : list) {\n" +
+                "    print(i)\n" +
+                "}");
+
+        assertParsedTreeEquals("LOOP_FOR\n" +
+                               "├─ ARRAY\n" +
+                               "│  ├─ IDENTIFIER: i\n" +
+                               "│  └─ IDENTIFIER: e\n" +
+                               "├─ IDENTIFIER: list\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      ├─ IDENTIFIER: print\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ IDENTIFIER: i",
+                "for ([i, e] : list) {\n" +
+                "    print(i)\n" +
+                "}");
+
+        assertParsedTreeEquals("LOOP_FOR\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  ├─ IDENTIFIER: i\n" +
+                               "│  └─ IDENTIFIER: e\n" +
+                               "├─ IDENTIFIER: list\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      ├─ IDENTIFIER: print\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ IDENTIFIER: i",
+                "for ((i, e) : list) {\n" +
+                "    print(i)\n" +
+                "}");
+
+        assertParsedTreeEquals("LOOP_FOR\n" +
+                               "├─ IDENTIFIER: e\n" +
+                               "├─ IDENTIFIER: list\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER: print\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      └─ IDENTIFIER: i",
+                "for (e : list) print(i)");
+
+        assertParsedTreeEquals("LOOP_FOR\n" +
+                               "├─ ARRAY\n" +
+                               "│  ├─ IDENTIFIER: i\n" +
+                               "│  └─ IDENTIFIER: e\n" +
+                               "├─ IDENTIFIER: list\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER: print\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      └─ IDENTIFIER: i",
+                "for ([i, e] : list) print(i)");
+
+        assertParsedTreeEquals("LOOP_FOR\n" +
+                               "├─ PARENTHESIS_PAIR\n" +
+                               "│  ├─ IDENTIFIER: i\n" +
+                               "│  └─ IDENTIFIER: e\n" +
+                               "├─ IDENTIFIER: list\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ IDENTIFIER: print\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      └─ IDENTIFIER: i",
+                "for ((i, e) : list) print(i)");
+    }
+
+    @Test
     public void jonasExpressionParseTreeTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ PARENTHESIS_PAIR\n" +

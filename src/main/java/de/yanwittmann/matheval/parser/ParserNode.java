@@ -114,7 +114,8 @@ public class ParserNode {
         FUNCTION_DECLARATION, FUNCTION_CALL, FUNCTION_INLINE,
         ARRAY, LISTED_ELEMENTS,
         MAP, MAP_ELEMENT,
-        CONDITIONAL, CONDITIONAL_BRANCH
+        CONDITIONAL, CONDITIONAL_BRANCH,
+        LOOP_FOR, LOOP_WHILE
     }
 
     public String reconstructCode() {
@@ -357,6 +358,15 @@ public class ParserNode {
                             sb.append(", ");
                         }
                     }
+                    break;
+
+                case LOOP_FOR:
+                    sb.append("for (");
+                    reconstructCode(node.getChildren().get(0), sb);
+                    sb.append(" : ");
+                    reconstructCode(node.getChildren().get(1), sb);
+                    sb.append(") ");
+                    reconstructCode(node.getChildren().get(2), sb);
                     break;
 
                 default:

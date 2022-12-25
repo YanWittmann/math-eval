@@ -281,6 +281,68 @@ public abstract class EvaluationContext {
                 if (!foundMatchingBranch) {
                     result = Value.empty();
                 }
+            } else if (node.getType() == ParserNode.NodeType.LOOP_FOR) { // for each loop
+                final Object iteratorVariable = node.getChildren().get(0);
+                final Value iteratorValue = evaluate(node.getChildren().get(1), globalContext, localSymbols, symbolCreationMode);
+                final Object loopCode = node.getChildren().get(2);
+
+                final Value iteratorGetter = iteratorValue.access(new Value("iterator"));
+                final Value iterator = evaluateFunction(iteratorGetter, Collections.singletonList(iteratorValue), globalContext, localSymbols);
+                if (!iterator.getType().equals(PrimitiveValueType.ITERATOR.getType())) {
+                    throw new MenterExecutionException(globalContext, "Iterator element did not provide iterable: " + iteratorValue, node);
+                }
+                final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
+
+                // might be a list of values or a single value
+                final List<Value> variableValues = new ArrayList<>();
+
+                if (iteratorVariable instanceof Token) {
+                    variableValues.add(new Value(iteratorVariable));
+
+                } else if (iteratorVariable instanceof ParserNode) {
+                    final ParserNode varNode = (ParserNode) iteratorVariable;
+                    if (Parser.isType(varNode, ParserNode.NodeType.PARENTHESIS_PAIR) || Parser.isType(varNode, ParserNode.NodeType.SQUARE_BRACKET_PAIR) ||
+                        Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
+                        for (Object child : varNode.getChildren()) {
+                            variableValues.add(new Value(child));
+                        }
+                    } else {
+                        throw new MenterExecutionException(globalContext, "Invalid iterator variable node: " + iteratorVariable, node);
+                    }
+
+                } else {
+                    throw new MenterExecutionException(globalContext, "Iterator variable is not a token or a node", node);
+                }
+
+                final Map<String, Value> localLoopSymbols = new HashMap<>(localSymbols);
+                variableValues.forEach(v -> localLoopSymbols.put(v.getValue().toString(), v));
+
+                while (iteratorIterator.hasNext()) {
+                    final Value iteratorElement = iteratorIterator.next();
+                    final Object iteratorElementValue = iteratorElement.getValue();
+
+                    final int acceptedVariableCount = variableValues.size();
+                    final int providedVariableCount = iteratorElement.size();
+
+                    if (iteratorElementValue instanceof Map && providedVariableCount == 2) {
+                        final Map<?, ?> element = (Map<?, ?>) iteratorElementValue;
+
+                        if (acceptedVariableCount == 1) {
+                            variableValues.get(0).setValue(element.get("value"));
+
+                        } else if (acceptedVariableCount == 2) {
+                            variableValues.get(0).setValue(element.get("key"));
+                            variableValues.get(1).setValue(element.get("value"));
+
+                        } else {
+                            throw new MenterExecutionException(globalContext, "Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement, node);
+                        }
+                    } else {
+                        throw new MenterExecutionException(globalContext, "Invalid iterator element: " + iteratorElement, node);
+                    }
+
+                    result = evaluate(loopCode, globalContext, localLoopSymbols, symbolCreationMode);
+                }
             }
 
             if (result == null) {
@@ -311,7 +373,7 @@ public abstract class EvaluationContext {
 
     protected Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, Map<String, Value> localSymbols) {
         if (!functionValue.isFunction()) {
-            throw new MenterExecutionException(globalContext, "Value is not a function " + functionValue);
+            throw new MenterExecutionException(globalContext, "Value is not a function [" + functionValue + "]");
         }
 
         if (functionValue.getValue() instanceof MNodeFunction) {

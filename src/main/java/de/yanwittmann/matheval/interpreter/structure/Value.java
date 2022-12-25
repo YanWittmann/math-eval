@@ -45,7 +45,7 @@ public class Value implements Comparable<Value> {
         else if (value instanceof Float) this.value = BigDecimal.valueOf((Float) value);
         else if (value instanceof Double) this.value = BigDecimal.valueOf((Double) value);
         else if (value instanceof List) {
-            final Map<BigDecimal, Value> map = new LinkedHashMap<>();
+            final Map<Object, Value> map = new LinkedHashMap<>();
             int i = 0;
             for (Object o : (List<?>) value) {
                 map.put(new BigDecimal(i++), new Value(o));
@@ -53,6 +53,14 @@ public class Value implements Comparable<Value> {
             this.value = map;
         } else if (value instanceof Value) {
             inheritValue((Value) value);
+        } else if (value instanceof Map.Entry) {
+            final Map.Entry<?, ?> mapEntry = (Map.Entry<?, ?>) value;
+            final Map<Object, Value> map = new LinkedHashMap<>();
+            map.put("key", new Value(mapEntry.getKey()));
+            map.put("value", new Value(mapEntry.getValue()));
+            this.value = map;
+        } else if (value instanceof Token) {
+            setValue(((Token) value).getValue());
         } else {
             this.value = value;
         }
@@ -79,8 +87,10 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.VALUE_FUNCTION.getType();
         } else if (value instanceof Function) {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
+        } else if (value instanceof Iterator<?>) {
+            return PrimitiveValueType.ITERATOR.getType();
         } else {
-            return PrimitiveValueType.UNKNOWN.getType();
+            return value.getClass().getSimpleName();
         }
     }
 
@@ -118,6 +128,25 @@ public class Value implements Comparable<Value> {
                value instanceof Function || value instanceof Pattern;
     }
 
+    public int size() {
+        if (value instanceof Map) {
+            return ((Map<?, ?>) value).size();
+        } else if (value instanceof String) {
+            return ((String) value).length();
+        } else if (value instanceof Collection) {
+            return ((Collection<?>) value).size();
+        } else if (value instanceof Iterator) {
+            int i = 0;
+            while (((Iterator<?>) value).hasNext()) {
+                ((Iterator<?>) value).next();
+                i++;
+            }
+            return i;
+        } else {
+            return 0;
+        }
+    }
+
     public Value access(Value identifier) {
         if (identifier.getValue() == null) {
             return Value.empty();
@@ -126,8 +155,8 @@ public class Value implements Comparable<Value> {
         if (VALUE_FUNCTIONS.containsKey(this.getType()) && VALUE_FUNCTIONS.get(this.getType()).containsKey(String.valueOf(identifier.getValue()))) {
             return new Value(VALUE_FUNCTIONS.get(this.getType()).get(identifier.getValue().toString()), this);
         }
-        if (VALUE_FUNCTIONS.get(PrimitiveValueType.UNKNOWN.getType()).containsKey(String.valueOf(identifier.getValue()))) {
-            return new Value(VALUE_FUNCTIONS.get(PrimitiveValueType.UNKNOWN.getType()).get(identifier.getValue().toString()), this);
+        if (VALUE_FUNCTIONS.get(PrimitiveValueType.ANY.getType()).containsKey(String.valueOf(identifier.getValue()))) {
+            return new Value(VALUE_FUNCTIONS.get(PrimitiveValueType.ANY.getType()).get(identifier.getValue().toString()), this);
         }
 
         if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
@@ -149,7 +178,7 @@ public class Value implements Comparable<Value> {
         {
             put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, MValueFunction>() {
                 {
-                    put("size", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).size()));
+                    put("size", (context, self, values, localSymbols) -> new Value(self.size()));
                     put("keys", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
                     put("values", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).values().stream().map(Value::new).collect(Collectors.toList())));
                     put("entries", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).entrySet().stream().map(entry -> new Value(new LinkedHashMap<Object, Value>() {{
@@ -278,19 +307,55 @@ public class Value implements Comparable<Value> {
                         sb.append(suffix);
                         return new Value(sb.toString());
                     });
+
+                    put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((Map<Object, Value>) self.getValue()).entrySet().iterator()));
                 }
             });
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MValueFunction>() {
                 {
+                    put("size", (context, self, values, localSymbols) -> new Value(self.size()));
+                    put("charAt", (context, self, values, localSymbols) -> new Value(((String) self.getValue()).charAt(values.get(0).getNumberValue().intValue())));
+
+                    put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((String) self.getValue()).chars().mapToObj(c -> (char) c).iterator()));
                 }
             });
-            put(PrimitiveValueType.UNKNOWN.getType(), new HashMap<String, MValueFunction>() {
+            put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MValueFunction>() {
+                {
+                    put("hasNext", (context, self, values, localSymbols) -> new Value(((Iterator<?>) self.getValue()).hasNext()));
+                    put("next", (context, self, values, localSymbols) -> new Value(((Iterator<?>) self.getValue()).next()));
+
+                    put("forEach", (context, self, values, localSymbols) -> {
+                        final Iterator<?> iterator = (Iterator<?>) self.getValue();
+                        while (iterator.hasNext()) {
+                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localSymbols);
+                        }
+                        return self;
+                    });
+
+                    put("iterator", (context, self, values, localSymbols) -> self);
+                }
+            });
+            put(PrimitiveValueType.ANY.getType(), new HashMap<String, MValueFunction>() {
                 {
                     put("type", (context, self, values, localSymbols) -> new Value(self.getType()));
                 }
             });
         }
     };
+
+    private static Value makeIteratorValueIterator(Iterator<?> iterator) {
+        return new Value(new Iterator<Value>() {
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public Value next() {
+                return new Value(iterator.next());
+            }
+        });
+    }
 
     private static Value applyFunction(List<Value> value, Value function, GlobalContext context, Map<String, Value> localSymbols) {
         return context.evaluateFunction(function, value, context, localSymbols);
@@ -361,6 +426,10 @@ public class Value implements Comparable<Value> {
             return "<<instance function>>";
         } else if (object instanceof MNodeFunction) {
             return String.valueOf(object);
+
+        } else if (object instanceof Iterator) {
+            // cannot print the iterator, because it will consume the values
+            return "<<iterator>>";
 
         } else {
             return String.valueOf(object);
