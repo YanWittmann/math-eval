@@ -88,6 +88,8 @@ public class MenterInterpreter extends EvalRuntime {
                 LOG.debug("Loading Menter core files from external Menter home directory: {}", externalMenterHomeDir);
                 loadFile(externalMenterHomeDir);
             }
+
+            finishLoadingContexts();
         } catch (Exception e) {
             throw new MenterExecutionException("Failed to load additional Menter files. Additional files have been attempted to be loaded from:\n" +
                                                "  - MENTER_HOME environment variable\n" +
@@ -147,12 +149,20 @@ public class MenterInterpreter extends EvalRuntime {
         if (isRepl) {
             final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             boolean debugShowEntireStackTrace = false;
+            boolean isMultilineMode = false;
+            final List<String> multilineBuffer = new ArrayList<>();
+
             while (true) {
                 try {
-                    System.out.print(">> ");
+                    if (isMultilineMode && multilineBuffer.size() > 0) {
+                        System.out.print("     ");
+                    } else {
+                        System.out.print(">> ");
+                    }
+
                     final String input = reader.readLine();
                     if (input == null || input.equals("exit") || input.equals("quit")) break;
-                    if (input.trim().length() == 0) continue;
+                    if (input.trim().length() == 0 && !isMultilineMode) continue;
 
                     if (input.startsWith("debug")) {
                         if (input.endsWith("interpreter")) {
@@ -180,9 +190,28 @@ public class MenterInterpreter extends EvalRuntime {
                                                "  stack trace         " + debugShowEntireStackTrace);
                         }
                         continue;
+
+                    } else if (input.equals("multiline") || input.equals("ml")) {
+                        isMultilineMode = !isMultilineMode;
+                        System.out.println((isMultilineMode ? "Enabled" : "Disabled") + " multiline mode");
+                        continue;
                     }
 
-                    final Value result = interpreter.evaluateInContextOf(input, "repl");
+                    final Value result;
+                    if (isMultilineMode) {
+                        if (input.equals("")) {
+                            final String joined = String.join("\n", multilineBuffer);
+                            multilineBuffer.clear();
+                            isMultilineMode = false;
+                            result = interpreter.evaluateInContextOf(joined, "repl");
+                        } else {
+                            multilineBuffer.add("  " + input);
+                            continue;
+                        }
+                    } else {
+                        result = interpreter.evaluateInContextOf(input, "repl");
+                    }
+
                     if (result != null && !result.isEmpty()) {
                         System.out.println(result.toDisplayString());
                     }

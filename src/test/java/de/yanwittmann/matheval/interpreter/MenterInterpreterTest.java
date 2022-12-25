@@ -115,6 +115,14 @@ class MenterInterpreterTest {
                                                   "  fibstorage[n];" +
                                                   "};" +
                                                   "fib(30);");
+
+        evaluateAndAssertEqual(interpreter, "13", "" +
+                                                      "fib2 = n -> {\n" +
+                                                      " if (n == 0) 0\n" +
+                                                      " else if (n == 1) 1\n" +
+                                                      " else fib2(n - 1) + fib2 (n - 2)\n" +
+                                                      "};" +
+                                                      "fib2(7);");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
