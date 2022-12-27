@@ -1,11 +1,19 @@
 package de.yanwittmann.matheval.interpreter;
 
+import de.yanwittmann.matheval.interpreter.structure.CustomValueType;
+import de.yanwittmann.matheval.interpreter.structure.EvaluationContext;
+import de.yanwittmann.matheval.interpreter.structure.MenterValueFunction;
+import de.yanwittmann.matheval.interpreter.structure.Value;
 import de.yanwittmann.matheval.operator.Operators;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 class MenterInterpreterTest {
 
@@ -173,6 +181,171 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "[d, foo]", "" +
                                                         "import sometestmodule\n" +
                                                         "sometestmodule.symbols.keys()");
+    }
+
+    @Test
+    public void customTypesTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        class TestType {
+            private BigDecimal value;
+            private List<Value> list = new ArrayList<>();
+
+            public TestType(BigDecimal value) {
+                this.value = value;
+            }
+
+            public TestType() {
+                this.value = BigDecimal.ZERO;
+            }
+        }
+
+        Value.registerCustomValueType(new CustomValueType() {
+            @Override
+            public String getType() {
+                return "<TestType>";
+            }
+
+            @Override
+            public HashMap<String, MenterValueFunction> getFunctions() {
+                return new HashMap<String, MenterValueFunction>() {
+                    {
+                        put("getValue", (context, self, values, localSymbols) -> new Value(((TestType) self.getValue()).value));
+                        put("setValue", (context, self, values, localSymbols) -> {
+                            ((TestType) self.getValue()).value = values.get(0).getNumericValue();
+                            return self;
+                        });
+                        put("getList", (context, self, values, localSymbols) -> new Value(((TestType) self.getValue()).list));
+                        put("addToList", (context, self, values, localSymbols) -> {
+                            ((TestType) self.getValue()).list.add(values.get(0));
+                            return self;
+                        });
+                        put("size", (context, self, values, localSymbols) -> new Value(self.size()));
+                        put("iterator", (context, self, values, localSymbols) -> new Value(((TestType) self.getValue()).list.iterator()));
+                    }
+                };
+            }
+
+            @Override
+            public boolean isType(Object value) {
+                return value instanceof TestType;
+            }
+
+            @Override
+            public Value accessValue(Value thisValue, Value identifier) {
+                if (thisValue.getValue() instanceof TestType) {
+                    if (identifier.getValue() instanceof BigDecimal) {
+                        int index = identifier.getNumericValue().intValue();
+                        if (index >= 0 && index < ((TestType) thisValue.getValue()).list.size()) {
+                            return new Value(((TestType) thisValue.getValue()).list.get(index));
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            @Override
+            public boolean createAccessedValue(Value thisValue, Value identifier, Value accessedValue, boolean isFinalIdentifier) {
+                if (thisValue.getValue() instanceof TestType) {
+                    if (identifier.getValue() instanceof BigDecimal) {
+                        int index = ((BigDecimal) identifier.getValue()).intValue();
+                        if (index >= 0 && index < ((TestType) thisValue.getValue()).list.size()) {
+                            ((TestType) thisValue.getValue()).list.set(index, accessedValue);
+                            return true;
+                        } else if (index == ((TestType) thisValue.getValue()).list.size()) {
+                            ((TestType) thisValue.getValue()).list.add(accessedValue);
+                            return true;
+                        }
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            @Override
+            public BigDecimal getNumericValue(Value thisValue) {
+                return ((TestType) thisValue.getValue()).value;
+            }
+
+            @Override
+            public boolean isTrue(Value thisValue) {
+                return ((TestType) thisValue.getValue()).value.compareTo(BigDecimal.ZERO) != 0;
+            }
+
+            @Override
+            public int size(Value thisValue) {
+                return ((TestType) thisValue.getValue()).list.size();
+            }
+
+            @Override
+            public String toDisplayString(Object thisValue) {
+                return ((TestType) thisValue).value.toString() + " " + ((TestType) thisValue).list.toString();
+            }
+        });
+
+        EvaluationContext.registerNativeFunction(new String[]{"TestType", "TestType"}, values -> {
+            if (values.length == 0) {
+                return new Value(new TestType());
+            } else {
+                return new Value(new TestType(((BigDecimal) values[0].getValue())));
+            }
+        });
+
+        interpreter.evaluateInContextOf("", "native TestType() export [TestType] as TestType", "TestType");
+
+        interpreter.addAutoImport("TestType");
+        interpreter.addAutoImport("common inline");
+
+        evaluateAndAssertEqual(interpreter, "3", "" +
+                                                 "val = TestType.TestType(3)\n" +
+                                                 "val.getValue()");
+
+        evaluateAndAssertEqual(interpreter, "5", "" +
+                                                 "val = TestType.TestType(3)\n" +
+                                                 "val.setValue(5)\n" +
+                                                 "val.getValue()");
+
+        evaluateAndAssertEqual(interpreter, "[5, 10]", "" +
+                                                       "val = TestType.TestType()\n" +
+                                                       "val[0] = 5\n" +
+                                                       "val[1] = 10\n" +
+                                                       "val.getList()");
+
+        evaluateAndAssertEqual(interpreter, "<TestType>", "" +
+                                                          "val = TestType.TestType()\n" +
+                                                          "val.type()");
+
+        evaluateAndAssertEqual(interpreter, "4 []", "" +
+                                                    "val = TestType.TestType(4)\n" +
+                                                    "val");
+
+        evaluateAndAssertEqual(interpreter, "1", "" +
+                                                 "val = TestType.TestType(4)\n" +
+                                                 "val.addToList(5)\n" +
+                                                 "val.size()");
+
+        evaluateAndAssertEqual(interpreter, "15", "" +
+                                                  "val = TestType.TestType(1)\n" +
+                                                  "val.addToList(5)\n" +
+                                                  "val.addToList(10)\n" +
+                                                  "sum = 0\n" +
+                                                  "if (val) {\n" +
+                                                  "  for (i in val) { sum = sum + i }\n" +
+                                                  "}\n" +
+                                                  "sum");
+
+        evaluateAndAssertEqual(interpreter, "15", "" +
+                                                  "val = TestType.TestType(1)\n" +
+                                                  "val.addToList(5)\n" +
+                                                  "val.addToList(10)\n" +
+                                                  "sum = 0\n" +
+                                                  "if (val) {\n" +
+                                                  "  for (i in range(0, val.size() - 1)) { sum = sum + val[i] }\n" +
+                                                  "}\n" +
+                                                  "sum");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {

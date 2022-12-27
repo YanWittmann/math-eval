@@ -28,16 +28,16 @@ public abstract class EvaluationContext {
     protected final static Map<String[], Function<Value[], Value>> nativeFunctions = new HashMap<>();
 
     static {
-        putNativeFunction(new String[]{"common.ter", "print"}, CoreModuleCommon::print);
-        putNativeFunction(new String[]{"common.ter", "range"}, CoreModuleCommon::range);
+        registerNativeFunction(new String[]{"common.ter", "print"}, CoreModuleCommon::print);
+        registerNativeFunction(new String[]{"common.ter", "range"}, CoreModuleCommon::range);
 
-        putNativeFunction(new String[]{"io.ter", "read"}, CoreModuleIo::apply);
+        registerNativeFunction(new String[]{"io.ter", "read"}, CoreModuleIo::apply);
 
-        putNativeFunction(new String[]{"system.ter", "getProperty"}, CoreModuleSystem::getProperty);
-        putNativeFunction(new String[]{"system.ter", "getEnv"}, CoreModuleSystem::getEnv);
+        registerNativeFunction(new String[]{"system.ter", "getProperty"}, CoreModuleSystem::getProperty);
+        registerNativeFunction(new String[]{"system.ter", "getEnv"}, CoreModuleSystem::getEnv);
     }
 
-    public static void putNativeFunction(String[] path, Function<Value[], Value> function) {
+    public static void registerNativeFunction(String[] path, Function<Value[], Value> function) {
         nativeFunctions.put(path, function);
     }
 
@@ -194,6 +194,10 @@ public abstract class EvaluationContext {
                             final String[] functionQualifier = nativeFunction.getKey();
                             final Function<Value[], Value> nativeFunctionValue = nativeFunction.getValue();
 
+                            if (functionQualifier.length != 2) {
+                                throw new MenterExecutionException(globalContext, "Invalid native function qualifier: " + Arrays.toString(functionQualifier) + ". Expected format: [module name, function name]", node);
+                            }
+
                             if (functionQualifier[0].equals(moduleNameCandidate) && functionQualifier[1].equals(functionName)) {
                                 functionValue.setValue(nativeFunctionValue);
                                 result = functionValue;
@@ -207,7 +211,7 @@ public abstract class EvaluationContext {
                     }
 
                     if (!foundNativeFunction) {
-                        throw new MenterExecutionException(globalContext, "Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates + "\nDefine custom functions using EvaluationContext.putNativeFunction().", node);
+                        throw new MenterExecutionException(globalContext, "Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates + "\nDefine custom functions using EvaluationContext.registerNativeFunction().", node);
                     }
 
                 } else {
@@ -218,7 +222,7 @@ public abstract class EvaluationContext {
                     }
                     final ParserNode functionCode = (ParserNode) node.getChildren().get(2);
 
-                    final MNodeFunction function = new MNodeFunction(globalContext, functionArguments, functionCode);
+                    final MenterNodeFunction function = new MenterNodeFunction(globalContext, functionArguments, functionCode);
                     functionValue.setValue(function);
 
                     result = functionValue;
@@ -232,7 +236,7 @@ public abstract class EvaluationContext {
                 }
 
                 final ParserNode functionCode = (ParserNode) node.getChildren().get(1);
-                final MNodeFunction function = new MNodeFunction(globalContext, functionArguments, functionCode);
+                final MenterNodeFunction function = new MenterNodeFunction(globalContext, functionArguments, functionCode);
                 result = new Value(function);
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
@@ -372,8 +376,8 @@ public abstract class EvaluationContext {
             throw new MenterExecutionException(globalContext, "Value is not a function [" + functionValue + "]");
         }
 
-        if (functionValue.getValue() instanceof MNodeFunction) {
-            final MNodeFunction executableFunction = (MNodeFunction) functionValue.getValue();
+        if (functionValue.getValue() instanceof MenterNodeFunction) {
+            final MenterNodeFunction executableFunction = (MenterNodeFunction) functionValue.getValue();
             final List<String> functionArgumentNames = executableFunction.getArgumentNames();
 
             if (functionArgumentNames.size() != functionParameters.size()) {
@@ -397,7 +401,7 @@ public abstract class EvaluationContext {
             return nativeFunction.apply(nativeFunctionArguments);
 
         } else { // otherwise it must be a value function
-            final MValueFunction executableFunction = (MValueFunction) functionValue.getValue();
+            final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
             return executableFunction.apply(globalContext, functionValue.getSecondaryValue(), functionParameters, localSymbols);
         }
     }
@@ -587,13 +591,10 @@ public abstract class EvaluationContext {
                         continue;
 
                     } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS.equals(symbolCreationMode)) {
-                        if (isFinalIdentifier) {
-                            value = Value.empty();
-                        } else {
-                            value = new Value(new LinkedHashMap<>());
-                        }
-                        value = previousValue.create(accessAs, value);
-                        if (MenterDebugger.logInterpreterResolveSymbols) {
+                        value = Value.empty();
+                        if (!previousValue.create(accessAs, value, isFinalIdentifier)) {
+                            value = null;
+                        } else if (MenterDebugger.logInterpreterResolveSymbols) {
                             LOG.info("Symbol resolve: [{}] from creating new value on previous value: {}", stringKey, previousValue);
                         }
                         continue;

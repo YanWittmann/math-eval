@@ -6,19 +6,19 @@ import de.yanwittmann.matheval.parser.ParserNode;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MNodeFunction {
+public class MenterNodeFunction {
 
     private final GlobalContext parentContext;
     private final List<Object> parameters;
     private final ParserNode body;
 
-    public MNodeFunction(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
+    public MenterNodeFunction(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
         this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = body;
     }
 
-    public MNodeFunction(GlobalContext parentContext, List<Object> parameters) {
+    public MenterNodeFunction(GlobalContext parentContext, List<Object> parameters) {
         this.parentContext = parentContext;
         this.parameters = parameters;
         this.body = null;

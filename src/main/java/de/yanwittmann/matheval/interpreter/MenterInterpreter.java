@@ -31,7 +31,7 @@ public class MenterInterpreter extends EvalRuntime {
     }
 
     public void addAutoImport(String importStatement) {
-        autoImports.add(importStatement);
+        autoImports.add(importStatement.startsWith("import ") ? importStatement : "import " + importStatement);
     }
 
     public void clearAutoImports() {

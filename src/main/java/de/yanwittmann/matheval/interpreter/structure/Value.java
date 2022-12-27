@@ -2,6 +2,8 @@ package de.yanwittmann.matheval.interpreter.structure;
 
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.lexer.Token;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -11,6 +13,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Value implements Comparable<Value> {
+
+    private final static Logger LOG = LogManager.getLogger(Value.class);
+
+    private final static List<CustomValueType> CUSTOM_VALUE_TYPES = new ArrayList<>();
 
     private Object value;
     private Value secondaryValue;
@@ -51,6 +57,8 @@ public class Value implements Comparable<Value> {
                 map.put(new BigDecimal(i++), new Value(o));
             }
             this.value = map;
+        } else if (value instanceof Map && !(value instanceof LinkedHashMap)) {
+            this.value = new LinkedHashMap<>((Map<?, ?>) value);
         } else if (value instanceof Value) {
             inheritValue((Value) value);
         } else if (value instanceof Map.Entry) {
@@ -81,15 +89,21 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.OBJECT.getType();
         } else if (value instanceof HashMap) {
             return PrimitiveValueType.OBJECT.getType();
-        } else if (value instanceof MNodeFunction) {
+        } else if (value instanceof MenterNodeFunction) {
             return PrimitiveValueType.FUNCTION.getType();
-        } else if (value instanceof MValueFunction) {
+        } else if (value instanceof MenterValueFunction) {
             return PrimitiveValueType.VALUE_FUNCTION.getType();
         } else if (value instanceof Function) {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
         } else if (value instanceof Iterator<?>) {
             return PrimitiveValueType.ITERATOR.getType();
         } else {
+            for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+                if (type.isType(value)) {
+                    return type.getType();
+                }
+            }
+
             return value.getClass().getSimpleName();
         }
     }
@@ -101,10 +115,16 @@ public class Value implements Comparable<Value> {
                type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType());
     }
 
-    public BigDecimal getNumberValue() {
+    public BigDecimal getNumericValue() {
         if (Objects.equals(this.getType(), PrimitiveValueType.NUMBER.getType())) {
             return (BigDecimal) value;
         } else {
+            for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+                if (type.isType(value)) {
+                    return type.getNumericValue(this);
+                }
+            }
+
             return null;
         }
     }
@@ -124,8 +144,18 @@ public class Value implements Comparable<Value> {
             return !((HashMap<?, ?>) value).isEmpty();
         }
 
-        return value instanceof MNodeFunction || value instanceof MValueFunction ||
-               value instanceof Function || value instanceof Pattern;
+        if (value instanceof MenterNodeFunction || value instanceof MenterValueFunction ||
+            value instanceof Function || value instanceof Pattern) {
+            return true;
+        }
+
+        for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+            if (type.isType(value)) {
+                return type.isTrue(this);
+            }
+        }
+
+        return false;
     }
 
     public int size() {
@@ -143,7 +173,13 @@ public class Value implements Comparable<Value> {
             }
             return i;
         } else {
-            return 0;
+            for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+                if (type.isType(value)) {
+                    return type.size(this);
+                }
+            }
+
+            return 1;
         }
     }
 
@@ -163,20 +199,61 @@ public class Value implements Comparable<Value> {
             return ((Map<Object, Value>) value).get(identifier.getValue());
         }
 
+        for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+            if (type.isType(this.value)) {
+                return type.accessValue(this, identifier);
+            }
+        }
+
         return null;
     }
 
-    public Value create(Value identifier, Value value) {
+    public boolean create(Value identifier, Value value, boolean isFinalIdentifier) {
         if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
+            if (!isFinalIdentifier) {
+                value.setValue(new LinkedHashMap<>());
+            }
             ((Map<Object, Value>) this.value).put(identifier.getValue(), value);
+            return true;
         }
 
-        return value;
+        for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+            if (type.isType(this.value)) {
+                return type.createAccessedValue(this, identifier, value, isFinalIdentifier);
+            }
+        }
+
+        return false;
     }
 
-    private final static Map<String, Map<String, MValueFunction>> VALUE_FUNCTIONS = new HashMap<String, Map<String, MValueFunction>>() {
+    public static void registerCustomValueType(CustomValueType type) {
+        final String typename = type.getType();
+        final HashMap<String, MenterValueFunction> functions = type.getFunctions();
+
+        if (VALUE_FUNCTIONS.containsKey(typename)) {
+            LOG.warn("Overwriting custom value type [{}], appending/overwriting functions", typename);
+            VALUE_FUNCTIONS.get(typename).putAll(functions);
+        } else {
+            VALUE_FUNCTIONS.put(typename, functions);
+        }
+
+        CUSTOM_VALUE_TYPES.add(type);
+    }
+
+    public static void removeCustomValueType(CustomValueType type) {
+        final String typename = type.getType();
+        final HashMap<String, MenterValueFunction> functions = type.getFunctions();
+
+        if (VALUE_FUNCTIONS.containsKey(typename)) {
+            VALUE_FUNCTIONS.get(typename).keySet().removeAll(functions.keySet());
+        }
+
+        CUSTOM_VALUE_TYPES.remove(type);
+    }
+
+    private final static Map<String, Map<String, MenterValueFunction>> VALUE_FUNCTIONS = new HashMap<String, Map<String, MenterValueFunction>>() {
         {
-            put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, MValueFunction>() {
+            put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("size", (context, self, values, localSymbols) -> new Value(self.size()));
                     put("keys", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
@@ -325,15 +402,15 @@ public class Value implements Comparable<Value> {
                     put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((Map<Object, Value>) self.getValue()).entrySet().iterator()));
                 }
             });
-            put(PrimitiveValueType.STRING.getType(), new HashMap<String, MValueFunction>() {
+            put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("size", (context, self, values, localSymbols) -> new Value(self.size()));
-                    put("charAt", (context, self, values, localSymbols) -> new Value(((String) self.getValue()).charAt(values.get(0).getNumberValue().intValue())));
+                    put("charAt", (context, self, values, localSymbols) -> new Value(((String) self.getValue()).charAt(values.get(0).getNumericValue().intValue())));
 
                     put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((String) self.getValue()).chars().mapToObj(c -> (char) c).iterator()));
                 }
             });
-            put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MValueFunction>() {
+            put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("hasNext", (context, self, values, localSymbols) -> new Value(((Iterator<?>) self.getValue()).hasNext()));
                     put("next", (context, self, values, localSymbols) -> new Value(((Iterator<?>) self.getValue()).next()));
@@ -349,7 +426,7 @@ public class Value implements Comparable<Value> {
                     put("iterator", (context, self, values, localSymbols) -> self);
                 }
             });
-            put(PrimitiveValueType.ANY.getType(), new HashMap<String, MValueFunction>() {
+            put(PrimitiveValueType.ANY.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("type", (context, self, values, localSymbols) -> new Value(self.getType()));
                 }
@@ -380,8 +457,8 @@ public class Value implements Comparable<Value> {
             throw new MenterExecutionException("Value is not a function " + value);
         }
 
-        if (value.getValue() instanceof MNodeFunction) {
-            final MNodeFunction executableFunction = (MNodeFunction) value.getValue();
+        if (value.getValue() instanceof MenterNodeFunction) {
+            final MenterNodeFunction executableFunction = (MenterNodeFunction) value.getValue();
             return executableFunction.getArgumentNames();
         } else {
             return null;
@@ -438,7 +515,7 @@ public class Value implements Comparable<Value> {
             return "<<native function>>";
         } else if (object instanceof BiFunction) {
             return "<<instance function>>";
-        } else if (object instanceof MNodeFunction) {
+        } else if (object instanceof MenterNodeFunction) {
             return String.valueOf(object);
 
         } else if (object instanceof Iterator) {
@@ -446,6 +523,12 @@ public class Value implements Comparable<Value> {
             return "<<iterator>>";
 
         } else {
+            for (CustomValueType type : CUSTOM_VALUE_TYPES) {
+                if (type.isType(object)) {
+                    return type.toDisplayString(object);
+                }
+            }
+
             return String.valueOf(object);
         }
     }
@@ -482,7 +565,7 @@ public class Value implements Comparable<Value> {
         }
 
         if (this.getType().equals(PrimitiveValueType.NUMBER.getType())) {
-            return this.getNumberValue().compareTo(other.getNumberValue()) == 0;
+            return this.getNumericValue().compareTo(other.getNumericValue()) == 0;
         } else if (this.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
             return this.isTrue() == other.isTrue();
         }
@@ -493,7 +576,7 @@ public class Value implements Comparable<Value> {
     @Override
     public int compareTo(Value o) {
         if (this.getType().equals(PrimitiveValueType.NUMBER.getType())) {
-            return this.getNumberValue().compareTo(o.getNumberValue());
+            return this.getNumericValue().compareTo(o.getNumericValue());
         } else if (this.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
             return Boolean.compare(this.isTrue(), o.isTrue());
         } else if (this.getType().equals(PrimitiveValueType.STRING.getType())) {
