@@ -2,19 +2,18 @@ package de.yanwittmann.matheval.interpreter.structure;
 
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.interpreter.MenterDebugger;
+import de.yanwittmann.matheval.interpreter.core.CoreModuleCommon;
+import de.yanwittmann.matheval.interpreter.core.CoreModuleIo;
+import de.yanwittmann.matheval.interpreter.core.CoreModuleSystem;
 import de.yanwittmann.matheval.lexer.Lexer;
 import de.yanwittmann.matheval.lexer.Token;
 import de.yanwittmann.matheval.operator.Operator;
 import de.yanwittmann.matheval.parser.Parser;
 import de.yanwittmann.matheval.parser.ParserNode;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -29,23 +28,13 @@ public abstract class EvaluationContext {
     protected final static Map<String[], Function<Value[], Value>> nativeFunctions = new HashMap<>();
 
     static {
-        nativeFunctions.put(new String[]{"common.ter", "print"}, arguments -> {
-            System.out.println(Arrays.stream(arguments)
-                    .map(v -> v.toDisplayString())
-                    .collect(Collectors.joining(" ")));
-            return Value.empty();
-        });
+        putNativeFunction(new String[]{"common.ter", "print"}, CoreModuleCommon::print);
+        putNativeFunction(new String[]{"common.ter", "range"}, CoreModuleCommon::range);
 
-        nativeFunctions.put(new String[]{"io.ter", "read"}, arguments -> {
-            try {
-                return new Value(FileUtils.readLines(new File(arguments[0].getValue().toString()), StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new MenterExecutionException("Could not read file '" + arguments[0].toString() + "'.");
-            }
-        });
+        putNativeFunction(new String[]{"io.ter", "read"}, CoreModuleIo::apply);
 
-        nativeFunctions.put(new String[]{"system.ter", "getProperty"}, arguments -> new Value(System.getProperty(arguments[0].toString())));
-        nativeFunctions.put(new String[]{"system.ter", "getEnv"}, arguments -> new Value(System.getenv(arguments[0].toString())));
+        putNativeFunction(new String[]{"system.ter", "getProperty"}, CoreModuleSystem::getProperty);
+        putNativeFunction(new String[]{"system.ter", "getEnv"}, CoreModuleSystem::getEnv);
     }
 
     public static void putNativeFunction(String[] path, Function<Value[], Value> function) {
@@ -218,7 +207,7 @@ public abstract class EvaluationContext {
                     }
 
                     if (!foundNativeFunction) {
-                        throw new MenterExecutionException(globalContext, "Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates, node);
+                        throw new MenterExecutionException(globalContext, "Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates + "\nDefine custom functions using EvaluationContext.putNativeFunction().", node);
                     }
 
                 } else {
@@ -525,7 +514,7 @@ public abstract class EvaluationContext {
 
                 boolean foundImport = false;
                 for (Import anImport : globalContext.getImports()) {
-                    if (anImport.getAliasOrName().equals(stringKey) && anImport.getModule().containsSymbol(nextStringKey)) {
+                    if (anImport.getAliasOrName().equals(stringKey) && (anImport.getModule().containsSymbol(nextStringKey) || "symbols".equals(nextStringKey))) {
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();
@@ -571,6 +560,14 @@ public abstract class EvaluationContext {
                         }
                         continue;
                     }
+                }
+
+                if ("symbols".equals(stringKey) && globalContext != originalGlobalContext) {
+                    value = new Value(globalContext.getVariables());
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        LOG.info("Symbol resolve: [{}] from symbols", value);
+                    }
+                    continue;
                 }
 
             } else {

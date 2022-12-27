@@ -190,8 +190,22 @@ public class Value implements Comparable<Value> {
                     put("containsValue", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
 
                     put("forEach", (context, self, values, localSymbols) -> {
-                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
-                            applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localSymbols);
+                        final Map<Object, Value> mapValue = (Map<Object, Value>) self.getValue();
+                        final boolean mapAnArray = isMapAnArray(mapValue);
+                        for (Entry<Object, Value> entry : mapValue.entrySet()) {
+                            if (mapAnArray) {
+                                try {
+                                    applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols);
+                                } catch (Exception e) {
+                                    try {
+                                        applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localSymbols);
+                                    } catch (Exception ignored) {
+                                        throw e;
+                                    }
+                                }
+                            } else {
+                                applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localSymbols);
+                            }
                         }
                         return Value.empty();
                     });

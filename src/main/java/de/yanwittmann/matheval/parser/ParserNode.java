@@ -260,6 +260,9 @@ public class ParserNode {
 
                 case FUNCTION_CALL:
                     reconstructCode(node.getChildren().get(0), sb);
+                    if (node.getChildren().size() > 1) {
+                        reconstructCode(node.getChildren().get(1), sb);
+                    }
                     break;
 
                 case FUNCTION_INLINE:

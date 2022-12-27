@@ -63,6 +63,7 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "[0]", "foo(x) = x + x; mapper(f, val) = f(val); [mapper(foo, 3)].keys()");
 
         evaluateAndAssertEqual(interpreter, "3", "(x -> x + 1)(2)");
+        evaluateAndAssertEqual(interpreter, "(x) -> { print(x); }", "x -> print(x)");
     }
 
     @Test
@@ -160,6 +161,18 @@ class MenterInterpreterTest {
                                                   "  sum = sum + i; sum = sum + i\n" +
                                                   "  sum = sum + i * 2\n" +
                                                   "}");
+    }
+
+    @Test
+    public void moduleAttributesTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        interpreter.evaluateInContextOf("", "d = 5; foo() { d }; export [foo, d] as sometestmodule", "sometestmodule");
+
+        evaluateAndAssertEqual(interpreter, "[d, foo]", "" +
+                                                        "import sometestmodule\n" +
+                                                        "sometestmodule.symbols.keys()");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
