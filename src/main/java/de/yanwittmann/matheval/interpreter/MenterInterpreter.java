@@ -155,7 +155,7 @@ public class MenterInterpreter extends EvalRuntime {
             while (true) {
                 try {
                     if (isMultilineMode && multilineBuffer.size() > 0) {
-                        System.out.print("     ");
+                        System.out.print("   ");
                     } else {
                         System.out.print(">> ");
                     }
@@ -205,7 +205,7 @@ public class MenterInterpreter extends EvalRuntime {
                             isMultilineMode = false;
                             result = interpreter.evaluateInContextOf(joined, "repl");
                         } else {
-                            multilineBuffer.add("  " + input);
+                            multilineBuffer.add(input);
                             continue;
                         }
                     } else {

@@ -86,7 +86,8 @@ public class Parser {
                isType(token, ParserNode.NodeType.EXPRESSION) || isType(token, ParserNode.NodeType.FUNCTION_CALL) ||
                isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
-               isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE);
+               isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE) ||
+               isType(token, ParserNode.NodeType.LOOP_FOR);
     }
 
     public static boolean isListable(Object token) {
@@ -146,7 +147,7 @@ public class Parser {
         return false;
     }
 
-    private static boolean createParenthesisRule(List<Object> tokens, Object openParenthesis, Object closeParenthesis, ParserNode.NodeType replaceNode, Object[] tokenBlacklist, Object[] tokenWhitelist) {
+    private static boolean createParenthesisRule(List<Object> tokens, Object openParenthesis, Object closeParenthesis, ParserNode.NodeType replaceNode, Object[] tokenBlacklist, Object[] tokenWhitelist, Object[] doNotInclude) {
         final ParserNode node = new ParserNode(replaceNode, null);
         int start = -1;
         int end = -1;
@@ -179,6 +180,7 @@ public class Parser {
         }
 
         if (start != -1 && end != -1) {
+            node.getChildren().removeIf(child -> Arrays.stream(doNotInclude).anyMatch(doNotIncludeToken -> isType(child, doNotIncludeToken)));
             ParserRule.replace(tokens, node, start, end);
             return true;
         }
@@ -600,11 +602,20 @@ public class Parser {
 
         // rule for parenthesis pairs
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_CURLY_BRACKET, TokenType.CLOSE_CURLY_BRACKET, ParserNode.NodeType.CURLY_BRACKET_PAIR,
-                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET}, new Object[]{ParserNode.NodeType.MAP_ELEMENT, ParserNode.NodeType.STATEMENT, ParserNode.NodeType.RETURN_STATEMENT}));
+                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
+                new Object[]{ParserNode.NodeType.MAP_ELEMENT, ParserNode.NodeType.STATEMENT, ParserNode.NodeType.RETURN_STATEMENT, TokenType.NEWLINE},
+                new Object[]{TokenType.NEWLINE}
+        ));
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_SQUARE_BRACKET, TokenType.CLOSE_SQUARE_BRACKET, ParserNode.NodeType.SQUARE_BRACKET_PAIR,
-                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET}, new Object[]{}));
+                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
+                new Object[]{},
+                new Object[]{}
+        ));
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_PARENTHESIS, TokenType.CLOSE_PARENTHESIS, ParserNode.NodeType.PARENTHESIS_PAIR,
-                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET}, new Object[]{}));
+                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
+                new Object[]{},
+                new Object[]{}
+        ));
 
         // listed elements , separated
         rules.add(tokens -> {
@@ -797,17 +808,6 @@ public class Parser {
             return false;
         });
 
-// for loop
-/*
-for (e : list) {
-    print(i)
-}
-for ([i, e] : list) {
-    print(i)
-}
-for (e : list) print(i)
-for ([i, e] : list) print(i)
-*/
         rules.add(tokens -> {
             int state = 0;
             int start = -1;
@@ -823,8 +823,8 @@ for ([i, e] : list) print(i)
                     state = 2;
                 } else if (state == 2 && (isIdentifier(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.SQUARE_BRACKET_PAIR))) {
                     state = 3;
-                } else if (state == 3 && isOperator(token, ":")) {
-                    // state = 3; // the : is optional
+                } else if (state == 3 && (isOperator(token, ":") || isKeyword(token, "in"))) {
+                    // state = 3; // the : is not optional, but does not change the state
                 } else if (state == 3 && isEvaluableToValue(token)) {
                     state = 4;
                 } else if (state == 4 && isType(token, TokenType.CLOSE_PARENTHESIS)) {

@@ -80,7 +80,7 @@ public class Lexer {
         OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET,
         COMMA, SEMICOLON, DOT,
         KEYWORD,
-        INDENTED_BLOCK, NEWLINE,
+        NEWLINE,
         COMMENT,
         EOF;
 
@@ -91,8 +91,9 @@ public class Lexer {
 
     private static class TokenIterator implements Iterable<Token>, Iterator<Token> {
         private final StringIterator stringIterator;
+        private final Operators operators;
         private Token nextToken;
-        private Operators operators;
+        int lastIndentation = 0;
 
         public TokenIterator(String expression, Operators operators) {
             this.stringIterator = new StringIterator(expression + " ");
@@ -120,7 +121,7 @@ public class Lexer {
 
         private final static String[] KEYWORDS = {
                 "if", "else", "elif", "true", "false", "null", "export", "as", "import", "inline", "native", "return",
-                "while", "for", "break", "continue"
+                "while", "for", "break", "continue", "in"
         };
 
         private boolean isSingleCharacterToken(char c) {
@@ -177,13 +178,29 @@ public class Lexer {
                     case 0:
                         if (c == '\n') {
                             buffer.append(c);
-                            if (this.stringIterator.peek() == '\t' || this.stringIterator.peek() == ' ') {
-                                buffer.append(this.stringIterator.next());
-                                buffer.setLength(0);
-                                // do not append TokenType.INDENTED_BLOCK. this token should not be used anymore, as it would be removed in any case later on.
+                            if (getIndentationValue(this.stringIterator.peek()) > 0) {
+                                int indentationCount = 0;
+                                int currentIndentationValue;
+                                do {
+                                    currentIndentationValue = getIndentationValue(this.stringIterator.peek());
+                                    indentationCount += currentIndentationValue;
+                                    if (currentIndentationValue > 0) this.stringIterator.next();
+                                } while (currentIndentationValue > 0);
+
+                                if (indentationCount > lastIndentation) {
+                                    buffer.setLength(0);
+                                    lastIndentation = indentationCount;
+
+                                } else {
+                                    nextToken = createToken(buffer, TokenType.NEWLINE);
+                                    lastIndentation = indentationCount;
+                                    return;
+                                }
+
                                 continue;
                             } else {
                                 nextToken = createToken(buffer, TokenType.NEWLINE);
+                                lastIndentation = 0;
                                 return;
                             }
                         } else if (Character.isWhitespace(c)) {
@@ -424,6 +441,15 @@ public class Lexer {
             }
 
             nextToken = null;
+        }
+
+        private int getIndentationValue(char c) {
+            if (c == '\t') {
+                return 4;
+            } else if (c == ' ') {
+                return 1;
+            }
+            return 0;
         }
 
         private Token createToken(StringBuffer buffer, TokenType type) {

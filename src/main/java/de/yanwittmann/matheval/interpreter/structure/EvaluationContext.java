@@ -337,6 +337,13 @@ public abstract class EvaluationContext {
                         } else {
                             throw new MenterExecutionException(globalContext, "Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement, node);
                         }
+                    } else if (providedVariableCount == 1) {
+                        if (acceptedVariableCount == 1) {
+                            variableValues.get(0).setValue(iteratorElementValue);
+
+                        } else {
+                            throw new MenterExecutionException(globalContext, "Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement, node);
+                        }
                     } else {
                         throw new MenterExecutionException(globalContext, "Invalid iterator element: " + iteratorElement, node);
                     }
@@ -421,7 +428,7 @@ public abstract class EvaluationContext {
             parenthesisPair = functionParametersNode.getChildren().stream()
                     .filter(child -> Parser.isType(child, ParserNode.NodeType.PARENTHESIS_PAIR))
                     .map(child -> (ParserNode) child)
-                    .findFirst()
+                    .reduce((first, second) -> second) // find last in stream
                     .orElse(null);
         }
 

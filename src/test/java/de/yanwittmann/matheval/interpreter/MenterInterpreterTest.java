@@ -61,6 +61,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "2", "[2, 3].keys().size()");
 
         evaluateAndAssertEqual(interpreter, "[0]", "foo(x) = x + x; mapper(f, val) = f(val); [mapper(foo, 3)].keys()");
+
+        evaluateAndAssertEqual(interpreter, "3", "(x -> x + 1)(2)");
     }
 
     @Test
@@ -109,20 +111,20 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "832040", "" +
-                                                      "fibstorage = {};" +
-                                                      "fib(n) = {" +
-                                                      "  if (!fibstorage.containsKey(n)) { fibstorage[n] = if (n == 0) 0 else if (n == 1) 1 else fib(n - 1) + fib(n - 2) };" +
-                                                      "  fibstorage[n];" +
-                                                      "};" +
-                                                      "fib(30);");
+                                                      "fibstorage = {}\n" +
+                                                      "fib(n) = {\n" +
+                                                      "  if (!fibstorage.containsKey(n)) { fibstorage[n] = if (n == 0) 0 else if (n == 1) 1 else fib(n - 1) + fib(n - 2) }\n" +
+                                                      "  fibstorage[n]\n" +
+                                                      "}\n" +
+                                                      "fib(30)");
 
         evaluateAndAssertEqual(interpreter, "13", "" +
                                                   "fib2 = n -> {\n" +
                                                   " if (n == 0) 0\n" +
                                                   " else if (n == 1) 1\n" +
                                                   " else fib2(n - 1) + fib2 (n - 2)\n" +
-                                                  "};" +
-                                                  "fib2(7);");
+                                                  "}\n" +
+                                                  "fib2(7)");
     }
 
     @Test
@@ -131,20 +133,33 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "6", "" +
-                                                 "sum = 0;" +
-                                                 "for (i : [1, 2, 3]) {" +
-                                                 "  sum = sum + i;" +
-                                                 "}" +
-                                                 "sum;");
+                                                 "sum = 0\n" +
+                                                 "for (i : [1, 2, 3]) {\n" +
+                                                 "  sum = sum + i\n" +
+                                                 "}\n" +
+                                                 "sum");
 
         evaluateAndAssertEqual(interpreter, "11", "" +
-                                                  "sum = 0;" +
-                                                  "keys = 0;" +
-                                                  "for ((k, v) : [6, 4]) {" +
-                                                  "  sum = sum + v;" +
-                                                  "  keys = keys + k;" +
-                                                  "}" +
-                                                  "sum + keys;");
+                                                  "sum = 0\n" +
+                                                  "keys = 0\n" +
+                                                  "for ((k, v) in [6, 4]) {\n" +
+                                                  "  sum = sum + v\n" +
+                                                  "  keys = keys + k\n" +
+                                                  "}\n" +
+                                                  "sum + keys");
+    }
+
+    @Test
+    public void indentationAutoStatementEndTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "24", "" +
+                                                  "sum = 0\n" +
+                                                  "for (i in [1, 2, 3]) {\n" +
+                                                  "  sum = sum + i; sum = sum + i\n" +
+                                                  "  sum = sum + i * 2\n" +
+                                                  "}");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
@@ -157,6 +172,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
+        MenterDebugger.logLexedTokens = true;
         MenterDebugger.logParseProgress = true;
         MenterDebugger.logParsedTokens = true;
         MenterDebugger.logInterpreterEvaluation = true;
