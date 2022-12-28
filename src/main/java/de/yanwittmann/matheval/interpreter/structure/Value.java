@@ -264,58 +264,58 @@ public class Value implements Comparable<Value> {
         {
             put(PrimitiveValueType.OBJECT.getType(), new HashMap<String, MenterValueFunction>() {
                 {
-                    put("size", (context, self, values, localSymbols) -> new Value(self.size()));
-                    put("keys", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
-                    put("values", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).values().stream().map(Value::new).collect(Collectors.toList())));
-                    put("entries", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).entrySet().stream().map(entry -> new Value(new LinkedHashMap<Object, Value>() {{
+                    put("size", (context, self, values, localInformation) -> new Value(self.size()));
+                    put("keys", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().map(Value::new).collect(Collectors.toList())));
+                    put("values", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).values().stream().map(Value::new).collect(Collectors.toList())));
+                    put("entries", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).entrySet().stream().map(entry -> new Value(new LinkedHashMap<Object, Value>() {{
                         put("key", new Value(entry.getKey()));
                         put("value", ((Value) entry.getValue()));
                     }})).collect(Collectors.toList())));
 
-                    put("containsKey", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
-                    put("containsValue", (context, self, values, localSymbols) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
+                    put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
+                    put("containsValue", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
 
-                    put("forEach", (context, self, values, localSymbols) -> {
+                    put("forEach", (context, self, values, localInformation) -> {
                         final Map<Object, Value> mapValue = (Map<Object, Value>) self.getValue();
                         final boolean mapAnArray = isMapAnArray(mapValue);
                         for (Entry<Object, Value> entry : mapValue.entrySet()) {
                             if (mapAnArray) {
                                 try {
-                                    applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols);
+                                    applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "forEach");
                                 } catch (Exception e) {
                                     try {
-                                        applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localSymbols);
+                                        applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localInformation, "forEach");
                                     } catch (Exception ignored) {
                                         throw e;
                                     }
                                 }
                             } else {
-                                applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localSymbols);
+                                applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localInformation, "forEach");
                             }
                         }
                         return Value.empty();
                     });
 
-                    put("map", (context, self, values, localSymbols) -> {
+                    put("map", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
                         for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
-                            map.put(entry.getKey(), applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols));
+                            map.put(entry.getKey(), applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "map"));
                         }
                         return new Value(map);
                     });
-                    put("mapKeys", (context, self, values, localSymbols) -> {
+                    put("mapKeys", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
                         for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
-                            map.put(applyFunction(toList(entry.getKey()), values.get(0), context, localSymbols).getValue(), entry.getValue());
+                            map.put(applyFunction(toList(entry.getKey()), values.get(0), context, localInformation, "mapKeys").getValue(), entry.getValue());
                         }
                         return new Value(map);
                     });
 
-                    put("filter", (context, self, values, localSymbols) -> {
+                    put("filter", (context, self, values, localInformation) -> {
                         if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
                             final List<Value> mapped = new ArrayList<>();
                             for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
-                                if (applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols).isTrue()) {
+                                if (applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "filter").isTrue()) {
                                     mapped.add(entry.getValue());
                                 }
                             }
@@ -324,24 +324,24 @@ public class Value implements Comparable<Value> {
                         } else {
                             final Map<Object, Value> map = new LinkedHashMap<>();
                             for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
-                                if (applyFunction(toList(entry.getValue()), values.get(0), context, localSymbols).isTrue()) {
+                                if (applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "filter").isTrue()) {
                                     map.put(entry.getKey(), entry.getValue());
                                 }
                             }
                             return new Value(map);
                         }
                     });
-                    put("filterKeys", (context, self, values, localSymbols) -> {
+                    put("filterKeys", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
                         for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
-                            if (applyFunction(toList(entry.getKey()), values.get(0), context, localSymbols).isTrue()) {
+                            if (applyFunction(toList(entry.getKey()), values.get(0), context, localInformation, "filterKeys").isTrue()) {
                                 map.put(entry.getKey(), entry.getValue());
                             }
                         }
                         return new Value(map);
                     });
 
-                    put("distinct", (context, self, values, localSymbols) -> {
+                    put("distinct", (context, self, values, localInformation) -> {
                         if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
                             final List<Value> mapped = new ArrayList<>();
                             for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
@@ -362,8 +362,8 @@ public class Value implements Comparable<Value> {
                         }
                     });
 
-                    put("sort", (context, self, values, localSymbols) -> {
-                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localSymbols);
+                    put("sort", (context, self, values, localInformation) -> {
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
 
                         if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
                             return new Value(((Map<Object, Value>) self.getValue()).values().stream()
@@ -376,7 +376,7 @@ public class Value implements Comparable<Value> {
                         }
                     });
 
-                    put("join", (context, self, values, localSymbols) -> {
+                    put("join", (context, self, values, localInformation) -> {
                         final String separator = values.size() > 0 ? values.get(0).toDisplayString() : "";
                         final String prefix = values.size() > 1 ? values.get(1).toDisplayString() : "";
                         final String suffix = values.size() > 2 ? values.get(2).toDisplayString() : "";
@@ -392,57 +392,57 @@ public class Value implements Comparable<Value> {
                         return new Value(sb.toString());
                     });
 
-                    put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((Map<Object, Value>) self.getValue()).entrySet().iterator()));
+                    put("iterator", (context, self, values, localInformation) -> makeIteratorValueIterator(((Map<Object, Value>) self.getValue()).entrySet().iterator()));
 
-                    put("sum", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0))));
-                    put("avg", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
-                    put("max", (context, self, values, localSymbols) -> {
-                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localSymbols);
+                    put("sum", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0))));
+                    put("avg", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
+                    put("max", (context, self, values, localInformation) -> {
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
                         return new Value(((Map<Object, Value>) self.getValue()).values().stream().max(comparator).orElse(Value.empty()));
                     });
-                    put("min", (context, self, values, localSymbols) -> {
-                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localSymbols);
+                    put("min", (context, self, values, localInformation) -> {
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
                         return new Value(((Map<Object, Value>) self.getValue()).values().stream().min(comparator).orElse(Value.empty()));
                     });
                 }
             });
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
                 {
-                    put("size", (context, self, values, localSymbols) -> new Value(self.size()));
-                    put("charAt", (context, self, values, localSymbols) -> new Value(((String) self.getValue()).charAt(values.get(0).getNumericValue().intValue())));
+                    put("size", (context, self, values, localInformation) -> new Value(self.size()));
+                    put("charAt", (context, self, values, localInformation) -> new Value(((String) self.getValue()).charAt(values.get(0).getNumericValue().intValue())));
 
-                    put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((String) self.getValue()).chars().mapToObj(c -> (char) c).iterator()));
+                    put("iterator", (context, self, values, localInformation) -> makeIteratorValueIterator(((String) self.getValue()).chars().mapToObj(c -> (char) c).iterator()));
                 }
             });
             put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MenterValueFunction>() {
                 {
-                    put("hasNext", (context, self, values, localSymbols) -> new Value(((Iterator<?>) self.getValue()).hasNext()));
-                    put("next", (context, self, values, localSymbols) -> new Value(((Iterator<?>) self.getValue()).next()));
+                    put("hasNext", (context, self, values, localInformation) -> new Value(((Iterator<?>) self.getValue()).hasNext()));
+                    put("next", (context, self, values, localInformation) -> new Value(((Iterator<?>) self.getValue()).next()));
 
-                    put("forEach", (context, self, values, localSymbols) -> {
+                    put("forEach", (context, self, values, localInformation) -> {
                         final Iterator<?> iterator = (Iterator<?>) self.getValue();
                         while (iterator.hasNext()) {
-                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localSymbols);
+                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localInformation, "forEach");
                         }
                         return self;
                     });
 
-                    put("iterator", (context, self, values, localSymbols) -> self);
+                    put("iterator", (context, self, values, localInformation) -> self);
                 }
             });
             put(PrimitiveValueType.ANY.getType(), new HashMap<String, MenterValueFunction>() {
                 {
-                    put("type", (context, self, values, localSymbols) -> new Value(self.getType()));
+                    put("type", (context, self, values, localInformation) -> new Value(self.getType()));
 
-                    put("forEach", (context, self, values, localSymbols) -> {
-                        final Iterator<?> iterator = (Iterator<?>) applyFunction(toList(self), self.access(new Value("iterator")), context, localSymbols).getValue();
+                    put("forEach", (context, self, values, localInformation) -> {
+                        final Iterator<?> iterator = (Iterator<?>) applyFunction(toList(self), self.access(new Value("iterator")), context, localInformation, "iterator").getValue();
                         while (iterator.hasNext()) {
-                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localSymbols);
+                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localInformation, "forEach");
                         }
                         return self;
                     });
 
-                    put("functions", (context, self, values, localSymbols) -> {
+                    put("functions", (context, self, values, localInformation) -> {
                         final List<Value> result = new ArrayList<>();
                         VALUE_FUNCTIONS.getOrDefault(self.getType(), new HashMap<>()).keySet().forEach(f -> result.add(new Value(f)));
                         return new Value(result);
@@ -452,13 +452,13 @@ public class Value implements Comparable<Value> {
         }
     };
 
-    public static Comparator<Value> extractComparatorFromParameters(GlobalContext context, List<Value> values, Map<String, Value> localSymbols) {
+    public static Comparator<Value> extractComparatorFromParameters(GlobalContext context, List<Value> values, EvaluationContextLocalInformation localInformation) {
         final Comparator<Value> comparator;
         if (values.size() > 0) {
             final List<String> parameterList = getParameterList(values.get(0));
             if (parameterList == null || parameterList.size() == 2) {
                 comparator = (a, b) -> {
-                    final Value result = applyFunction(toList(a, b), values.get(0), context, localSymbols);
+                    final Value result = applyFunction(toList(a, b), values.get(0), context, localInformation, "compareTo");
                     if (result.getType().equals(PrimitiveValueType.NUMBER.getType())) {
                         return ((Number) result.getValue()).intValue();
                     }
@@ -487,8 +487,8 @@ public class Value implements Comparable<Value> {
         });
     }
 
-    private static Value applyFunction(List<Value> value, Value function, GlobalContext context, Map<String, Value> localSymbols) {
-        return context.evaluateFunction(function, value, context, localSymbols);
+    private static Value applyFunction(List<Value> value, Value function, GlobalContext context, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
+        return context.evaluateFunction(function, value, context, localInformation, originalFunctionName);
     }
 
     private static List<String> getParameterList(Value value) {

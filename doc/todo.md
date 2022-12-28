@@ -2,7 +2,7 @@ Features:
 
 - [ ] Parser/Interpreter: while loops (?)
 - [ ] different types of assignments (e.g. `+=`, `-=`, `*=`, `/=`, `%=`)
-- [ ] stack trace
+- [ ] stack trace line numbers
 - [ ] `break` and `continue` statements
 - [ ] `return` statement
 - [ ] debugger?

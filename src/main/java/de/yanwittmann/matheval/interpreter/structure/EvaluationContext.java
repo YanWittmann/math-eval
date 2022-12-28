@@ -3,6 +3,7 @@ package de.yanwittmann.matheval.interpreter.structure;
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.interpreter.core.CoreModuleCommon;
+import de.yanwittmann.matheval.interpreter.core.CoreModuleDebug;
 import de.yanwittmann.matheval.interpreter.core.CoreModuleIo;
 import de.yanwittmann.matheval.interpreter.core.CoreModuleSystem;
 import de.yanwittmann.matheval.lexer.Lexer;
@@ -35,6 +36,9 @@ public abstract class EvaluationContext {
 
         registerNativeFunction(new String[]{"system.ter", "getProperty"}, CoreModuleSystem::getProperty);
         registerNativeFunction(new String[]{"system.ter", "getEnv"}, CoreModuleSystem::getEnv);
+
+        registerNativeFunction(new String[]{"debug.ter", "switch"}, CoreModuleDebug::debugSwitch);
+        registerNativeFunction(new String[]{"debug.ter", "stackTraceValues"}, CoreModuleDebug::stackTraceValues);
     }
 
     public static void registerNativeFunction(String[] path, Function<Value[], Value> function) {
@@ -70,8 +74,13 @@ public abstract class EvaluationContext {
         return value;
     }
 
-    public Value evaluate(Object nodeOrToken, GlobalContext globalContext, Map<String, Value> localSymbols, SymbolCreationMode symbolCreationMode) {
+    public Value evaluate(Object nodeOrToken, GlobalContext globalContext, SymbolCreationMode symbolCreationMode, EvaluationContextLocalInformation localInformation) {
         Value result = null;
+
+        final boolean appendToStackTrace = !Parser.isType(nodeOrToken, ParserNode.NodeType.STATEMENT) && !Parser.isType(nodeOrToken, ParserNode.NodeType.ROOT) && !Parser.isType(nodeOrToken, ParserNode.NodeType.CODE_BLOCK);
+        if (appendToStackTrace) {
+            localInformation.putStackFrame(globalContext, nodeOrToken);
+        }
 
         if (nodeOrToken instanceof ParserNode) {
             final ParserNode node = (ParserNode) nodeOrToken;
@@ -85,22 +94,22 @@ public abstract class EvaluationContext {
 
             if (node.getType() == ParserNode.NodeType.STATEMENT || node.getType() == ParserNode.NodeType.ROOT || node.getType() == ParserNode.NodeType.CODE_BLOCK) {
                 for (Object child : node.getChildren()) {
-                    result = evaluate(child, globalContext, localSymbols, symbolCreationMode);
+                    result = evaluate(child, globalContext, symbolCreationMode, localInformation);
                     if (child instanceof ParserNode && ((ParserNode) child).getType() == ParserNode.NodeType.RETURN_STATEMENT) {
                         break;
                     }
                 }
             } else if (node.getType() == ParserNode.NodeType.RETURN_STATEMENT) {
-                result = evaluate(node.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                result = evaluate(node.getChildren().get(0), globalContext, symbolCreationMode, localInformation);
 
             } else if (node.getType() == ParserNode.NodeType.IMPORT_STATEMENT) {
-                throw new MenterExecutionException(globalContext, "Import statements are not supported in the interpreter.");
+                throw localInformation.createException("Import statements are not supported in the interpreter");
 
             } else if (node.getType() == ParserNode.NodeType.ARRAY) {
                 final Map<Object, Value> array = new LinkedHashMap<>();
                 final List<Object> children = node.getChildren();
                 for (int i = 0; i < children.size(); i++) {
-                    array.put(new BigDecimal(i), evaluate(children.get(i), globalContext, localSymbols, symbolCreationMode));
+                    array.put(new BigDecimal(i), evaluate(children.get(i), globalContext, symbolCreationMode, localInformation));
                 }
                 result = new Value(array);
 
@@ -116,12 +125,12 @@ public abstract class EvaluationContext {
                     } else if (keyNode instanceof Token) {
                         key = ((Token) keyNode).getValue();
                     } else if (keyNode instanceof ParserNode) {
-                        key = evaluate(keyNode, globalContext, localSymbols, symbolCreationMode).toDisplayString();
+                        key = evaluate(keyNode, globalContext, symbolCreationMode, localInformation).toDisplayString();
                     } else {
-                        throw new MenterExecutionException(globalContext, "Invalid map key type: " + keyNode.getClass().getName());
+                        throw localInformation.createException("Invalid map key type: " + keyNode.getClass().getName());
                     }
 
-                    final Value value = evaluate(childNode.getChildren().get(1), globalContext, localSymbols, symbolCreationMode);
+                    final Value value = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
                     map.put(key, value);
                 }
                 result = new Value(map);
@@ -134,25 +143,25 @@ public abstract class EvaluationContext {
                     int numberOfChildren = node.getChildren().size();
 
                     if (numberOfChildren != numberOfArguments) {
-                        throw new MenterExecutionException(globalContext, "Operator " + op.getSymbol() + " requires " + numberOfArguments + " arguments, but " + numberOfChildren + " were given:", node);
+                        throw localInformation.createException("Operator " + op.getSymbol() + " requires " + numberOfArguments + " arguments, but " + numberOfChildren + " were given:");
                     }
 
                     final Value[] arguments = new Value[numberOfArguments];
                     for (int i = 0; i < numberOfArguments; i++) {
-                        arguments[i] = evaluate(node.getChildren().get(i), globalContext, localSymbols, symbolCreationMode);
+                        arguments[i] = evaluate(node.getChildren().get(i), globalContext, symbolCreationMode, localInformation);
                     }
 
                     result = op.evaluate(arguments);
                     if (result == null) {
-                        throw new MenterExecutionException(globalContext, "Operator " + op.getSymbol() + " returned null as result; this is most likely due to an incomplete implementation of the operator.", node);
+                        throw localInformation.createException("Operator " + op.getSymbol() + " returned null as result; this is most likely due to an incomplete implementation of the operator.");
                     }
                 }
             } else if (node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
-                result = resolveSymbol(node, symbolCreationMode, globalContext, localSymbols);
+                result = resolveSymbol(node, symbolCreationMode, globalContext, localInformation);
 
             } else if (node.getType() == ParserNode.NodeType.ASSIGNMENT) {
-                final Value variable = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
-                final Value value = evaluate(node.getChildren().get(1), globalContext, new HashMap<>(localSymbols), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                final Value variable = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_IF_NOT_EXISTS, localInformation);
+                final Value value = evaluate(node.getChildren().get(1), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
 
                 variable.inheritValue(value);
                 result = value;
@@ -163,24 +172,24 @@ public abstract class EvaluationContext {
 
             } else if (node.getType() == ParserNode.NodeType.PARENTHESIS_PAIR) {
                 if (node.getChildren().size() == 1) {
-                    result = evaluate(node.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                    result = evaluate(node.getChildren().get(0), globalContext, symbolCreationMode, localInformation);
                 } else {
                     result = new Value(node.getChildren().stream()
-                            .map(child -> evaluate(child, globalContext, localSymbols, symbolCreationMode))
+                            .map(child -> evaluate(child, globalContext, symbolCreationMode, localInformation))
                             .collect(Collectors.toList()));
                 }
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_DECLARATION) {
                 if (Parser.isKeyword(node.getChildren().get(0), "native")) {
-                    final Value functionValue = evaluate(node.getChildren().get(1), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
+                    final Value functionValue = evaluate(node.getChildren().get(1), globalContext, SymbolCreationMode.CREATE_IF_NOT_EXISTS, localInformation);
                     final String functionName = ((Token) node.getChildren().get(1)).getValue();
                     final List<Object> functionArguments = Parser.isType(node.getChildren().get(2), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(2)).getChildren() : null;
                     if (functionArguments == null) {
-                        throw new MenterExecutionException(globalContext, "Function arguments are not a parenthesis pair", node);
+                        throw localInformation.createException("Function arguments are not a parenthesis pair");
                     }
 
                     if (!(this instanceof GlobalContext)) {
-                        throw new MenterExecutionException(globalContext, "Native functions can only be declared in the global context", node);
+                        throw localInformation.createException("Native functions can only be declared in the global context");
                     }
 
                     final List<String> moduleNameCandidates = new ArrayList<>();
@@ -195,7 +204,7 @@ public abstract class EvaluationContext {
                             final Function<Value[], Value> nativeFunctionValue = nativeFunction.getValue();
 
                             if (functionQualifier.length != 2) {
-                                throw new MenterExecutionException(globalContext, "Invalid native function qualifier: " + Arrays.toString(functionQualifier) + ". Expected format: [module name, function name]", node);
+                                throw localInformation.createException("Invalid native function qualifier: " + Arrays.toString(functionQualifier) + ". Expected format: [module name, function name]");
                             }
 
                             if (functionQualifier[0].equals(moduleNameCandidate) && functionQualifier[1].equals(functionName)) {
@@ -211,14 +220,14 @@ public abstract class EvaluationContext {
                     }
 
                     if (!foundNativeFunction) {
-                        throw new MenterExecutionException(globalContext, "Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates + "\nDefine custom functions using EvaluationContext.registerNativeFunction().", node);
+                        throw localInformation.createException("Native function [" + functionName + "] not found using candidates: " + moduleNameCandidates + "\nDefine custom functions using EvaluationContext.registerNativeFunction().");
                     }
 
                 } else {
-                    final Value functionValue = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.CREATE_IF_NOT_EXISTS);
+                    final Value functionValue = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_IF_NOT_EXISTS, localInformation);
                     final List<Object> functionArguments = Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(1)).getChildren() : null;
                     if (functionArguments == null) {
-                        throw new MenterExecutionException(globalContext, "Function arguments are not a parenthesis pair", node);
+                        throw localInformation.createException("Function arguments are not a parenthesis pair");
                     }
                     final ParserNode functionCode = (ParserNode) node.getChildren().get(2);
 
@@ -232,7 +241,7 @@ public abstract class EvaluationContext {
                 // 0 is params, 1 is body
                 final List<Object> functionArguments = Parser.isType(node.getChildren().get(0), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(0)).getChildren() : null;
                 if (functionArguments == null) {
-                    throw new MenterExecutionException(globalContext, "Function arguments are not a parenthesis pair", node);
+                    throw localInformation.createException("Function arguments are not a parenthesis pair");
                 }
 
                 final ParserNode functionCode = (ParserNode) node.getChildren().get(1);
@@ -240,13 +249,13 @@ public abstract class EvaluationContext {
                 result = new Value(function);
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
-                final Value function = evaluate(node.getChildren().get(0), globalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                final Value function = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                 if (!Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR)) {
-                    throw new MenterExecutionException(globalContext, "Function arguments are not a parenthesis pair", node);
+                    throw localInformation.createException("Function arguments are not a parenthesis pair");
                 }
 
-                final List<Value> functionParameters = makeFunctionArguments(node, globalContext, localSymbols);
-                result = evaluateFunction(function, functionParameters, globalContext, localSymbols);
+                final List<Value> functionParameters = makeFunctionArguments(node, globalContext, localInformation);
+                result = evaluateFunction(function, functionParameters, globalContext, localInformation, ParserNode.reconstructCode(node.getChildren().get(0)));
 
             } else if (node.getType() == ParserNode.NodeType.CONDITIONAL) {
                 final List<ParserNode> branches = node.getChildren().stream()
@@ -257,14 +266,14 @@ public abstract class EvaluationContext {
                 boolean foundMatchingBranch = false;
                 for (ParserNode branch : branches) {
                     if (branch.getChildren().size() == 1) { // else
-                        result = evaluate(branch.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                        result = evaluate(branch.getChildren().get(0), globalContext, symbolCreationMode, localInformation);
                         foundMatchingBranch = true;
                         break;
 
                     } else {
-                        final Value condition = evaluate(branch.getChildren().get(0), globalContext, localSymbols, symbolCreationMode);
+                        final Value condition = evaluate(branch.getChildren().get(0), globalContext, symbolCreationMode, localInformation);
                         if (condition.isTrue()) {
-                            result = evaluate(branch.getChildren().get(1), globalContext, localSymbols, symbolCreationMode);
+                            result = evaluate(branch.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
                             foundMatchingBranch = true;
                             break;
                         }
@@ -276,13 +285,13 @@ public abstract class EvaluationContext {
                 }
             } else if (node.getType() == ParserNode.NodeType.LOOP_FOR) { // for each loop
                 final Object iteratorVariable = node.getChildren().get(0);
-                final Value iteratorValue = evaluate(node.getChildren().get(1), globalContext, localSymbols, symbolCreationMode);
+                final Value iteratorValue = evaluate(node.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
                 final Object loopCode = node.getChildren().get(2);
 
                 final Value iteratorGetter = iteratorValue.access(new Value("iterator"));
-                final Value iterator = evaluateFunction(iteratorGetter, Collections.singletonList(iteratorValue), globalContext, localSymbols);
+                final Value iterator = evaluateFunction(iteratorGetter, Collections.singletonList(iteratorValue), globalContext, localInformation, "iterator");
                 if (!iterator.getType().equals(PrimitiveValueType.ITERATOR.getType())) {
-                    throw new MenterExecutionException(globalContext, "Iterator element did not provide iterable: " + iteratorValue, node);
+                    throw localInformation.createException("Iterator element did not provide iterable: " + iteratorValue);
                 }
                 final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
 
@@ -300,15 +309,16 @@ public abstract class EvaluationContext {
                             variableValues.add(new Value(child));
                         }
                     } else {
-                        throw new MenterExecutionException(globalContext, "Invalid iterator variable node: " + iteratorVariable, node);
+                        throw localInformation.createException("Invalid iterator variable node: " + iteratorVariable);
                     }
 
                 } else {
-                    throw new MenterExecutionException(globalContext, "Iterator variable is not a token or a node", node);
+                    throw localInformation.createException("Iterator variable is not a token or a node");
                 }
 
-                final Map<String, Value> localLoopSymbols = new HashMap<>(localSymbols);
-                variableValues.forEach(v -> localLoopSymbols.put(v.getValue().toString(), v));
+                final EvaluationContextLocalInformation loopLocalInformation = localInformation.deriveNewContext();
+                variableValues.forEach(v -> loopLocalInformation.putLocalSymbol(v.getValue().toString(), v));
+
 
                 while (iteratorIterator.hasNext()) {
                     final Value iteratorElement = iteratorIterator.next();
@@ -328,32 +338,32 @@ public abstract class EvaluationContext {
                             variableValues.get(1).setValue(element.get("value"));
 
                         } else {
-                            throw new MenterExecutionException(globalContext, "Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement, node);
+                            throw localInformation.createException("Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement);
                         }
                     } else if (providedVariableCount == 1) {
                         if (acceptedVariableCount == 1) {
                             variableValues.get(0).setValue(iteratorElementValue);
 
                         } else {
-                            throw new MenterExecutionException(globalContext, "Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement, node);
+                            throw localInformation.createException("Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement);
                         }
                     } else {
-                        throw new MenterExecutionException(globalContext, "Invalid iterator element: " + iteratorElement, node);
+                        throw localInformation.createException("Invalid iterator element: " + iteratorElement);
                     }
 
-                    result = evaluate(loopCode, globalContext, localLoopSymbols, symbolCreationMode);
+                    result = evaluate(loopCode, globalContext, symbolCreationMode, loopLocalInformation);
                 }
             }
 
             if (result == null) {
-                throw new MenterExecutionException(globalContext, "Node did not evaluate to anything:", node);
+                throw localInformation.createException("Node did not evaluate to anything: " + node);
             }
 
         } else if (nodeOrToken instanceof Token) {
             final Token node = (Token) nodeOrToken;
 
             if (node.getType() == Lexer.TokenType.IDENTIFIER) {
-                result = resolveSymbol(node, symbolCreationMode, globalContext, localSymbols);
+                result = resolveSymbol(node, symbolCreationMode, globalContext, localInformation);
 
             } else if (node.getType() == Lexer.TokenType.NUMBER_LITERAL) {
                 result = new Value(new BigDecimal(node.getValue()));
@@ -368,13 +378,19 @@ public abstract class EvaluationContext {
             }
         }
 
+        if (appendToStackTrace) {
+            localInformation.popStackFrame();
+        }
+
         return result;
     }
 
-    protected Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, Map<String, Value> localSymbols) {
+    protected Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
         try {
+            localInformation.provideFunctionNameForNextStackTraceElement(originalFunctionName);
+
             if (!functionValue.isFunction()) {
-                throw new MenterExecutionException(globalContext, "Value is not a function [" + functionValue + "]");
+                throw localInformation.createException("Value is not a function [" + functionValue + "]");
             }
 
             if (functionValue.getValue() instanceof MenterNodeFunction) {
@@ -382,19 +398,19 @@ public abstract class EvaluationContext {
                 final List<String> functionArgumentNames = executableFunction.getArgumentNames();
 
                 if (functionArgumentNames.size() != functionParameters.size()) {
-                    throw new MenterExecutionException(globalContext, "Function [" + functionValue + "] requires " + functionArgumentNames.size() + " arguments, but " + functionParameters.size() + " were given");
+                    throw localInformation.createException("Function [" + functionValue + "] requires " + functionArgumentNames.size() + " arguments, but " + functionParameters.size() + " were given");
                 }
 
-                final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);
+                final EvaluationContextLocalInformation functionLocalInformation = localInformation.deriveNewContext();
                 for (int i = 0; i < functionArgumentNames.size(); i++) {
                     final String argumentName = functionArgumentNames.get(i);
                     final Value argumentValue = functionParameters.get(i);
-                    functionLocalSymbols.put(argumentName, argumentValue);
+                    functionLocalInformation.putLocalSymbol(argumentName, argumentValue);
                 }
 
-                functionLocalSymbols.putAll(executableFunction.getParentContext().getVariables());
+                functionLocalInformation.putLocalSymbol(executableFunction.getParentContext().getVariables());
 
-                return evaluate(executableFunction.getBody(), globalContext, functionLocalSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                return evaluate(executableFunction.getBody(), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
 
             } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) { // native functions
                 final Function<Value[], Value> nativeFunction = (Function<Value[], Value>) functionValue.getValue();
@@ -403,16 +419,16 @@ public abstract class EvaluationContext {
 
             } else { // otherwise it must be a value function
                 final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
-                return executableFunction.apply(globalContext, functionValue.getSecondaryValue(), functionParameters, localSymbols);
+                return executableFunction.apply(globalContext, functionValue.getSecondaryValue(), functionParameters, localInformation);
             }
         } catch (Exception e) {
-            throw new MenterExecutionException(globalContext, "Error while executing function [" + functionValue + "]", e);
+            throw localInformation.createException(e.getMessage(), e);
         }
     }
 
-    private List<Value> makeFunctionArguments(Object functionParameters, GlobalContext parameterGlobalContext, Map<String, Value> localSymbols) {
+    private List<Value> makeFunctionArguments(Object functionParameters, GlobalContext parameterGlobalContext, EvaluationContextLocalInformation localInformation) {
         if (!(functionParameters instanceof ParserNode)) {
-            throw new MenterExecutionException(parameterGlobalContext, "Function parameters are not a parenthesis pair\n" + functionParameters);
+            throw localInformation.createException("Function parameters are not a parenthesis pair\n" + functionParameters);
         }
 
         final ParserNode functionParametersNode = (ParserNode) functionParameters;
@@ -432,10 +448,10 @@ public abstract class EvaluationContext {
 
         final List<Object> functionArguments = Parser.isType(parenthesisPair, ParserNode.NodeType.PARENTHESIS_PAIR) ? parenthesisPair.getChildren() : null;
         if (functionArguments == null) {
-            throw new MenterExecutionException(parameterGlobalContext, "Function arguments are not a parenthesis pair", functionParametersNode);
+            throw localInformation.createException("Function arguments are not a parenthesis pair");
         }
         return functionArguments.stream()
-                .map(argument -> evaluate(argument, parameterGlobalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS))
+                .map(argument -> evaluate(argument, parameterGlobalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation))
                 .collect(Collectors.toList());
     }
 
@@ -444,7 +460,7 @@ public abstract class EvaluationContext {
         THROW_IF_NOT_EXISTS
     }
 
-    private Value resolveSymbol(Object identifier, SymbolCreationMode symbolCreationMode, GlobalContext globalContext, Map<String, Value> localSymbols) {
+    private Value resolveSymbol(Object identifier, SymbolCreationMode symbolCreationMode, GlobalContext globalContext, EvaluationContextLocalInformation localInformation) {
         if (MenterDebugger.logInterpreterResolveSymbols) {
             LOG.info("Symbol resolve start: {}", ParserNode.reconstructCode(identifier));
         }
@@ -455,7 +471,7 @@ public abstract class EvaluationContext {
             if (node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
                 identifiers.addAll(node.getChildren());
             } else if (Parser.isLiteral(node)) {
-                identifiers.add(evaluate(node, globalContext, localSymbols, SymbolCreationMode.THROW_IF_NOT_EXISTS));
+                identifiers.add(evaluate(node, globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation));
             }
         } else if (identifier instanceof Token) {
             final Token token = (Token) identifier;
@@ -471,20 +487,20 @@ public abstract class EvaluationContext {
             if (identifiers.get(i) instanceof ParserNode) {
                 final ParserNode node = (ParserNode) identifiers.get(i);
                 if (node.getType() == ParserNode.NodeType.CODE_BLOCK || node.getType() == ParserNode.NodeType.EXPRESSION) {
-                    final Value value = evaluate(node, globalContext, new HashMap<>(localSymbols), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                    final Value value = evaluate(node, globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                     identifiers.set(i, value);
                 }
             } else if (identifiers.get(i) instanceof Token) {
                 final Token token = (Token) identifiers.get(i);
                 if (Parser.isLiteral(token)) {
-                    final Value value = evaluate(token, globalContext, new HashMap<>(localSymbols), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+                    final Value value = evaluate(token, globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                     identifiers.set(i, value);
                 }
             }
         }
 
         if (identifiers.isEmpty()) {
-            throw new MenterExecutionException(globalContext, "Cannot resolve symbol from " + identifier);
+            throw localInformation.createException("Cannot resolve symbol from " + ParserNode.reconstructCode(identifier));
         }
         if (MenterDebugger.logInterpreterResolveSymbols) {
             LOG.info("Symbol resolve: Split into identifiers: {}", identifiers);
@@ -503,8 +519,8 @@ public abstract class EvaluationContext {
             final Value previousValue = value;
 
             if (value == null) {
-                if (localSymbols.containsKey(stringKey)) {
-                    value = localSymbols.get(stringKey);
+                if (localInformation.hasLocalSymbol(stringKey)) {
+                    value = localInformation.getLocalSymbol(stringKey);
                     if (MenterDebugger.logInterpreterResolveSymbols) {
                         LOG.info("Symbol resolve: [{}] from local symbols", stringKey);
                     }
@@ -526,7 +542,8 @@ public abstract class EvaluationContext {
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();
-                            localSymbols = globalContext.getVariables();
+                            localInformation = localInformation.deriveNewContext();
+                            localInformation.setLocalSymbols(globalContext.getVariables());
                             // value = null; // is already null
                             foundImport = true;
                             if (MenterDebugger.logInterpreterResolveSymbols) {
@@ -538,7 +555,8 @@ public abstract class EvaluationContext {
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();
-                            localSymbols = globalContext.getVariables();
+                            localInformation = localInformation.deriveNewContext();
+                            localInformation.setLocalSymbols(globalContext.getVariables());
                             value = module.getParentContext().getVariable(stringKey);
                             foundImport = true;
                             if (MenterDebugger.logInterpreterResolveSymbols) {
@@ -562,7 +580,7 @@ public abstract class EvaluationContext {
                     final ParserNode node = (ParserNode) id;
                     if (node.getType() == ParserNode.NodeType.MAP || node.getType() == ParserNode.NodeType.CODE_BLOCK ||
                         node.getType() == ParserNode.NodeType.ARRAY) {
-                        value = evaluate(node, globalContext, localSymbols, symbolCreationMode);
+                        value = evaluate(node, globalContext, symbolCreationMode, localInformation);
                         if (MenterDebugger.logInterpreterResolveSymbols) {
                             LOG.info("Symbol resolve: [{}] from evaluated node", value);
                         }
@@ -580,11 +598,11 @@ public abstract class EvaluationContext {
 
             } else {
                 if (Parser.isType(id, ParserNode.NodeType.FUNCTION_CALL)) {
-                    final List<Value> functionParameters = makeFunctionArguments(id, originalGlobalContext, localSymbols);
+                    final List<Value> functionParameters = makeFunctionArguments(id, originalGlobalContext, localInformation);
                     try {
-                        value = evaluateFunction(value, functionParameters, globalContext, localSymbols);
+                        value = evaluateFunction(value, functionParameters, globalContext, localInformation, ParserNode.reconstructCode(identifiers.get(i - 1)));
                     } catch (Exception e) {
-                        throw new MenterExecutionException(globalContext, e.getMessage() + ": " + identifiers.get(i - 1), e);
+                        throw localInformation.createException(e.getMessage() + ": " + identifiers.get(i - 1), e);
                     }
                     continue;
 
@@ -611,14 +629,16 @@ public abstract class EvaluationContext {
             }
 
             if (SymbolCreationMode.THROW_IF_NOT_EXISTS == symbolCreationMode) {
-                throw new MenterExecutionException(globalContext, "Cannot resolve symbol '" + stringKey + "' on\n" + ParserNode.reconstructCode(identifier));
+                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on " + ParserNode.reconstructCode(identifier));
+
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {
                 if (isFinalIdentifier) {
                     value = Value.empty();
                 } else {
                     value = new Value(new LinkedHashMap<>());
                 }
-                localSymbols.put(stringKey, value);
+
+                localInformation.putLocalSymbol(stringKey, value);
                 if (MenterDebugger.logInterpreterResolveSymbols) {
                     LOG.info("Symbol resolve: [{}] from creating new value", stringKey);
                 }

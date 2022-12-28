@@ -1,0 +1,5 @@
+
+native switch()
+native stackTraceValues()
+
+export [switch, stackTraceValues] as debug

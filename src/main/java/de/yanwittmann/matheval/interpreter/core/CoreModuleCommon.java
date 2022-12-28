@@ -43,5 +43,4 @@ public abstract class CoreModuleCommon {
                 .collect(Collectors.joining(" ")));
         return Value.empty();
     }
-
 }

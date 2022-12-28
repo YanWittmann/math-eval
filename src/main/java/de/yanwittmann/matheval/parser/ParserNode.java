@@ -162,7 +162,7 @@ public class ParserNode {
                     for (Object child : node.getChildren()) {
                         reconstructCode(child, sb);
                     }
-                    sb.append(";");
+                    sb.append("; ");
                     break;
 
                 case ASSIGNMENT:

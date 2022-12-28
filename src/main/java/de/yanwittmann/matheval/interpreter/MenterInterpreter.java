@@ -66,6 +66,7 @@ public class MenterInterpreter extends EvalRuntime {
             "common.ter",
             "io.ter",
             "system.ter",
+            "debug.ter",
     };
 
     private void loadMenterCoreFiles() {
@@ -164,7 +165,7 @@ public class MenterInterpreter extends EvalRuntime {
                     if (input == null || input.equals("exit") || input.equals("quit")) break;
                     if (input.trim().length() == 0 && !isMultilineMode) continue;
 
-                    if (input.startsWith("debug")) {
+                    if (input.startsWith("debug ")) {
                         if (input.endsWith("interpreter")) {
                             MenterDebugger.logInterpreterEvaluation = !MenterDebugger.logInterpreterEvaluation;
                         } else if (input.endsWith("lexer")) {
@@ -219,7 +220,7 @@ public class MenterInterpreter extends EvalRuntime {
                     if (debugShowEntireStackTrace) {
                         e.printStackTrace();
                     } else {
-                        System.out.println("Error: " + e.getMessage());
+                        System.err.println("Error: " + e.getMessage());
                     }
                     try {
                         Thread.sleep(50);

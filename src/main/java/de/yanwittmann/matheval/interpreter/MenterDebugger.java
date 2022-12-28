@@ -1,5 +1,8 @@
 package de.yanwittmann.matheval.interpreter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class MenterDebugger {
 
     public static boolean logLexedTokens = false;
@@ -19,4 +22,6 @@ public abstract class MenterDebugger {
     public static boolean logInterpreterResolveSymbols = false;
     public static boolean logInterpreterEvaluationOrder = false;
     public static boolean logInterpreterAssignments = false;
+
+    public static List<String> printSymbolValuesOnStackTrace = new ArrayList<>();
 }

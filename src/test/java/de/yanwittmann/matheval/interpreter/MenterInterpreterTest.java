@@ -1,5 +1,6 @@
 package de.yanwittmann.matheval.interpreter;
 
+import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.interpreter.structure.CustomValueType;
 import de.yanwittmann.matheval.interpreter.structure.EvaluationContext;
 import de.yanwittmann.matheval.interpreter.structure.MenterValueFunction;
@@ -230,18 +231,18 @@ class MenterInterpreterTest {
             public HashMap<String, MenterValueFunction> getFunctions() {
                 return new HashMap<String, MenterValueFunction>() {
                     {
-                        put("getValue", (context, self, values, localSymbols) -> new Value(((TestType) self.getValue()).value));
-                        put("setValue", (context, self, values, localSymbols) -> {
+                        put("getValue", (context, self, values, localInformation) -> new Value(((TestType) self.getValue()).value));
+                        put("setValue", (context, self, values, localInformation) -> {
                             ((TestType) self.getValue()).value = values.get(0).getNumericValue();
                             return self;
                         });
-                        put("getList", (context, self, values, localSymbols) -> new Value(((TestType) self.getValue()).list));
-                        put("addToList", (context, self, values, localSymbols) -> {
+                        put("getList", (context, self, values, localInformation) -> new Value(((TestType) self.getValue()).list));
+                        put("addToList", (context, self, values, localInformation) -> {
                             ((TestType) self.getValue()).list.add(values.get(0));
                             return self;
                         });
-                        put("size", (context, self, values, localSymbols) -> new Value(self.size()));
-                        put("iterator", (context, self, values, localSymbols) -> new Value(((TestType) self.getValue()).list.iterator()));
+                        put("size", (context, self, values, localInformation) -> new Value(self.size()));
+                        put("iterator", (context, self, values, localInformation) -> new Value(((TestType) self.getValue()).list.iterator()));
                     }
                 };
             }
@@ -308,6 +309,8 @@ class MenterInterpreterTest {
         interpreter.addAutoImport("TestType inline");
         interpreter.addAutoImport("common inline");
 
+        MenterDebugger.logInterpreterEvaluation = true;
+        MenterDebugger.logInterpreterResolveSymbols = true;
         evaluateAndAssertEqual(interpreter, "3", "" +
                                                  "val = TestType(3)\n" +
                                                  "val.getValue()");
@@ -365,6 +368,23 @@ class MenterInterpreterTest {
                                                   "sum");
     }
 
+    @Test
+    public void exceptionTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        interpreter.evaluateInContextOf("test.foo = 4; doStuff(x) { x + calculate(x, 5) }; calculate(a, b) { a + b + test.hmm }; export [test, doStuff] as test", "testContext");
+
+        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import common inline; import test; test.doStuff(5)"));
+        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import common inline; import test; print(test.test[1])"));
+
+        try {
+            evaluateAndAssertEqual(interpreter, "", "import debug; debug.stackTraceValues(\"a\"); a = 5; test");
+        } catch (MenterExecutionException e) {
+            Assertions.assertTrue(e.getMessage().contains("a = 5 (number)"));
+        }
+    }
+
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
         Assertions.assertEquals(expected, interpreter.evaluate(expression).toDisplayString());
     }
@@ -375,9 +395,9 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        MenterDebugger.logLexedTokens = true;
-        MenterDebugger.logParseProgress = true;
-        MenterDebugger.logParsedTokens = true;
+        // MenterDebugger.logLexedTokens = true;
+        // MenterDebugger.logParseProgress = true;
+        // MenterDebugger.logParsedTokens = true;
         MenterDebugger.logInterpreterEvaluation = true;
         MenterDebugger.logInterpreterResolveSymbols = true;
 

@@ -115,7 +115,7 @@ public class GlobalContext extends EvaluationContext {
     }
 
     public Value evaluate(ParserNode node) {
-        return super.evaluate(node, this, super.getVariables(), SymbolCreationMode.THROW_IF_NOT_EXISTS);
+        return super.evaluate(node, this, SymbolCreationMode.THROW_IF_NOT_EXISTS, new EvaluationContextLocalInformation(super.getVariables()));
     }
 
     @Override
