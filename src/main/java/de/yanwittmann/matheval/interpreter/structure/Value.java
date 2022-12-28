@@ -363,23 +363,7 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("sort", (context, self, values, localSymbols) -> {
-                        final Comparator<Value> comparator;
-                        if (values.size() > 0) {
-                            final List<String> parameterList = getParameterList(values.get(0));
-                            if (parameterList == null || parameterList.size() == 2) {
-                                comparator = (a, b) -> {
-                                    final Value result = applyFunction(toList(a, b), values.get(0), context, localSymbols);
-                                    if (result.getType().equals(PrimitiveValueType.NUMBER.getType())) {
-                                        return ((Number) result.getValue()).intValue();
-                                    }
-                                    return 0;
-                                };
-                            } else {
-                                comparator = Value::compareTo;
-                            }
-                        } else {
-                            comparator = Value::compareTo;
-                        }
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localSymbols);
 
                         if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
                             return new Value(((Map<Object, Value>) self.getValue()).values().stream()
@@ -412,8 +396,14 @@ public class Value implements Comparable<Value> {
 
                     put("sum", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0))));
                     put("avg", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
-                    put("min", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).min(BigDecimal::compareTo).orElse(new BigDecimal(0))));
-                    put("max", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).max(BigDecimal::compareTo).orElse(new BigDecimal(0))));
+                    put("max", (context, self, values, localSymbols) -> {
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localSymbols);
+                        return new Value(((Map<Object, Value>) self.getValue()).values().stream().max(comparator).orElse(Value.empty()));
+                    });
+                    put("min", (context, self, values, localSymbols) -> {
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localSymbols);
+                        return new Value(((Map<Object, Value>) self.getValue()).values().stream().min(comparator).orElse(Value.empty()));
+                    });
                 }
             });
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
@@ -461,6 +451,27 @@ public class Value implements Comparable<Value> {
             });
         }
     };
+
+    public static Comparator<Value> extractComparatorFromParameters(GlobalContext context, List<Value> values, Map<String, Value> localSymbols) {
+        final Comparator<Value> comparator;
+        if (values.size() > 0) {
+            final List<String> parameterList = getParameterList(values.get(0));
+            if (parameterList == null || parameterList.size() == 2) {
+                comparator = (a, b) -> {
+                    final Value result = applyFunction(toList(a, b), values.get(0), context, localSymbols);
+                    if (result.getType().equals(PrimitiveValueType.NUMBER.getType())) {
+                        return ((Number) result.getValue()).intValue();
+                    }
+                    return 0;
+                };
+            } else {
+                comparator = Value::compareTo;
+            }
+        } else {
+            comparator = Value::compareTo;
+        }
+        return comparator;
+    }
 
     private static Value makeIteratorValueIterator(Iterator<?> iterator) {
         return new Value(new Iterator<Value>() {

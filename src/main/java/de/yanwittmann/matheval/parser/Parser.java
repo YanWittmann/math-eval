@@ -966,11 +966,48 @@ public class Parser {
                 Parser::isEvaluableToValue,
                 Parser::isStatementFinisher
         ));
+        rules.add(tokens -> {
+            int state = 0;
+            int start = -1;
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
 
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.STATEMENT, (t) -> null, 0, (t, i) -> !isStatementFinisher(t), (t, i) -> !isType(t, TokenType.CLOSE_CURLY_BRACKET) && !isType(t, ParserNode.NodeType.STATEMENT), (t, i) -> t,
-                Parser::isFinishedStatement,
-                Parser::isStatementFinisher
-        ));
+                if (currentToken instanceof Token || currentToken instanceof ParserNode) {
+                    if (state == 0 && isFinishedStatement(currentToken)) {
+                        state = 1;
+                        start = i;
+                    } else if (state == 1 && isStatementFinisher(currentToken)) {
+                        state = 2;
+                    } else {
+                        state = 0;
+                        start = -1;
+                    }
+                }
+
+                if (state == 2) {
+                    final ParserNode node = new ParserNode(ParserNode.NodeType.STATEMENT, null);
+                    int paddedValueLength = 0;
+                    for (int j = start; j < i + 1; j++) {
+                        final Object token = tokens.get(j);
+
+                        if (isType(token, TokenType.CLOSE_CURLY_BRACKET) || isType(token, ParserNode.NodeType.STATEMENT)) {
+                            paddedValueLength++;
+                        } else if (isFinishedStatement(token)) {
+                            if (token instanceof Collection) {
+                                node.addChildren((Collection<Object>) token);
+                            } else {
+                                node.addChild(token);
+                            }
+                        }
+                    }
+
+                    ParserRule.replace(tokens, node, start, i - paddedValueLength);
+                    return true;
+                }
+            }
+
+            return false;
+        });
 
         // remove all remaining unnecessary tokens like newlines
         rules.add(createRemoveTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON, TokenType.EOF}));

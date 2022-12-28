@@ -25,4 +25,8 @@ public class MenterExecutionException extends RuntimeException {
     public MenterExecutionException(EvaluationContext context, String message) {
         super((context instanceof GlobalContext ? ((GlobalContext) context).getSourceName() + ": " : "") + message);
     }
+
+    public MenterExecutionException(EvaluationContext context, String message, Throwable cause) {
+        super((context instanceof GlobalContext ? ((GlobalContext) context).getSourceName() + ": " : "") + message, cause);
+    }
 }

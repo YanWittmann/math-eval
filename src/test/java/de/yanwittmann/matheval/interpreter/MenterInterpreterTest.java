@@ -95,6 +95,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "~ 8 - 7 ~", "[1, 2, 3, 3].map(x -> x + 5).filter(x -> x > 6).sort((a, b) -> b - a).distinct().join(\" - \", \"~ \", \" ~\")");
 
         evaluateAndAssertEqual(interpreter, "5", "[\"test\", \"hello\"].map(x -> x.size()).max()");
+        evaluateAndAssertEqual(interpreter, "max", "[\"containsValue\", \"max\", \"test\"].max((a, b) -> b.size() - a.size())");
+        evaluateAndAssertEqual(interpreter, "containsValue", "[\"containsValue\", \"max\", \"test\"].max((a, b) -> a.size() - b.size())");
     }
 
     @Test
