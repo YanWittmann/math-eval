@@ -9,4 +9,10 @@ Features:
 - [ ] "safe-mode" in which no global variables can be changed
 
 Bugs:
----
+
+```menter
+test = {
+    1: x -> x + 1,
+    3: x -> x - 1
+}
+```
