@@ -567,13 +567,14 @@ class ParserTest {
                                "      └─ IDENTIFIER: bar",
                 "native foo(bar)");
 
-        assertParsedTreeEquals("FUNCTION_DECLARATION\n" +
-                               "├─ IDENTIFIER: foo\n" +
-                               "├─ PARENTHESIS_PAIR\n" +
-                               "│  └─ IDENTIFIER: bar\n" +
-                               "└─ CODE_BLOCK\n" +
-                               "   └─ RETURN_STATEMENT\n" +
-                               "      └─ NUMBER_LITERAL: 4",
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
+                               "   ├─ IDENTIFIER: foo\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ IDENTIFIER: bar\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      └─ RETURN_STATEMENT\n" +
+                               "         └─ NUMBER_LITERAL: 4",
                 "foo(bar) = return 4");
 
         assertParsedTreeEquals("STATEMENT\n" +

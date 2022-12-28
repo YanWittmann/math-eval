@@ -185,7 +185,7 @@ public class Lexer {
                                     currentIndentationValue = getIndentationValue(this.stringIterator.peek());
                                     indentationCount += currentIndentationValue;
                                     if (currentIndentationValue > 0) this.stringIterator.next();
-                                } while (currentIndentationValue > 0);
+                                } while (currentIndentationValue > 0 && this.stringIterator.hasNext());
 
                                 if (indentationCount > lastIndentation) {
                                     buffer.setLength(0);

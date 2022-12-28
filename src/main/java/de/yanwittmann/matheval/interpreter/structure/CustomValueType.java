@@ -7,6 +7,14 @@ public interface CustomValueType {
 
     String getType();
 
+    /**
+     * Should return a string of the context source code that defines the value type.<br>
+     * e.g.<br>
+     * <code>native TestType() # constructor<br>export [TestType] as TestType # import</code>
+     * @return the context source code.
+     */
+    String contextSource();
+
     HashMap<String, MenterValueFunction> getFunctions();
 
     boolean isType(Object value);

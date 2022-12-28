@@ -381,7 +381,7 @@ public abstract class EvaluationContext {
             final List<String> functionArgumentNames = executableFunction.getArgumentNames();
 
             if (functionArgumentNames.size() != functionParameters.size()) {
-                throw new MenterExecutionException(globalContext, "Function " + functionValue + " requires " + functionArgumentNames.size() + " arguments, but " + functionParameters.size() + " were given");
+                throw new MenterExecutionException(globalContext, "Function [" + functionValue + "] requires " + functionArgumentNames.size() + " arguments, but " + functionParameters.size() + " were given");
             }
 
             final Map<String, Value> functionLocalSymbols = new HashMap<>(localSymbols);

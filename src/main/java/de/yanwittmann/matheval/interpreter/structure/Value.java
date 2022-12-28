@@ -1,11 +1,13 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
+import de.yanwittmann.matheval.interpreter.MenterInterpreter;
 import de.yanwittmann.matheval.lexer.Token;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -226,7 +228,7 @@ public class Value implements Comparable<Value> {
         return false;
     }
 
-    public static void registerCustomValueType(CustomValueType type) {
+    public static void registerCustomValueType(MenterInterpreter interpreter, CustomValueType type) {
         final String typename = type.getType();
         final HashMap<String, MenterValueFunction> functions = type.getFunctions();
 
@@ -238,6 +240,13 @@ public class Value implements Comparable<Value> {
         }
 
         CUSTOM_VALUE_TYPES.add(type);
+
+        final String contextName = typename + "_" + new Random(typename.hashCode() + type.hashCode()).ints(48, 122)
+                .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
+                .limit(20)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+        interpreter.evaluateInContextOf(type.contextSource(), contextName);
     }
 
     public static void removeCustomValueType(CustomValueType type) {
@@ -400,6 +409,11 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("iterator", (context, self, values, localSymbols) -> makeIteratorValueIterator(((Map<Object, Value>) self.getValue()).entrySet().iterator()));
+
+                    put("sum", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0))));
+                    put("avg", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
+                    put("min", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).min(BigDecimal::compareTo).orElse(new BigDecimal(0))));
+                    put("max", (context, self, values, localSymbols) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).max(BigDecimal::compareTo).orElse(new BigDecimal(0))));
                 }
             });
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
@@ -429,6 +443,20 @@ public class Value implements Comparable<Value> {
             put(PrimitiveValueType.ANY.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("type", (context, self, values, localSymbols) -> new Value(self.getType()));
+
+                    put("forEach", (context, self, values, localSymbols) -> {
+                        final Iterator<?> iterator = (Iterator<?>) applyFunction(toList(self), self.access(new Value("iterator")), context, localSymbols).getValue();
+                        while (iterator.hasNext()) {
+                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localSymbols);
+                        }
+                        return self;
+                    });
+
+                    put("functions", (context, self, values, localSymbols) -> {
+                        final List<Value> result = new ArrayList<>();
+                        VALUE_FUNCTIONS.getOrDefault(self.getType(), new HashMap<>()).keySet().forEach(f -> result.add(new Value(f)));
+                        return new Value(result);
+                    });
                 }
             });
         }

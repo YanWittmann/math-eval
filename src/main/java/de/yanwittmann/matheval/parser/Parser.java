@@ -50,11 +50,22 @@ public class Parser {
         while (true) {
             if (rules.stream().noneMatch(rule -> rule.match(tokenTree))) {
                 break;
+            } else if (!isType(tokenTree.get(tokenTree.size() - 1), TokenType.EOF)) {
+                tokenTree.add(new Token("", TokenType.EOF));
             }
         }
 
         if (MenterDebugger.logParsedTokens) {
             LOG.info("Parsed tokens:\n" + toString(tokenTree));
+        }
+
+        // validate token tree
+        for (Object token : tokenTree) {
+            if (!isType(token, ParserNode.NodeType.STATEMENT) && !isType(token, ParserNode.NodeType.EXPORT_STATEMENT) &&
+                !isType(token, ParserNode.NodeType.IMPORT_STATEMENT) && !isType(token, ParserNode.NodeType.IMPORT_INLINE_STATEMENT) &&
+                !isType(token, ParserNode.NodeType.IMPORT_AS_STATEMENT)) {
+                throw new ParsingException("Invalid token tree, failed on\n" + token + "\n\nin\n" + toString(tokenTree));
+            }
         }
 
         final ParserNode root = new ParserNode(ParserNode.NodeType.ROOT, null);
@@ -556,8 +567,13 @@ public class Parser {
                 } else if (state == 1 && isOperator(token, inlineOperator.getSymbol())) {
                     state = 2;
                 } else if (state == 2 &&
-                           (isType(token, ParserNode.NodeType.CODE_BLOCK) || isEvaluableToValue(token) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)) &&
-                           !isType(nextToken, TokenType.OPEN_PARENTHESIS)) {
+                           (
+                                   isType(token, ParserNode.NodeType.CODE_BLOCK) || isEvaluableToValue(token) ||
+                                   isType(token, ParserNode.NodeType.RETURN_STATEMENT) || isFinishedStatement(token)
+                           ) &&
+                           !isType(nextToken, TokenType.OPEN_PARENTHESIS) && !isType(nextToken, TokenType.DOT) &&
+                           !isType(nextToken, TokenType.OPEN_SQUARE_BRACKET) && !isType(nextToken, TokenType.OPEN_CURLY_BRACKET) &&
+                           !isType(nextToken, TokenType.OPERATOR)) {
                     state = 3;
                     end = i;
                     break;
@@ -818,7 +834,8 @@ public class Parser {
                         }
                     }
 
-                    if (isEvaluableToValue(bodyToken) || isType(bodyToken, ParserNode.NodeType.CODE_BLOCK) || isType(bodyToken, ParserNode.NodeType.RETURN_STATEMENT)) {
+                    if (isEvaluableToValue(bodyToken) || isType(bodyToken, ParserNode.NodeType.CODE_BLOCK) ||
+                        isType(bodyToken, ParserNode.NodeType.RETURN_STATEMENT) || isType(bodyToken, ParserNode.NodeType.STATEMENT)) {
                         if (bodyToken instanceof ParserNode) {
                             branch.addChild(makeProperCodeBlock((ParserNode) bodyToken));
                         } else {
@@ -865,7 +882,8 @@ public class Parser {
                     state = 4;
                 } else if (state == 4 && isType(token, TokenType.CLOSE_PARENTHESIS)) {
                     state = 5;
-                } else if (state == 5 && (isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK))) {
+                } else if (state == 5 && (isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) ||
+                                          isType(token, ParserNode.NodeType.STATEMENT))) {
                     state = 6;
                     end = i;
                     break;
@@ -882,7 +900,8 @@ public class Parser {
 
                     if (isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(token, ParserNode.NodeType.ARRAY) ||
                         isType(token, ParserNode.NodeType.SQUARE_BRACKET_PAIR) || isIdentifier(token) ||
-                        isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK)) {
+                        isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) ||
+                        isType(token, ParserNode.NodeType.STATEMENT)) {
 
                         node.addChild(token);
                     }

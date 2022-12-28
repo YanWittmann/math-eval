@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 class MenterInterpreterTest {
 
@@ -37,11 +38,12 @@ class MenterInterpreterTest {
     }
 
     @Test
-    public void inlineFunctionTest() {
+    public void otherTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "6", "a.test = x -> x + 1; a.test(5);");
+        evaluateAndAssertEqual(interpreter, "false", "!true\n");
     }
 
     @Test
@@ -91,6 +93,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "[1, 2, 3]", "[1, 2, 3].sort((a, b) -> a - b)");
 
         evaluateAndAssertEqual(interpreter, "~ 8 - 7 ~", "[1, 2, 3, 3].map(x -> x + 5).filter(x -> x > 6).sort((a, b) -> b - a).distinct().join(\" - \", \"~ \", \" ~\")");
+
+        evaluateAndAssertEqual(interpreter, "5", "[\"test\", \"hello\"].map(x -> x.size()).max()");
     }
 
     @Test
@@ -201,10 +205,23 @@ class MenterInterpreterTest {
             }
         }
 
-        Value.registerCustomValueType(new CustomValueType() {
+        EvaluationContext.registerNativeFunction(new String[]{"TestType", "TestType"}, values -> {
+            if (values.length == 0) {
+                return new Value(new TestType());
+            } else {
+                return new Value(new TestType(((BigDecimal) values[0].getValue())));
+            }
+        });
+
+        Value.registerCustomValueType(interpreter, new CustomValueType() {
             @Override
             public String getType() {
                 return "<TestType>";
+            }
+
+            @Override
+            public String contextSource() {
+                return "native TestType();export [TestType] as TestType";
             }
 
             @Override
@@ -282,69 +299,67 @@ class MenterInterpreterTest {
 
             @Override
             public String toDisplayString(Object thisValue) {
-                return ((TestType) thisValue).value.toString() + " " + ((TestType) thisValue).list.toString();
+                return ((TestType) thisValue).value.toString() + " " + ((TestType) thisValue).list.stream().map(v -> v.toDisplayString()).collect(Collectors.toList());
             }
         });
 
-        EvaluationContext.registerNativeFunction(new String[]{"TestType", "TestType"}, values -> {
-            if (values.length == 0) {
-                return new Value(new TestType());
-            } else {
-                return new Value(new TestType(((BigDecimal) values[0].getValue())));
-            }
-        });
-
-        interpreter.evaluateInContextOf("", "native TestType() export [TestType] as TestType", "TestType");
-
-        interpreter.addAutoImport("TestType");
+        interpreter.addAutoImport("TestType inline");
         interpreter.addAutoImport("common inline");
 
         evaluateAndAssertEqual(interpreter, "3", "" +
-                                                 "val = TestType.TestType(3)\n" +
+                                                 "val = TestType(3)\n" +
                                                  "val.getValue()");
 
         evaluateAndAssertEqual(interpreter, "5", "" +
-                                                 "val = TestType.TestType(3)\n" +
+                                                 "val = TestType(3)\n" +
                                                  "val.setValue(5)\n" +
                                                  "val.getValue()");
 
         evaluateAndAssertEqual(interpreter, "[5, 10]", "" +
-                                                       "val = TestType.TestType()\n" +
+                                                       "val = TestType()\n" +
                                                        "val[0] = 5\n" +
                                                        "val[1] = 10\n" +
                                                        "val.getList()");
 
         evaluateAndAssertEqual(interpreter, "<TestType>", "" +
-                                                          "val = TestType.TestType()\n" +
+                                                          "val = TestType()\n" +
                                                           "val.type()");
 
         evaluateAndAssertEqual(interpreter, "4 []", "" +
-                                                    "val = TestType.TestType(4)\n" +
+                                                    "val = TestType(4)\n" +
                                                     "val");
 
         evaluateAndAssertEqual(interpreter, "1", "" +
-                                                 "val = TestType.TestType(4)\n" +
+                                                 "val = TestType(4)\n" +
                                                  "val.addToList(5)\n" +
                                                  "val.size()");
 
         evaluateAndAssertEqual(interpreter, "15", "" +
-                                                  "val = TestType.TestType(1)\n" +
+                                                  "val = TestType(1)\n" +
                                                   "val.addToList(5)\n" +
                                                   "val.addToList(10)\n" +
                                                   "sum = 0\n" +
                                                   "if (val) {\n" +
-                                                  "  for (i in val) { sum = sum + i }\n" +
+                                                  "  for (i in val) sum = sum + i\n" +
                                                   "}\n" +
                                                   "sum");
 
         evaluateAndAssertEqual(interpreter, "15", "" +
-                                                  "val = TestType.TestType(1)\n" +
+                                                  "val = TestType(1)\n" +
                                                   "val.addToList(5)\n" +
                                                   "val.addToList(10)\n" +
                                                   "sum = 0\n" +
                                                   "if (val) {\n" +
-                                                  "  for (i in range(0, val.size() - 1)) { sum = sum + val[i] }\n" +
+                                                  "  for (i in range(0, val.size() - 1)) sum = sum + val[i]\n" +
                                                   "}\n" +
+                                                  "sum");
+
+        evaluateAndAssertEqual(interpreter, "15", "" +
+                                                  "val = TestType(1)\n" +
+                                                  "val.addToList(5)\n" +
+                                                  "val.addToList(10)\n" +
+                                                  "sum = 0\n" +
+                                                  "val.forEach(i -> sum = sum + i)\n" +
                                                   "sum");
     }
 
