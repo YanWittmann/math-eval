@@ -146,9 +146,15 @@ public class ParserNode {
                         int i = 0;
                         if (operator.isLeftAssociative()) {
                             reconstructCode(node.getChildren().get(i++), sb);
+                            if (operator.isRightAssociative()) {
+                                sb.append(" ");
+                            }
                         }
-                        sb.append(" ").append(operator.getSymbol()).append(" ");
+                        sb.append(operator.getSymbol());
                         if (operator.isRightAssociative()) {
+                            if (operator.isLeftAssociative()) {
+                                sb.append(" ");
+                            }
                             reconstructCode(node.getChildren().get(i), sb);
                         }
                     } else {

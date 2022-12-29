@@ -16,3 +16,4 @@ test = {
     3: x -> x - 1
 }
 ```
+[1,2].containsValue(1) --> false

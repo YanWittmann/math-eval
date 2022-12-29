@@ -36,6 +36,11 @@ public class Value implements Comparable<Value> {
         return value;
     }
 
+    public LinkedHashMap<String, Value> getMap() {
+        if (value instanceof LinkedHashMap) return (LinkedHashMap<String, Value>) value;
+        else throw new MenterExecutionException("Cannot transform type " + getType() + " to map");
+    }
+
     public Value getSecondaryValue() {
         return secondaryValue;
     }
@@ -210,6 +215,17 @@ public class Value implements Comparable<Value> {
         return null;
     }
 
+    public List<Map.Entry<String, Map<String, MenterValueFunction>>> getValueFunctionCandidates() {
+        final List<Map.Entry<String, Map<String, MenterValueFunction>>> candidates = new ArrayList<>();
+        if (VALUE_FUNCTIONS.containsKey(this.getType())) {
+            candidates.add(new AbstractMap.SimpleEntry<>(this.getType(), VALUE_FUNCTIONS.get(this.getType())));
+        }
+        if (VALUE_FUNCTIONS.containsKey(PrimitiveValueType.ANY.getType())) {
+            candidates.add(new AbstractMap.SimpleEntry<>(PrimitiveValueType.ANY.getType(), VALUE_FUNCTIONS.get(PrimitiveValueType.ANY.getType())));
+        }
+        return candidates;
+    }
+
     public boolean create(Value identifier, Value value, boolean isFinalIdentifier) {
         if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
             if (!isFinalIdentifier) {
@@ -272,6 +288,8 @@ public class Value implements Comparable<Value> {
                         put("value", ((Value) entry.getValue()));
                     }})).collect(Collectors.toList())));
 
+                    // TODO: Seems to not be working: [1,2].containsValue(1) --> false
+                    //       Also consider adding contains() for arrays
                     put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
                     put("containsValue", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
 
@@ -447,6 +465,8 @@ public class Value implements Comparable<Value> {
                         VALUE_FUNCTIONS.getOrDefault(self.getType(), new HashMap<>()).keySet().forEach(f -> result.add(new Value(f)));
                         return new Value(result);
                     });
+
+                    put("isNull", (context, self, values, localInformation) -> new Value(self.isEmpty()));
                 }
             });
         }

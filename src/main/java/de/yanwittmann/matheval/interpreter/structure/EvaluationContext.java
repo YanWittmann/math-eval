@@ -1,6 +1,5 @@
 package de.yanwittmann.matheval.interpreter.structure;
 
-import de.yanwittmann.matheval.exceptions.MenterExecutionException;
 import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.interpreter.core.CoreModuleCommon;
 import de.yanwittmann.matheval.interpreter.core.CoreModuleDebug;
@@ -16,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -356,7 +356,7 @@ public abstract class EvaluationContext {
             }
 
             if (result == null) {
-                throw localInformation.createException("Node did not evaluate to anything: " + node);
+                throw localInformation.createException("Node did not evaluate to anything: " + ParserNode.reconstructCode(node));
             }
 
         } else if (nodeOrToken instanceof Token) {
@@ -538,7 +538,7 @@ public abstract class EvaluationContext {
 
                 boolean foundImport = false;
                 for (Import anImport : globalContext.getImports()) {
-                    if (anImport.getAliasOrName().equals(stringKey) && (anImport.getModule().containsSymbol(nextStringKey) || "symbols".equals(nextStringKey))) {
+                    if (!anImport.isInline() && anImport.getAliasOrName().equals(stringKey)) {
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();
@@ -629,7 +629,10 @@ public abstract class EvaluationContext {
             }
 
             if (SymbolCreationMode.THROW_IF_NOT_EXISTS == symbolCreationMode) {
-                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on " + ParserNode.reconstructCode(identifier));
+                final List<String> candidates = findMostLikelyCandidates(globalContext, previousValue, stringKey);
+
+                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on " + ParserNode.reconstructCode(identifier) +
+                                                       (candidates.isEmpty() ? "" : "; did you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
 
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {
                 if (isFinalIdentifier) {
@@ -646,6 +649,79 @@ public abstract class EvaluationContext {
         }
 
         return value;
+    }
+
+    private List<String> findMostLikelyCandidates(GlobalContext globalContext, Value previousValue, String identifierAccessed) {
+        final List<Object> candidates = new ArrayList<>();
+
+        if (previousValue != null) {
+            if (previousValue.getType().equals(PrimitiveValueType.OBJECT.getType())) {
+                candidates.addAll(previousValue.getMap().keySet());
+            }
+            candidates.addAll(previousValue.getValueFunctionCandidates().stream()
+                    .map(Map.Entry::getValue)
+                    .map(Map::keySet)
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()));
+        } else {
+            candidates.addAll(globalContext.getVariables().keySet());
+            for (Import anImport : globalContext.getImports()) {
+                if (anImport.getModule() != null) {
+                    if (anImport.isInline()) {
+                        candidates.addAll(anImport.getModule().getSymbols().stream()
+                                .map(t -> {
+                                    if (t instanceof Token) {
+                                        return ((Token) t).getValue();
+                                    } else if (t instanceof ParserNode) {
+                                        return ParserNode.reconstructCode(t);
+                                    } else {
+                                        return t.toString();
+                                    }
+                                }).collect(Collectors.toList()));
+                    } else {
+                        candidates.add(anImport.getAliasOrName());
+                    }
+                }
+            }
+        }
+
+        final List<String> stringCandidates = candidates.stream()
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        final BiFunction<String, String, Integer> scoreFunction = (s1, s2) -> {
+            if (s1 == null || s2 == null || s1.isEmpty() || s2.isEmpty()) {
+                return 0;
+            }
+            s1 = s1.toLowerCase();
+            s2 = s2.toLowerCase();
+
+            int score = 0;
+            int currentMatchIndex = 0;
+            boolean isMatchingSequence = true;
+            for (int i = 0; i < s1.length() && currentMatchIndex < s2.length(); i++) {
+                if (s1.charAt(i) == s2.charAt(currentMatchIndex)) {
+                    if (isMatchingSequence) {
+                        score += 1;
+                    } else {
+                        score += 0.5;
+                    }
+                    isMatchingSequence = true;
+                    currentMatchIndex++;
+                } else {
+                    isMatchingSequence = false;
+                }
+            }
+
+            return score;
+        };
+
+        return stringCandidates.stream()
+                .sorted(Comparator.comparingInt(s -> -scoreFunction.apply(s, identifierAccessed)))
+                .limit(MenterDebugger.stackTraceUnknownSymbolSuggestions)
+                .collect(Collectors.toList());
     }
 
     public Object getTokenOrNodeValue(Object node) {

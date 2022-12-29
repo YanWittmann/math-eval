@@ -110,11 +110,11 @@ public class EvaluationContextLocalInformation {
         HashMap<String, Value> localSymbolsReduced = new HashMap<>(localSymbols);
         stackTraceElementOfInterest.getContext().getVariables().forEach((name, value) -> localSymbolsReduced.remove(name));
 
-        if (MenterDebugger.printSymbolValuesOnStackTrace.size() > 0) {
+        if (MenterDebugger.stackTracePrintValues.size() > 0) {
             // use localSymbols for this and stackTraceElementOfInterest.getContext().getVariables() as fallback
             sb.append("\n\tDebugger symbols: ");
             List<String> lines = new ArrayList<>();
-            for (String symbol : MenterDebugger.printSymbolValuesOnStackTrace) {
+            for (String symbol : MenterDebugger.stackTracePrintValues) {
                 Value value = localSymbolsReduced.get(symbol);
                 if (value == null) value = stackTraceElementOfInterest.getContext().getVariables().get(symbol);
                 if (value == null) value = Value.empty();
@@ -143,7 +143,7 @@ public class EvaluationContextLocalInformation {
     }
 
     public MenterExecutionException createException(String message, Throwable cause) {
-        if (cause instanceof MenterExecutionException) {
+        if (cause instanceof MenterExecutionException && ((MenterExecutionException) cause).hasStackTrace()) {
             return (MenterExecutionException) cause;
         } else {
             return new MenterExecutionException(formatStackTrace(message));

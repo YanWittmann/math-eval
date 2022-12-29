@@ -124,6 +124,8 @@ public class Operators {
 
             if (leftString.isPresent() && rightString.isPresent()) {
                 return new Value(leftString.get() + rightString.get());
+            } else if (leftString.isPresent() || rightString.isPresent()) {
+                return new Value(leftString.orElseGet(() -> left.get().toDisplayString()) + rightString.orElseGet(() -> right.get().toDisplayString()));
             }
 
             throwCannotPerformOperationException("+", arguments);

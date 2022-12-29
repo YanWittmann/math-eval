@@ -64,9 +64,9 @@ public abstract class CoreModuleDebug {
     }
 
     public static Value stackTraceValues(Value[] arguments) {
-        MenterDebugger.printSymbolValuesOnStackTrace.clear();
+        MenterDebugger.stackTracePrintValues.clear();
         for (Value argument : arguments) {
-            MenterDebugger.printSymbolValuesOnStackTrace.add(argument.getValue().toString());
+            MenterDebugger.stackTracePrintValues.add(argument.getValue().toString());
         }
         return Value.empty();
     }
