@@ -17,7 +17,6 @@ class ParserTest {
     private final static Operators DEFAULT_OPERATORS = new Operators();
 
     @Test
-    @Disabled
     public void customTest() {
         MenterDebugger.logParseProgress = true;
         MenterDebugger.logParsedTokens = true;
@@ -1109,6 +1108,7 @@ class ParserTest {
     }
 
     @Test
+    @Disabled
     public void parseFileTest() throws IOException {
         Parser parser = new Parser(ParserTest.DEFAULT_OPERATORS);
         ExpressionFileReader reader = new ExpressionFileReader(DEFAULT_OPERATORS);

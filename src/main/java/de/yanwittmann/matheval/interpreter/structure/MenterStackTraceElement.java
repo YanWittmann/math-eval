@@ -26,8 +26,15 @@ public class MenterStackTraceElement {
     }
 
     public String buildContextMethodString() {
-        if (functionName == null) return context.getSourceName();
-        return context.getSourceName() + "." + functionName;
+        if (context == null && functionName == null) {
+            return "unknown";
+        } else if (functionName == null) {
+            return context.getSourceName();
+        } else if (context == null) {
+            return functionName;
+        } else {
+            return context.getSourceName() + "." + functionName;
+        }
     }
 
     public String toString(int maxSourceNameLength) {

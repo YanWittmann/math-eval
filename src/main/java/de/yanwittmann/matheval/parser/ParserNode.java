@@ -121,16 +121,16 @@ public class ParserNode {
     public String reconstructCode() {
         final StringBuilder sb = new StringBuilder();
         reconstructCode(this, sb);
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     public static String reconstructCode(Object o) {
         final StringBuilder sb = new StringBuilder();
         reconstructCode(o, sb);
-        return sb.toString();
+        return sb.toString().trim();
     }
 
-    public static String reconstructCode(Object o, StringBuilder sb) {
+    private static String reconstructCode(Object o, StringBuilder sb) {
         if (o instanceof ParserNode) {
             ParserNode node = (ParserNode) o;
             switch (node.getType()) {

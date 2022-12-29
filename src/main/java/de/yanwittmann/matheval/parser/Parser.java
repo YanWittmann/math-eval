@@ -543,6 +543,12 @@ public class Parser {
             return false;
         });
 
+        rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_PARENTHESIS, TokenType.CLOSE_PARENTHESIS, ParserNode.NodeType.PARENTHESIS_PAIR,
+                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
+                new Object[]{},
+                new Object[]{}
+        ));
+
         // apply operators with both sides being evaluable to values
         for (Operator operator : operators.getOperatorsDoubleAssociative()) {
             if (operator.shouldCreateParserRule()) {
@@ -659,11 +665,6 @@ public class Parser {
                 new Object[]{TokenType.NEWLINE}
         ));
         rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_SQUARE_BRACKET, TokenType.CLOSE_SQUARE_BRACKET, ParserNode.NodeType.SQUARE_BRACKET_PAIR,
-                new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
-                new Object[]{},
-                new Object[]{}
-        ));
-        rules.add(tokens -> Parser.createParenthesisRule(tokens, TokenType.OPEN_PARENTHESIS, TokenType.CLOSE_PARENTHESIS, ParserNode.NodeType.PARENTHESIS_PAIR,
                 new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
                 new Object[]{},
                 new Object[]{}

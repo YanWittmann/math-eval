@@ -180,6 +180,10 @@ public class MenterInterpreter extends EvalRuntime {
                             MenterDebugger.logInterpreterEvaluationOrder = !MenterDebugger.logInterpreterEvaluationOrder;
                         } else if (input.endsWith("stack trace")) {
                             debugShowEntireStackTrace = !debugShowEntireStackTrace;
+                        } else if (input.endsWith("breakpoint halt")) {
+                            MenterDebugger.haltOnEveryExecutionStep = !MenterDebugger.haltOnEveryExecutionStep;
+                        } else if (input.contains("breakpoint")) {
+                            MenterDebugger.breakpointActivationCode = input.replace("debug breakpoint ", "").trim();
                         } else {
                             System.out.println("Unknown debug target: " + input.substring(5));
                             System.out.println("  interpreter         " + MenterDebugger.logInterpreterEvaluation + "\n" +
@@ -188,7 +192,9 @@ public class MenterInterpreter extends EvalRuntime {
                                                "  parser progress     " + MenterDebugger.logParseProgress + "\n" +
                                                "  lexer               " + MenterDebugger.logLexedTokens + "\n" +
                                                "  import order        " + MenterDebugger.logInterpreterEvaluationOrder + "\n" +
-                                               "  stack trace         " + debugShowEntireStackTrace);
+                                               "  stack trace         " + debugShowEntireStackTrace + "\n" +
+                                               "  breakpoint          " + MenterDebugger.breakpointActivationCode + "\n" +
+                                               "  breakpoint halt     " + MenterDebugger.haltOnEveryExecutionStep);
                         }
                         continue;
 
@@ -204,12 +210,14 @@ public class MenterInterpreter extends EvalRuntime {
                             final String joined = String.join("\n", multilineBuffer);
                             multilineBuffer.clear();
                             isMultilineMode = false;
+                            MenterDebugger.haltOnEveryExecutionStep = false;
                             result = interpreter.evaluateInContextOf(joined, "repl");
                         } else {
                             multilineBuffer.add(input);
                             continue;
                         }
                     } else {
+                        MenterDebugger.haltOnEveryExecutionStep = false;
                         result = interpreter.evaluateInContextOf(input, "repl");
                     }
 

@@ -107,26 +107,57 @@ public class EvaluationContextLocalInformation {
         }
 
         final MenterStackTraceElement stackTraceElementOfInterest = stackTrace.peek();
+        appendStackTraceSymbols(sb, stackTraceElementOfInterest, false);
+
+        return sb.toString();
+    }
+
+    public void appendStackTraceSymbols(StringBuilder sb, MenterStackTraceElement stackTraceElementOfInterest, boolean variableValueDisplayMode) {
         HashMap<String, Value> localSymbolsReduced = new HashMap<>(localSymbols);
-        stackTraceElementOfInterest.getContext().getVariables().forEach((name, value) -> localSymbolsReduced.remove(name));
+        final boolean hasContext = stackTraceElementOfInterest.getContext() != null;
+        if (hasContext) {
+            stackTraceElementOfInterest.getContext().getVariables().forEach((name, value) -> localSymbolsReduced.remove(name));
+        }
 
         if (MenterDebugger.stackTracePrintValues.size() > 0) {
-            // use localSymbols for this and stackTraceElementOfInterest.getContext().getVariables() as fallback
-            sb.append("\n\tDebugger symbols: ");
+            sb.append("\n\tDebugger symbols:\n\t\t");
             List<String> lines = new ArrayList<>();
             for (String symbol : MenterDebugger.stackTracePrintValues) {
                 Value value = localSymbolsReduced.get(symbol);
-                if (value == null) value = stackTraceElementOfInterest.getContext().getVariables().get(symbol);
+                if (value == null && hasContext) value = stackTraceElementOfInterest.getContext().getVariables().get(symbol);
                 if (value == null) value = Value.empty();
                 lines.add(symbol + " = " + value);
             }
-            sb.append(String.join(", ", lines));
+            sb.append(String.join("\n\t\t", lines));
         }
 
-        sb.append("\n\tLocal symbols:  ").append(formatVariables(localSymbolsReduced));
-        sb.append("\n\tGlobal symbols: ").append(formatVariables(stackTraceElementOfInterest.getContext().getVariables()));
+        if (variableValueDisplayMode) {
+            if (localSymbolsReduced.size() > 0) {
+                sb.append("\n\tLocal symbols:\n\t\t");
+                List<String> lines = new ArrayList<>();
+                for (Map.Entry<String, Value> entry : localSymbolsReduced.entrySet()) {
+                    lines.add(entry.getKey() + " = " + entry.getValue());
+                }
+                sb.append(String.join("\n\t\t", lines));
+            }
+        } else {
+            sb.append("\n\tLocal symbols:  ").append(formatVariables(localSymbolsReduced));
+        }
 
-        return sb.toString();
+        if (hasContext) {
+            if (variableValueDisplayMode) {
+                if (stackTraceElementOfInterest.getContext().getVariables().size() > 0) {
+                    sb.append("\n\tGlobal symbols:\n\t\t");
+                    List<String> lines = new ArrayList<>();
+                    for (Map.Entry<String, Value> entry : stackTraceElementOfInterest.getContext().getVariables().entrySet()) {
+                        lines.add(entry.getKey() + " = " + entry.getValue());
+                    }
+                    sb.append(String.join("\n\t\t", lines));
+                }
+            } else {
+                sb.append("\n\tGlobal symbols: ").append(formatVariables(stackTraceElementOfInterest.getContext().getVariables()));
+            }
+        }
     }
 
     private String formatVariables(Map<String, Value> localSymbols) {

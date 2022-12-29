@@ -85,11 +85,37 @@ public abstract class EvaluationContext {
         if (nodeOrToken instanceof ParserNode) {
             final ParserNode node = (ParserNode) nodeOrToken;
 
-            if (MenterDebugger.logInterpreterEvaluation) {
-                LOG.info(node.reconstructCode());
+            final boolean debuggerBreakpoint = MenterDebugger.haltOnEveryExecutionStep || (MenterDebugger.breakpointActivationCode != null && node.reconstructCode().equals(MenterDebugger.breakpointActivationCode.trim()));
+
+            if (MenterDebugger.logInterpreterEvaluation || debuggerBreakpoint) {
+                System.out.print(node.reconstructCode());
+                if (!debuggerBreakpoint) System.out.println();
+                else System.out.print(" ");
             }
-            if (MenterDebugger.breakpointActivationCode != null && node.reconstructCode().equals(MenterDebugger.breakpointActivationCode)) {
-                LOG.info("Found debugger breakpoint, place a breakpoint here to debug: {}.java:{}\nBreakpoint code: {}", EvaluationContext.class.getName(), new Throwable().getStackTrace()[0].getLineNumber(), node.reconstructCode());
+            if (debuggerBreakpoint) {
+                MenterDebugger.haltOnEveryExecutionStep = true;
+                while (true) {
+                    final int action = MenterDebugger.waitForDebuggerResume();
+
+                    if (action == 0) {
+                        break;
+                    } else if (action == 1) {
+                        final StringBuilder sb = new StringBuilder();
+                        localInformation.appendStackTraceSymbols(sb, new MenterStackTraceElement(this.getParentContext() instanceof GlobalContext ? ((GlobalContext) this.getParentContext()) : null, node), true);
+                        System.out.println("Symbols:" + sb);
+                    } else if (action == 2) {
+                        localInformation.printStackTrace("Debugger stack trace:");
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException ignored) {
+                        }
+                    } else if (action == 3) {
+                        MenterDebugger.haltOnEveryExecutionStep = false;
+                        break;
+                    }
+
+                    System.out.print(node.reconstructCode() + " ");
+                }
             }
 
             if (node.getType() == ParserNode.NodeType.STATEMENT || node.getType() == ParserNode.NodeType.ROOT || node.getType() == ParserNode.NodeType.CODE_BLOCK) {
@@ -153,7 +179,7 @@ public abstract class EvaluationContext {
 
                     result = op.evaluate(arguments);
                     if (result == null) {
-                        throw localInformation.createException("Operator " + op.getSymbol() + " returned null as result; this is most likely due to an incomplete implementation of the operator.");
+                        throw localInformation.createException("Operator " + op.getSymbol() + " did not return a result; this is most likely due to an incomplete implementation of the operator.");
                     }
                 }
             } else if (node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {

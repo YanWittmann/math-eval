@@ -1,5 +1,7 @@
 package de.yanwittmann.matheval.interpreter;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,10 +21,36 @@ public abstract class MenterDebugger {
      * Place your debugger there and set a breakpoint to debug the evaluation.
      */
     public static String breakpointActivationCode = null;
+    public static boolean haltOnEveryExecutionStep = false;
     public static boolean logInterpreterResolveSymbols = false;
     public static boolean logInterpreterEvaluationOrder = false;
     public static boolean logInterpreterAssignments = false;
 
     public static int stackTraceUnknownSymbolSuggestions = 3;
     public static List<String> stackTracePrintValues = new ArrayList<>();
+
+    public static int waitForDebuggerResume() {
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        try {
+            final String input = reader.readLine();
+            switch (input) {
+                case "symbols":
+                case "s":
+                    return 1;
+                case "stacktrace":
+                case "st":
+                case "trace":
+                case "stack":
+                    return 2;
+                case "continue":
+                case "resume":
+                case "r":
+                    return 3;
+                default:
+                    return 0;
+            }
+        } catch (Exception ignored) {
+        }
+        return 0;
+    }
 }
