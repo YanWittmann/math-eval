@@ -10,10 +10,4 @@ Features:
 
 Bugs:
 
-```menter
-test = {
-    1: x -> x + 1,
-    3: x -> x - 1
-}
-```
-[1,2].containsValue(1) --> false
+none at the moment

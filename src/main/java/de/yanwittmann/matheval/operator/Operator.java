@@ -10,7 +10,6 @@ import de.yanwittmann.matheval.parser.ParserRule;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 
 public abstract class Operator {
@@ -53,6 +52,11 @@ public abstract class Operator {
             this.start = start;
             this.end = end;
         }
+
+        @Override
+        public String toString() {
+            return operatorParentNode.getValue().toString() + " (" + start + " - " + end + ")";
+        }
     }
 
     public ParserRule makeParserRule(List<Operator> operatorsWithPrecedence) {
@@ -60,21 +64,24 @@ public abstract class Operator {
             final List<OperatorMatch> operatorMatches = new ArrayList<>();
 
             operatorMatches.add(findEarliestMatch(tokens, this));
+            if (operatorMatches.get(0) == null) return false;
 
             for (Operator operator : operatorsWithPrecedence) {
                 if (operator == this) continue;
-                OperatorMatch operatorMatch = findEarliestMatch(tokens, operator);
+                final OperatorMatch operatorMatch = findEarliestMatch(tokens, operator);
                 if (operatorMatch != null) operatorMatches.add(operatorMatch);
             }
 
-            final OperatorMatch earliestMatch = operatorMatches.stream()
-                    .filter(Objects::nonNull)
-                    .min(Comparator.comparingInt(match -> match.start))
-                    .orElse(null);
+            if (operatorMatches.size() > 0) {
+                final OperatorMatch earliestMatch = operatorMatches.stream()
+                        .min(Comparator.comparingInt(match -> match.start))
+                        .get();
 
-            if (earliestMatch == null) return false;
-            ParserRule.replace(tokens, earliestMatch.operatorParentNode, earliestMatch.start, earliestMatch.end);
-            return true;
+                ParserRule.replace(tokens, earliestMatch.operatorParentNode, earliestMatch.start, earliestMatch.end);
+                return true;
+            }
+
+            return false;
         };
     }
 

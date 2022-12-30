@@ -76,6 +76,8 @@ public class Value implements Comparable<Value> {
             this.value = map;
         } else if (value instanceof Token) {
             setValue(((Token) value).getValue());
+        } else if (value instanceof BigDecimal) {
+            this.value = ((BigDecimal) value).stripTrailingZeros();
         } else {
             this.value = value;
         }
@@ -288,10 +290,9 @@ public class Value implements Comparable<Value> {
                         put("value", ((Value) entry.getValue()));
                     }})).collect(Collectors.toList())));
 
-                    // TODO: Seems to not be working: [1,2].containsValue(1) --> false
-                    //       Also consider adding contains() for arrays
-                    put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).containsKey(values.get(0).getValue())));
-                    put("containsValue", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).containsValue(values.get(0).getValue())));
+                    put("containsValue", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).values().stream().anyMatch(value -> value.equals(values.get(0)))));
+                    put("contains", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).values().stream().anyMatch(value -> value.equals(values.get(0)))));
+                    put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().anyMatch(key -> key.equals(values.get(0).getValue()))));
 
                     put("forEach", (context, self, values, localInformation) -> {
                         final Map<Object, Value> mapValue = (Map<Object, Value>) self.getValue();

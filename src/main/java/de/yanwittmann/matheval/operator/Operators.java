@@ -5,12 +5,24 @@ import de.yanwittmann.matheval.interpreter.structure.PrimitiveValueType;
 import de.yanwittmann.matheval.interpreter.structure.Value;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Operators {
 
+    private static int BIG_DECIMAL_DIVISION_SCALE = 20;
+
     private final List<Operator> operators = new ArrayList<>();
+
+    public static void setBigDecimalDivisionScale(int bigDecimalDivisionScale) {
+        if (bigDecimalDivisionScale < 0) {
+            throw new IllegalArgumentException("bigDecimalDivisionScale must be >= 0");
+        } else if (bigDecimalDivisionScale > 100) {
+            throw new IllegalArgumentException("bigDecimalDivisionScale must be <= 100");
+        }
+        BIG_DECIMAL_DIVISION_SCALE = bigDecimalDivisionScale;
+    }
 
     private static Optional<Value> getNumericValue(Value value) {
         try {
@@ -34,7 +46,7 @@ public class Operators {
         }
     }
 
-    private static void throwCannotPerformOperationException(String symbol, Value... values) {
+    private static MenterExecutionException createCannotPerformOperationException(String symbol, Value... values) {
         StringBuilder builder = new StringBuilder();
         builder.append("Cannot perform operation '").append(symbol).append("' with arguments: ");
         for (int i = 0; i < values.length; i++) {
@@ -43,7 +55,7 @@ public class Operators {
                 builder.append(", ");
             }
         }
-        throw new MenterExecutionException(builder.toString());
+        return new MenterExecutionException(builder.toString());
     }
 
     public Operators() {
@@ -70,8 +82,7 @@ public class Operators {
             if (value.isPresent()) {
                 return new Value(value.get().getNumericValue().negate());
             } else {
-                throwCannotPerformOperationException("-", arguments);
-                return null;
+                throw createCannotPerformOperationException("-", arguments);
             }
         }));
         add(Operator.make("!", 140, false, true, (arguments) -> {
@@ -79,8 +90,7 @@ public class Operators {
             if (value.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
                 return new Value(!(boolean) value.getValue());
             } else {
-                throwCannotPerformOperationException("!", value);
-                return null;
+                throw createCannotPerformOperationException("!", value);
             }
         }));
         add(Operator.make("!", 140, true, false, (arguments) -> {
@@ -108,14 +118,43 @@ public class Operators {
                 return new Value(leftString.get() + rightString.get());
             }
 
-            throwCannotPerformOperationException("*", arguments);
-            return null;
+            throw createCannotPerformOperationException("*", arguments);
         }));
         add(Operator.make("/", 120, true, true, (arguments) -> {
-            return null;
+            final Optional<Value> left = getNumericValue(arguments[0]);
+            final Optional<Value> right = getNumericValue(arguments[1]);
+
+            if (left.isPresent() && right.isPresent()) {
+                return new Value(((BigDecimal) left.get().getValue()).divide((BigDecimal) right.get().getValue(), BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
+            }
+
+            throw createCannotPerformOperationException("/", arguments);
         }));
         add(Operator.make("%", 120, true, true, (arguments) -> {
-            return null;
+            final Optional<Value> left = getNumericValue(arguments[0]);
+            final Optional<Value> right = getNumericValue(arguments[1]);
+
+            if (left.isPresent() && right.isPresent()) {
+                return new Value(((BigDecimal) left.get().getValue()).remainder((BigDecimal) right.get().getValue()));
+            }
+
+            throw createCannotPerformOperationException("%", arguments);
+        }));
+        add(Operator.make("%%", 120, true, true, (arguments) -> {
+            final Optional<Value> left = getNumericValue(arguments[0]);
+            final Optional<Value> right = getNumericValue(arguments[1]);
+
+            if (left.isPresent() && right.isPresent()) {
+                BigDecimal leftValue = (BigDecimal) left.get().getValue();
+                BigDecimal rightValue = (BigDecimal) right.get().getValue();
+                BigDecimal remainder = leftValue.remainder(rightValue);
+                if (remainder.compareTo(BigDecimal.ZERO) < 0) {
+                    remainder = remainder.add(rightValue);
+                }
+                return new Value(remainder);
+            }
+
+            throw createCannotPerformOperationException("%%", arguments);
         }));
 
         add(Operator.make("+", 110, true, true, (arguments) -> {
@@ -132,11 +171,10 @@ public class Operators {
             if (leftString.isPresent() && rightString.isPresent()) {
                 return new Value(leftString.get() + rightString.get());
             } else if (leftString.isPresent() || rightString.isPresent()) {
-                return new Value(leftString.orElseGet(() -> left.get().toDisplayString()) + rightString.orElseGet(() -> right.get().toDisplayString()));
+                return new Value(leftString.orElseGet(() -> arguments[0].toDisplayString()) + rightString.orElseGet(() -> arguments[1].toDisplayString()));
             }
 
-            throwCannotPerformOperationException("+", arguments);
-            return null;
+            throw createCannotPerformOperationException("+", arguments);
         }));
         add(Operator.make("-", 110, true, true, (arguments) -> {
             final Optional<Value> left = getNumericValue(arguments[0]);
@@ -146,8 +184,7 @@ public class Operators {
                 return new Value(((BigDecimal) left.get().getValue()).subtract((BigDecimal) right.get().getValue()));
             }
 
-            throwCannotPerformOperationException("-", arguments);
-            return null;
+            throw createCannotPerformOperationException("-", arguments);
         }));
 
         add(Operator.make("<<", 100, true, true, (arguments) -> {

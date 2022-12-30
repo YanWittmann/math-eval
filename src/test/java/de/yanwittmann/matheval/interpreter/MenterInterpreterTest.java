@@ -44,7 +44,8 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "6", "a.test = x -> x + 1; a.test(5);");
-        evaluateAndAssertEqual(interpreter, "false", "!true\n");
+        evaluateAndAssertEqual(interpreter, "false", "!true\n"); // newlines at the end caused the lexer to read oob
+        evaluateAndAssertEqual(interpreter, "true", "[1,2].containsValue(1)"); // contains functions would not compare the values, but the value instances
     }
 
     @Test
@@ -124,6 +125,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "-30", "" +
                                                    "foo = x -> x; test = x -> x;" +
                                                    "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + test(1 * 5 + 2 * (3 + 2)) * 1");
+
+        evaluateAndAssertEqual(interpreter, "-3.5", "1 + 2 * 3 / 4 % 5 - 6");
     }
 
     @Test
@@ -398,20 +401,13 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        evaluateAndAssertEqual(interpreter, "0", "" +
-                                                 "(1 + 2) - 3");
-        evaluateAndAssertEqual(interpreter, "-44", "" +
-                                                   "-1 * (2 + 3 * 4) + -5 * 6");
-
-        MenterDebugger.logLexedTokens = true;
-        MenterDebugger.logParseProgress = true;
-        MenterDebugger.logParsedTokens = true;
+        // MenterDebugger.logLexedTokens = true;
+        // MenterDebugger.logParseProgress = true;
+        // MenterDebugger.logParsedTokens = true;
         MenterDebugger.logInterpreterEvaluationStyle = 2;
-        //MenterDebugger.logInterpreterResolveSymbols = true;
+        // MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "-75", "" +
-                                                   "foo = x -> x;" +
-                                                   "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + -30 * 1");
+        evaluateAndAssertEqual(interpreter, "-3.5", "1 + 2 * 3 / 4 % 5 - 6");
     }
 
 }

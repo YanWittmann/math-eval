@@ -636,9 +636,15 @@ public class Parser {
                     key = i;
                 } else if (state == 1 && isOperator(token, ":")) {
                     state = 2;
-                } else if (state == 2 && isEvaluableToValue(token) && (isType(nextToken, TokenType.COMMA) || isType(nextToken, TokenType.CLOSE_CURLY_BRACKET))) {
+                } else if (state == 2 && isEvaluableToValue(token) && isType(nextToken, TokenType.NEWLINE)) {
                     state = 3;
                     value = i;
+                } else if (state == 2 && isEvaluableToValue(token) && (isType(nextToken, TokenType.COMMA) || isType(nextToken, TokenType.CLOSE_CURLY_BRACKET))) {
+                    state = 4;
+                    value = i;
+                    break;
+                } else if (state == 3 && (isType(nextToken, TokenType.COMMA) || isType(nextToken, TokenType.CLOSE_CURLY_BRACKET))) {
+                    state = 4;
                     break;
                 } else {
                     state = 0;
@@ -646,7 +652,7 @@ public class Parser {
                 }
             }
 
-            if (state == 3) {
+            if (state == 4) {
                 final ParserNode node = new ParserNode(ParserNode.NodeType.MAP_ELEMENT, null);
                 node.addChild(tokens.get(key));
                 node.addChild(tokens.get(value));
@@ -679,6 +685,10 @@ public class Parser {
 
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
+                if (isType(currentToken, TokenType.NEWLINE)) {
+                    continue;
+                }
+
                 final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
                 final Object beforeToken = i - 1 >= 0 ? tokens.get(i - 1) : null;
 
@@ -699,8 +709,9 @@ public class Parser {
 
                 } else if (isType(currentToken, TokenType.COMMA)) {
                     if (node.getChildren().size() > 0) {
-                        if (!isEvaluableToValue(nextToken) && !isType(nextToken, ParserNode.NodeType.LISTED_ELEMENTS) &&
-                            !isType(nextToken, ParserNode.NodeType.PARENTHESIS_PAIR) && !isType(nextToken, ParserNode.NodeType.MAP_ELEMENT)) {
+                        if (!(isEvaluableToValue(nextToken) || isType(nextToken, ParserNode.NodeType.LISTED_ELEMENTS) ||
+                              isType(nextToken, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(nextToken, ParserNode.NodeType.MAP_ELEMENT) ||
+                              isType(nextToken, TokenType.NEWLINE))) {
                             start = -1;
                             includesNotListElements = false;
                             node.getChildren().clear();

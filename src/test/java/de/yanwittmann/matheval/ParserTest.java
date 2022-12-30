@@ -1065,6 +1065,36 @@ class ParserTest {
     }
 
     @Test
+    public void mapTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   └─ MAP\n" +
+                               "      ├─ MAP_ELEMENT\n" +
+                               "      │  ├─ NUMBER_LITERAL: 1\n" +
+                               "      │  └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "      │     ├─ PARENTHESIS_PAIR\n" +
+                               "      │     │  └─ IDENTIFIER: x\n" +
+                               "      │     └─ CODE_BLOCK\n" +
+                               "      │        └─ EXPRESSION: + (110 l r)\n" +
+                               "      │           ├─ IDENTIFIER: x\n" +
+                               "      │           └─ NUMBER_LITERAL: 1\n" +
+                               "      └─ MAP_ELEMENT\n" +
+                               "         ├─ NUMBER_LITERAL: 3\n" +
+                               "         └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "            ├─ PARENTHESIS_PAIR\n" +
+                               "            │  └─ IDENTIFIER: x\n" +
+                               "            └─ CODE_BLOCK\n" +
+                               "               └─ EXPRESSION: - (110 l r)\n" +
+                               "                  ├─ IDENTIFIER: x\n" +
+                               "                  └─ NUMBER_LITERAL: 1",
+                "test = {\n" +
+                "    1: x -> x + 1,\n" +
+                "    3: x -> x - 1\n" +
+                "}");
+    }
+
+    @Test
     public void accessorNightmareTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
