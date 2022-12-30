@@ -17,10 +17,11 @@ class ParserTest {
     private final static Operators DEFAULT_OPERATORS = new Operators();
 
     @Test
+    @Disabled
     public void customTest() {
         MenterDebugger.logParseProgress = true;
         MenterDebugger.logParsedTokens = true;
-        MenterDebugger.logInterpreterEvaluation = true;
+        MenterDebugger.logInterpreterEvaluationStyle = 1;
         MenterDebugger.logInterpreterResolveSymbols = true;
 
         // assertParsedTreeEquals("",
@@ -105,6 +106,20 @@ class ParserTest {
                                "      └─ PARENTHESIS_PAIR\n" +
                                "         └─ IDENTIFIER: i",
                 "for ((i, e) : list) print(i)");
+    }
+
+    @Test
+    public void correctOperatorOrder() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ EXPRESSION: + (110 l r)\n" +
+                               "   ├─ NUMBER_LITERAL: 1\n" +
+                               "   └─ EXPRESSION: * (120 l r)\n" +
+                               "      ├─ NUMBER_LITERAL: 2\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "            ├─ NUMBER_LITERAL: 3\n" +
+                               "            └─ NUMBER_LITERAL: 4",
+                "1 + 2 * (3 + 4)");
     }
 
     @Test

@@ -9,9 +9,6 @@ public abstract class CoreModuleDebug {
             // switch the debugger flag
             final String debuggerFlag = arguments[0].getValue().toString();
             switch (debuggerFlag) {
-                case "interpreter":
-                    MenterDebugger.logInterpreterEvaluation = !MenterDebugger.logInterpreterEvaluation;
-                    break;
                 case "lexer":
                     MenterDebugger.logLexedTokens = !MenterDebugger.logLexedTokens;
                     break;
@@ -37,7 +34,7 @@ public abstract class CoreModuleDebug {
             final String debuggerFlag = arguments[0].getValue().toString();
             switch (debuggerFlag) {
                 case "interpreter":
-                    MenterDebugger.logInterpreterEvaluation = arguments[1].isTrue();
+                    MenterDebugger.logInterpreterEvaluationStyle = arguments[1].getNumericValue().intValue();
                     break;
                 case "lexer":
                     MenterDebugger.logLexedTokens = arguments[1].isTrue();

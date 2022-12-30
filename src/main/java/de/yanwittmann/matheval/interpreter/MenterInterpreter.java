@@ -167,7 +167,7 @@ public class MenterInterpreter extends EvalRuntime {
 
                     if (input.startsWith("debug ")) {
                         if (input.endsWith("interpreter")) {
-                            MenterDebugger.logInterpreterEvaluation = !MenterDebugger.logInterpreterEvaluation;
+                            MenterDebugger.logInterpreterEvaluationStyle = (MenterDebugger.logInterpreterEvaluationStyle + 1) % 3;
                         } else if (input.endsWith("lexer")) {
                             MenterDebugger.logLexedTokens = !MenterDebugger.logLexedTokens;
                         } else if (input.endsWith("parser")) {
@@ -186,7 +186,7 @@ public class MenterInterpreter extends EvalRuntime {
                             MenterDebugger.breakpointActivationCode = input.replace("debug breakpoint ", "").trim();
                         } else {
                             System.out.println("Unknown debug target: " + input.substring(5));
-                            System.out.println("  interpreter         " + MenterDebugger.logInterpreterEvaluation + "\n" +
+                            System.out.println("  interpreter         " + MenterDebugger.logInterpreterEvaluationStyle + "\n" +
                                                "  interpreter resolve " + MenterDebugger.logInterpreterResolveSymbols + "\n" +
                                                "  parser              " + MenterDebugger.logParsedTokens + "\n" +
                                                "  parser progress     " + MenterDebugger.logParseProgress + "\n" +

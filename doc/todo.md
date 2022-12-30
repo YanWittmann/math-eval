@@ -17,5 +17,3 @@ test = {
 }
 ```
 [1,2].containsValue(1) --> false
-
-1 + 2 * (3 + 4) --> invalid order of operations

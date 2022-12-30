@@ -19,6 +19,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public abstract class EvaluationContext {
 
@@ -77,48 +78,34 @@ public abstract class EvaluationContext {
     public Value evaluate(Object nodeOrToken, GlobalContext globalContext, SymbolCreationMode symbolCreationMode, EvaluationContextLocalInformation localInformation) {
         Value result = null;
 
-        final boolean appendToStackTrace = !Parser.isType(nodeOrToken, ParserNode.NodeType.STATEMENT) && !Parser.isType(nodeOrToken, ParserNode.NodeType.ROOT) && !Parser.isType(nodeOrToken, ParserNode.NodeType.CODE_BLOCK);
-        if (appendToStackTrace) {
+        final boolean isMultiExpressionNode = Parser.isType(nodeOrToken, ParserNode.NodeType.STATEMENT) || Parser.isType(nodeOrToken, ParserNode.NodeType.ROOT) || Parser.isType(nodeOrToken, ParserNode.NodeType.CODE_BLOCK);
+        if (!isMultiExpressionNode) {
             localInformation.putStackFrame(globalContext, nodeOrToken);
         }
 
         if (nodeOrToken instanceof ParserNode) {
             final ParserNode node = (ParserNode) nodeOrToken;
 
-            final boolean debuggerBreakpoint = MenterDebugger.haltOnEveryExecutionStep || (MenterDebugger.breakpointActivationCode != null && node.reconstructCode().equals(MenterDebugger.breakpointActivationCode.trim()));
+            final boolean isDebuggerBreakpoint = MenterDebugger.haltOnEveryExecutionStep || (MenterDebugger.breakpointActivationCode != null && node.reconstructCode().equals(MenterDebugger.breakpointActivationCode.trim()));
 
-            if (MenterDebugger.logInterpreterEvaluation || debuggerBreakpoint) {
-                System.out.print(node.reconstructCode());
-                if (!debuggerBreakpoint) System.out.println();
-                else System.out.print(" ");
-            }
-            if (debuggerBreakpoint) {
-                MenterDebugger.haltOnEveryExecutionStep = true;
-                while (true) {
-                    final int action = MenterDebugger.waitForDebuggerResume();
+            if (!isMultiExpressionNode) {
+                if (MenterDebugger.logInterpreterEvaluationStyle > 0 || isDebuggerBreakpoint) {
+                    if (MenterDebugger.logInterpreterEvaluationStyle == 2) {
+                        System.out.println(createDebuggerPrintIndentation(localInformation) + node.reconstructCode());
 
-                    if (action == 0) {
-                        break;
-                    } else if (action == 1) {
-                        final StringBuilder sb = new StringBuilder();
-                        localInformation.appendStackTraceSymbols(sb, new MenterStackTraceElement(this.getParentContext() instanceof GlobalContext ? ((GlobalContext) this.getParentContext()) : null, node), true);
-                        System.out.println("Symbols:" + sb);
-                    } else if (action == 2) {
-                        localInformation.printStackTrace("Debugger stack trace:");
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException ignored) {
+                    } else if (MenterDebugger.logInterpreterEvaluationStyle == 1) {
+                        System.out.print(node.reconstructCode());
+                        if (!isDebuggerBreakpoint) System.out.println();
+                        else System.out.print(" ");
+
+                        if (isDebuggerBreakpoint) {
+                            breakpointReached(localInformation, node);
                         }
-                    } else if (action == 3) {
-                        MenterDebugger.haltOnEveryExecutionStep = false;
-                        break;
                     }
-
-                    System.out.print(node.reconstructCode() + " ");
                 }
             }
 
-            if (node.getType() == ParserNode.NodeType.STATEMENT || node.getType() == ParserNode.NodeType.ROOT || node.getType() == ParserNode.NodeType.CODE_BLOCK) {
+            if (isMultiExpressionNode) {
                 for (Object child : node.getChildren()) {
                     result = evaluate(child, globalContext, symbolCreationMode, localInformation);
                     if (child instanceof ParserNode && ((ParserNode) child).getType() == ParserNode.NodeType.RETURN_STATEMENT) {
@@ -385,6 +372,20 @@ public abstract class EvaluationContext {
                 throw localInformation.createException("Node did not evaluate to anything: " + ParserNode.reconstructCode(node));
             }
 
+            if (!isMultiExpressionNode) {
+                if (MenterDebugger.logInterpreterEvaluationStyle > 1 || isDebuggerBreakpoint) {
+                    if (MenterDebugger.logInterpreterEvaluationStyle == 2) {
+                        System.out.println(createDebuggerPrintIndentation(localInformation) + "└─> " + result);
+                    } else if (MenterDebugger.logInterpreterEvaluationStyle == 3) {
+                        System.out.println(node.reconstructCode() + " --> " + result);
+
+                        if (isDebuggerBreakpoint) {
+                            breakpointReached(localInformation, node);
+                        }
+                    }
+                }
+            }
+
         } else if (nodeOrToken instanceof Token) {
             final Token node = (Token) nodeOrToken;
 
@@ -404,11 +405,37 @@ public abstract class EvaluationContext {
             }
         }
 
-        if (appendToStackTrace) {
+        if (!isMultiExpressionNode) {
             localInformation.popStackFrame();
         }
 
         return result;
+    }
+
+    private void breakpointReached(EvaluationContextLocalInformation localInformation, ParserNode node) {
+        MenterDebugger.haltOnEveryExecutionStep = true;
+        while (true) {
+            final int action = MenterDebugger.waitForDebuggerResume();
+
+            if (action == 0) {
+                break;
+            } else if (action == 1) {
+                final StringBuilder sb = new StringBuilder();
+                localInformation.appendStackTraceSymbols(sb, new MenterStackTraceElement(this.getParentContext() instanceof GlobalContext ? ((GlobalContext) this.getParentContext()) : null, node), true);
+                System.out.println("Symbols:" + sb);
+            } else if (action == 2) {
+                localInformation.printStackTrace("Debugger stack trace:");
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ignored) {
+                }
+            } else if (action == 3) {
+                MenterDebugger.haltOnEveryExecutionStep = false;
+                break;
+            }
+
+            System.out.print(node.reconstructCode() + " ");
+        }
     }
 
     protected Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
@@ -757,5 +784,9 @@ public abstract class EvaluationContext {
             return ((ParserNode) node).getValue();
         }
         return null;
+    }
+
+    private String createDebuggerPrintIndentation(EvaluationContextLocalInformation localInformation) {
+        return IntStream.range(1, localInformation.getStackTrace().size()).mapToObj(x -> "| ").collect(Collectors.joining());
     }
 }

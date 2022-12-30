@@ -13,9 +13,12 @@ public abstract class MenterDebugger {
     public static boolean logParseProgress = false;
 
     /**
-     * When set to true, will log the reconstructed expression on every evaluation step.
+     * 0 = no logging
+     * 1 = log top-down evaluation of reconstructed code
+     * 2 = log top-town evaluation of reconstructed code and result of each step
+     * 3 = log bottom-up evaluation of reconstructed code and result of each step
      */
-    public static boolean logInterpreterEvaluation = false;
+    public static int logInterpreterEvaluationStyle = 0;
     /**
      * Will cause the program to log a special message when the given string is found in the evaluation.<br>
      * Place your debugger there and set a breakpoint to debug the evaluation.

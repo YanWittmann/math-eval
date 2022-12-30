@@ -6,6 +6,7 @@ import de.yanwittmann.matheval.interpreter.structure.Value;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Operators {
 
@@ -65,7 +66,13 @@ public class Operators {
             return null;
         }));
         add(Operator.make("-", 140, false, true, (arguments) -> {
-            return null;
+            final Optional<Value> value = getNumericValue(arguments[0]);
+            if (value.isPresent()) {
+                return new Value(value.get().getNumericValue().negate());
+            } else {
+                throwCannotPerformOperationException("-", arguments);
+                return null;
+            }
         }));
         add(Operator.make("!", 140, false, true, (arguments) -> {
             final Value value = arguments[0];
@@ -275,6 +282,10 @@ public class Operators {
             }
         }
         return null;
+    }
+
+    public List<Operator> findOperatorsWithPrecedence(int precedence) {
+        return operators.stream().filter(o -> o.getPrecedence() == precedence).collect(Collectors.toList());
     }
 
     @Override

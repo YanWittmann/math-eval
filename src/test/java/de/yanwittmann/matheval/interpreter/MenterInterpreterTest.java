@@ -78,17 +78,11 @@ class MenterInterpreterTest {
     }
 
     @Test
-    public void correctMapElementOrder() {
+    public void objectTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "[{key: 0, value: 0}, {key: 1, value: 1}, {key: 2, value: 2}]", "[0, 1, 2].entries()");
-    }
-
-    @Test
-    public void objectFunctionsTest() {
-        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
-        interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "[3, 2, 1]", "[1, 2, 3].sort((a, b) -> b - a)");
         evaluateAndAssertEqual(interpreter, "[1, 2, 3]", "[1, 2, 3].sort((a, b) -> a - b)");
@@ -118,7 +112,18 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "false", "!true");
-        evaluateAndAssertEqual(interpreter, "true", "!1 == 2");
+        evaluateAndAssertEqual(interpreter, "true", "!(1 == 2)");
+
+        evaluateAndAssertEqual(interpreter, "15", "1 + 2 * (3 + 4)");
+        evaluateAndAssertEqual(interpreter, "15", "1 * 5 + 2 * (3 + 2)");
+        evaluateAndAssertEqual(interpreter, "-44", "" +
+                                                   "-1 * (2 + 3 * 4) + -5 * 6");
+        evaluateAndAssertEqual(interpreter, "-75", "" +
+                                                   "foo = x -> x; test = x -> x;" +
+                                                   "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + -30 * 1");
+        evaluateAndAssertEqual(interpreter, "-30", "" +
+                                                   "foo = x -> x; test = x -> x;" +
+                                                   "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + test(1 * 5 + 2 * (3 + 2)) * 1");
     }
 
     @Test
@@ -309,8 +314,6 @@ class MenterInterpreterTest {
         interpreter.addAutoImport("TestType inline");
         interpreter.addAutoImport("common inline");
 
-        MenterDebugger.logInterpreterEvaluation = true;
-        MenterDebugger.logInterpreterResolveSymbols = true;
         evaluateAndAssertEqual(interpreter, "3", "" +
                                                  "val = TestType(3)\n" +
                                                  "val.getValue()");
@@ -395,13 +398,56 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        // MenterDebugger.logLexedTokens = true;
-        // MenterDebugger.logParseProgress = true;
-        // MenterDebugger.logParsedTokens = true;
-        MenterDebugger.logInterpreterEvaluation = true;
-        MenterDebugger.logInterpreterResolveSymbols = true;
+        evaluateAndAssertEqual(interpreter, "0", "" +
+                                                 "(1 + 2) - 3");
+        evaluateAndAssertEqual(interpreter, "-44", "" +
+                                                   "-1 * (2 + 3 * 4) + -5 * 6");
 
-        evaluateAndAssertEqual(interpreter, "false", "!true");
+        MenterDebugger.logLexedTokens = true;
+        MenterDebugger.logParseProgress = true;
+        MenterDebugger.logParsedTokens = true;
+        MenterDebugger.logInterpreterEvaluationStyle = 2;
+        //MenterDebugger.logInterpreterResolveSymbols = true;
+
+        evaluateAndAssertEqual(interpreter, "-75", "" +
+                                                   "foo = x -> x;" +
+                                                   "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + -30 * 1");
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

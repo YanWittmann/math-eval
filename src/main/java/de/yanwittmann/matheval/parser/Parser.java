@@ -64,7 +64,7 @@ public class Parser {
             if (!isType(token, ParserNode.NodeType.STATEMENT) && !isType(token, ParserNode.NodeType.EXPORT_STATEMENT) &&
                 !isType(token, ParserNode.NodeType.IMPORT_STATEMENT) && !isType(token, ParserNode.NodeType.IMPORT_INLINE_STATEMENT) &&
                 !isType(token, ParserNode.NodeType.IMPORT_AS_STATEMENT)) {
-                throw new ParsingException("Invalid token tree, failed on\n" + token + "\n\nin\n" + toString(tokenTree));
+                throw new ParsingException("Invalid token tree:\n" + toString(tokenTree));
             }
         }
 
@@ -549,10 +549,9 @@ public class Parser {
                 new Object[]{}
         ));
 
-        // apply operators with both sides being evaluable to values
-        for (Operator operator : operators.getOperatorsDoubleAssociative()) {
+        for (Operator operator : operators.getOperators()) {
             if (operator.shouldCreateParserRule()) {
-                rules.add(operator.makeParserRule());
+                rules.add(operator.makeParserRule(operators.findOperatorsWithPrecedence(operator.getPrecedence())));
             }
         }
 
@@ -735,12 +734,6 @@ public class Parser {
 
             return false;
         });
-
-        for (Operator operator : operators.getOperatorsSingleAssociative()) {
-            if (operator.shouldCreateParserRule()) {
-                rules.add(operator.makeParserRule());
-            }
-        }
 
         final Operator assignment = operators.findOperator("=", true, true);
         // assignment
