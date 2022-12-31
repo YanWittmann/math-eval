@@ -2,6 +2,7 @@ package de.yanwittmann.matheval.interpreter;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,8 @@ public abstract class MenterDebugger {
 
     public static int stackTraceUnknownSymbolSuggestions = 3;
     public static List<String> stackTracePrintValues = new ArrayList<>();
+
+    public static PrintStream printer = System.out;
 
     public static int waitForDebuggerResume() {
         final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));

@@ -8,10 +8,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -125,17 +122,19 @@ public class MenterInterpreter extends EvalRuntime {
         interpreter.addAutoImport("import common inline");
 
         final boolean isRepl = MenterInterpreter.isAnyOf(args, "-r", "--repl", "repl");
+        final boolean isGuideServer = MenterInterpreter.isAnyOf(args, "-gs", "--guide-server", "guide-server");
 
         final List<File> files = MenterInterpreter.getFiles(args);
         final boolean hasFiles = files.size() > 0;
 
-        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || (!isRepl && !hasFiles);
+        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || (!isRepl && !hasFiles && !isGuideServer);
 
         if (isHelp) {
-            System.out.println("Menter Interpreter");
-            System.out.println("  -ef [filename]      Evaluate file");
-            System.out.println("  -r, --repl, repl:   Start REPL");
-            System.out.println("  -h, --help:         Show this help");
+            MenterDebugger.printer.println("Menter Interpreter");
+            MenterDebugger.printer.println("  -ef [filename]      Evaluate file");
+            MenterDebugger.printer.println("  -r, --repl, repl:   Start REPL");
+            MenterDebugger.printer.println("  -gs, --guide-server Start guide server");
+            MenterDebugger.printer.println("  -h, --help:         Show this help");
             return;
         }
 
@@ -144,7 +143,15 @@ public class MenterInterpreter extends EvalRuntime {
                 interpreter.loadFile(file);
             }
             interpreter.finishLoadingContexts();
+        }
 
+        if (isGuideServer) {
+            final MenterGuideServer guideServer;
+            try {
+                guideServer = new MenterGuideServer(interpreter);
+            } catch (IOException e) {
+                LOG.error("Failed to start guide server", e);
+            }
         }
 
         if (isRepl) {
@@ -156,9 +163,9 @@ public class MenterInterpreter extends EvalRuntime {
             while (true) {
                 try {
                     if (isMultilineMode && multilineBuffer.size() > 0) {
-                        System.out.print("   ");
+                        MenterDebugger.printer.print("   ");
                     } else {
-                        System.out.print(">> ");
+                        MenterDebugger.printer.print(">> ");
                     }
 
                     final String input = reader.readLine();
@@ -185,8 +192,8 @@ public class MenterInterpreter extends EvalRuntime {
                         } else if (input.contains("breakpoint")) {
                             MenterDebugger.breakpointActivationCode = input.replace("debug breakpoint ", "").trim();
                         } else {
-                            System.out.println("Unknown debug target: " + input.substring(5));
-                            System.out.println("  interpreter         " + MenterDebugger.logInterpreterEvaluationStyle + "\n" +
+                            MenterDebugger.printer.println("Unknown debug target: " + input.substring(5));
+                            MenterDebugger.printer.println("  interpreter         " + MenterDebugger.logInterpreterEvaluationStyle + "\n" +
                                                "  interpreter resolve " + MenterDebugger.logInterpreterResolveSymbols + "\n" +
                                                "  parser              " + MenterDebugger.logParsedTokens + "\n" +
                                                "  parser progress     " + MenterDebugger.logParseProgress + "\n" +
@@ -200,7 +207,7 @@ public class MenterInterpreter extends EvalRuntime {
 
                     } else if (input.equals("multiline") || input.equals("ml")) {
                         isMultilineMode = !isMultilineMode;
-                        System.out.println((isMultilineMode ? "Enabled" : "Disabled") + " multiline mode");
+                        MenterDebugger.printer.println((isMultilineMode ? "Enabled" : "Disabled") + " multiline mode");
                         continue;
                     }
 
@@ -222,7 +229,7 @@ public class MenterInterpreter extends EvalRuntime {
                     }
 
                     if (result != null && !result.isEmpty()) {
-                        System.out.println(result.toDisplayString());
+                        MenterDebugger.printer.println(result.toDisplayString());
                     }
                 } catch (Exception e) {
                     if (debugShowEntireStackTrace) {

@@ -1,6 +1,7 @@
 package de.yanwittmann.matheval.interpreter.core;
 
 import de.yanwittmann.matheval.exceptions.MenterExecutionException;
+import de.yanwittmann.matheval.interpreter.MenterDebugger;
 import de.yanwittmann.matheval.interpreter.structure.Value;
 
 import java.math.BigDecimal;
@@ -38,7 +39,7 @@ public abstract class CoreModuleCommon {
     }
 
     public static Value print(Value[] arguments) {
-        System.out.println(Arrays.stream(arguments)
+        MenterDebugger.printer.println(Arrays.stream(arguments)
                 .map(v -> v.toDisplayString())
                 .collect(Collectors.joining(" ")));
         return Value.empty();

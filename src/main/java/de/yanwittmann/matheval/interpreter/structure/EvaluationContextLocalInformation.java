@@ -140,7 +140,7 @@ public class EvaluationContextLocalInformation {
                 }
                 sb.append(String.join("\n\t\t", lines));
             }
-        } else {
+        } else if(localSymbolsReduced.size() > 0) {
             sb.append("\n\tLocal symbols:  ").append(formatVariables(localSymbolsReduced));
         }
 
@@ -154,7 +154,7 @@ public class EvaluationContextLocalInformation {
                     }
                     sb.append(String.join("\n\t\t", lines));
                 }
-            } else {
+            } else if (stackTraceElementOfInterest.getContext().getVariables().size() > 0) {
                 sb.append("\n\tGlobal symbols: ").append(formatVariables(stackTraceElementOfInterest.getContext().getVariables()));
             }
         }

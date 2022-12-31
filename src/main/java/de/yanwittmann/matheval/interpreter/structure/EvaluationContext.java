@@ -91,12 +91,12 @@ public abstract class EvaluationContext {
             if (!isMultiExpressionNode) {
                 if (MenterDebugger.logInterpreterEvaluationStyle > 0 || isDebuggerBreakpoint) {
                     if (MenterDebugger.logInterpreterEvaluationStyle == 2) {
-                        System.out.println(createDebuggerPrintIndentation(localInformation) + node.reconstructCode());
+                        MenterDebugger.printer.println(createDebuggerPrintIndentation(localInformation) + node.reconstructCode());
 
                     } else if (MenterDebugger.logInterpreterEvaluationStyle == 1) {
-                        System.out.print(node.reconstructCode());
-                        if (!isDebuggerBreakpoint) System.out.println();
-                        else System.out.print(" ");
+                        MenterDebugger.printer.print(node.reconstructCode());
+                        if (!isDebuggerBreakpoint) MenterDebugger.printer.println();
+                        else MenterDebugger.printer.print(" ");
 
                         if (isDebuggerBreakpoint) {
                             breakpointReached(localInformation, node);
@@ -375,9 +375,9 @@ public abstract class EvaluationContext {
             if (!isMultiExpressionNode) {
                 if (MenterDebugger.logInterpreterEvaluationStyle > 1 || isDebuggerBreakpoint) {
                     if (MenterDebugger.logInterpreterEvaluationStyle == 2) {
-                        System.out.println(createDebuggerPrintIndentation(localInformation) + "└─> " + result);
+                        MenterDebugger.printer.println(createDebuggerPrintIndentation(localInformation) + "└─> " + result);
                     } else if (MenterDebugger.logInterpreterEvaluationStyle == 3) {
-                        System.out.println(node.reconstructCode() + " --> " + result);
+                        MenterDebugger.printer.println(node.reconstructCode() + " --> " + result);
 
                         if (isDebuggerBreakpoint) {
                             breakpointReached(localInformation, node);
@@ -422,7 +422,7 @@ public abstract class EvaluationContext {
             } else if (action == 1) {
                 final StringBuilder sb = new StringBuilder();
                 localInformation.appendStackTraceSymbols(sb, new MenterStackTraceElement(this.getParentContext() instanceof GlobalContext ? ((GlobalContext) this.getParentContext()) : null, node), true);
-                System.out.println("Symbols:" + sb);
+                MenterDebugger.printer.println("Symbols:" + sb);
             } else if (action == 2) {
                 localInformation.printStackTrace("Debugger stack trace:");
                 try {
@@ -434,7 +434,7 @@ public abstract class EvaluationContext {
                 break;
             }
 
-            System.out.print(node.reconstructCode() + " ");
+            MenterDebugger.printer.print(node.reconstructCode() + " ");
         }
     }
 
@@ -684,8 +684,8 @@ public abstract class EvaluationContext {
             if (SymbolCreationMode.THROW_IF_NOT_EXISTS == symbolCreationMode) {
                 final List<String> candidates = findMostLikelyCandidates(globalContext, previousValue, stringKey);
 
-                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on " + ParserNode.reconstructCode(identifier) +
-                                                       (candidates.isEmpty() ? "" : "; did you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
+                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on " + ParserNode.reconstructCode(identifier) + "." +
+                                                       (candidates.isEmpty() ? "" : "\nDid you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
 
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {
                 if (isFinalIdentifier) {
