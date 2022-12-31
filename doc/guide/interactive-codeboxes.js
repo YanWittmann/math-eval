@@ -326,7 +326,7 @@ function createCodeBox(initialContent, interactive) {
 
     if (initialContent !== undefined) {
         bufferedInput[codeboxId] = [initialContent];
-        appendToCodebox(codeboxContainer, initialContent);
+        appendToCodebox(codeboxContainer, initialContent, true);
         if (interactive) {
             evaluateCodeBlock(codeboxContainer);
         }
