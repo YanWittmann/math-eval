@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Menter Guide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="css/index.css">
+    <script src="js/interactive-codeboxes.js" defer></script>
+    <script src="js/documentation.js" defer></script>
+</head>
+<body>
+
+<div class="page-container">
+    <div class="sidebar-toggle clickable" onclick="toggleSidebar()">
+        <svg viewBox="0 0 100 80">
+            <rect width="100" height="15"></rect>
+            <rect y="30" width="100" height="15"></rect>
+            <rect y="60" width="100" height="15"></rect>
+        </svg>
+    </div>
+    <div class="sidebar hidden" id="sidebar">
+        <div class="sidebar-header">
+            <a href="introduction.html">
+                <img src="img/navbar_icon.png" alt="Menter Logo">
+            </a><br>
+            <span>Menter Documentation</span>
+        </div>
+        <div class="sidebar-content">
+            {{ content.sidebar }}
+        </div>
+    </div>
+
+    <div class="segment-center-container">
+        <div class="segment-center" id="main-content-container">
+            <br><br>
+            {{ content.main }}
+            <br><br>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
