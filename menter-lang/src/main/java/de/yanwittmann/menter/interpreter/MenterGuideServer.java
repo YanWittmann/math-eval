@@ -21,16 +21,12 @@ public class MenterGuideServer {
     public MenterGuideServer(MenterInterpreter interpreter) throws IOException {
         LOG.info("Starting MenterGuideServer...");
 
-        HttpServer server = null;
-        final int serverPort = 8000;
+        HttpServer server;
+        final int serverPort = 26045;
         try {
             server = HttpServer.create(new InetSocketAddress(serverPort), 0);
         } catch (IOException e) {
-            LOG.warn("Port " + serverPort + " is already in use.");
-        }
-
-        if (server == null) {
-            throw new IOException("No port available.");
+            throw new IOException("Could not start MenterGuideServer on port " + serverPort, e);
         }
 
         final String[] printBuffer = {""};
@@ -46,6 +42,7 @@ public class MenterGuideServer {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, GET");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Length");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Access-Control-Allow-Origin");
 
             final JSONObject responseJson = new JSONObject();
@@ -102,6 +99,6 @@ public class MenterGuideServer {
         server.setExecutor(null); // creates a default executor
         server.start();
 
-        LOG.info("MenterGuideServer started.");
+        LOG.info("MenterGuideServer started on port [{}]", serverPort);
     }
 }

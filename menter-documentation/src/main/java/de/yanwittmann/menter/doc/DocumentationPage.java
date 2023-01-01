@@ -66,10 +66,14 @@ public class DocumentationPage {
                 while (codeBlockLines.get(codeBlockLines.size() - 1).isEmpty())
                     codeBlockLines.remove(codeBlockLines.size() - 1);
 
+                final boolean isStatic = codeBlockType.startsWith("static");
+                final String[] presetResult = codeBlockType.contains("=") ? codeBlockType.split("=", 2) : null;
+
                 div.with(
                         div().withClass("codebox-container")
-                                .attr("initialContent", String.join("\\n", codeBlockLines))
-                                .attr("interactive", "interactive".equals(codeBlockType))
+                                .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
+                                .attr("interactive", !isStatic)
+                                .attr("result", presetResult != null ? presetResult[1] : "")
                 );
             } else {
                 div.with(rawHtml(renderer.render(child)));

@@ -238,7 +238,7 @@ function codeBlockInteracted(inputElement, event) {
 
 function evaluateCodeBlock(codebox, initialInput = false) {
     let codeboxId = codebox.getAttribute("id");
-    let codeToExecute = bufferedInput[codeboxId].join("\n");
+    let codeToExecute = bufferedInput[codeboxId].join("\n").replaceAll(":NEWLINE:", "\n");
     bufferedInput[codeboxId] = [];
 
     if (codeToExecute.trim() !== "") {
@@ -285,7 +285,7 @@ function evaluateCodeBlock(codebox, initialInput = false) {
 
 function evaluateCode(code, context) {
     return new Promise((resolve, reject) => {
-        let evaluationEndpoint = "http://localhost:8000/api/guide";
+        let evaluationEndpoint = "http://localhost:26045/api/guide";
 
         let xhr = new XMLHttpRequest();
         xhr.open("POST", evaluationEndpoint);
@@ -312,7 +312,7 @@ function evaluateCode(code, context) {
 
 function isInterpreterAvailable() {
     return new Promise((resolve, reject) => {
-        let evaluationEndpoint = "http://localhost:8000/api/ping";
+        let evaluationEndpoint = "http://localhost:26045/api/ping";
 
         let xhr = new XMLHttpRequest();
         xhr.timeout = 1000;
@@ -401,6 +401,8 @@ function initializePage(interpreterIsAvailable = true) {
 
         if (codebox.getAttribute("initialized") === null) {
             let initialContent = codebox.getAttribute("initialContent");
+            let uninteractiveResult = codebox.getAttribute("result");
+            uninteractiveResult = uninteractiveResult === null || uninteractiveResult === undefined || uninteractiveResult === "" ? null : uninteractiveResult;
             let interactive = codebox.getAttribute("interactive") !== "false";
             if (!interpreterIsAvailable) {
                 interactive = false;
@@ -409,18 +411,25 @@ function initializePage(interpreterIsAvailable = true) {
             initialContent = initialContent == null ? "" : initialContent.replaceAll("\\\\", "\\").replaceAll("<br>", "\n");
             let newCodebox = createCodeBox(initialContent, interactive);
             if (!interactive) {
-                appendToCodebox(newCodebox, initialContent, 1);
+                let statementSplit = initialContent.split(";;;");
+                let uninteractiveSplit = uninteractiveResult !== null ? uninteractiveResult.split(";;;") : [];
+                for (let j = 0; j < statementSplit.length; j++) {
+                    let lines = statementSplit[j].split(":NEWLINE:");
+                    for (let k = 0; k < lines.length; k++) {
+                        appendToCodebox(newCodebox, lines[k], k === lines.length - 1 ? 1 : 2);
+                    }
+
+                    if (uninteractiveSplit[j] !== undefined) {
+                        appendToCodebox(newCodebox, "-> " + uninteractiveSplit[j], 0);
+                    }
+                }
             }
             parent.replaceChild(newCodebox, codebox);
         }
     }
 
     if (!interpreterIsAvailable && codeboxes.length > 0) {
-        let stickyFooter = document.createElement("div");
-        stickyFooter.classList.add("sticky-footer");
-        stickyFooter.classList.add("color-background-danger");
-        stickyFooter.innerHTML = "Run <code>menter -gs</code> to enable interactive code blocks.";
-        document.body.appendChild(stickyFooter);
+        addWarningText("<a href='#'>Download</a> and run <code>menter -gs</code> to enable interactive code blocks");
     }
 }
 
