@@ -15,24 +15,28 @@
  *
  * @param codebox The codebox to append to
  * @param text The text to append
- * @param isInput Whether the text is input or output
+ * @param inputType Whether the text is input or output
+ * @param belowPadding Whether to add padding below the text
  */
-function appendToCodebox(codebox, text, isInput = 0) {
+function appendToCodebox(codebox, text, inputType, belowPadding) {
     let appender = codebox.getElementsByClassName("codebox-appender")[0];
 
     let span = document.createElement("span");
     span.classList.add("codebox-line");
-    if (isInput === 1) {
+    if (inputType === 1) {
         span.classList.add("codebox-input-symbol");
-    } else if (isInput === 2) {
+    } else if (inputType === 2) {
         span.classList.add("codebox-input-symbol");
         span.classList.add("multiline");
     }
     span.innerHTML = applyCodeFormatting(text);
-    if (appender.childNodes.length > 0) {
+    if (appender.childNodes.length > 0 && appender.lastChild.classList.contains("codebox-line")) {
         appender.innerHTML += "<br>";
     }
     appender.appendChild(span);
+    if (belowPadding) {
+        appender.innerHTML += "<hr class='codebox-padding'>";
+    }
 }
 
 function applyCodeFormatting(text) {
@@ -215,13 +219,13 @@ function codeBlockInteracted(inputElement, event) {
                 bufferedInput[codeboxId] = [];
             }
             bufferedInput[codeboxId].push(inputText);
-            appendToCodebox(codebox, inputText, event.shiftKey ? 2 : 1);
+            appendToCodebox(codebox, inputText, event.shiftKey ? 2 : 1, false);
         }
 
         lastInput[codeboxId] = inputText;
 
         if (!event.shiftKey) {
-            evaluateCodeBlock(codebox);
+            evaluateCodeBlock(codebox, false);
             inputElement.parentElement.classList.remove("multiline");
         } else {
             inputElement.parentElement.classList.add("multiline");
@@ -236,7 +240,7 @@ function codeBlockInteracted(inputElement, event) {
     }
 }
 
-function evaluateCodeBlock(codebox, initialInput = false) {
+function evaluateCodeBlock(codebox, initialInput) {
     let codeboxId = codebox.getAttribute("id");
     let codeToExecute = bufferedInput[codeboxId].join("\n").replaceAll(":NEWLINE:", "\n");
     bufferedInput[codeboxId] = [];
@@ -247,7 +251,7 @@ function evaluateCodeBlock(codebox, initialInput = false) {
         function evaluateAndApplyCodeBlock(i) {
             evaluateCode(statementSplit[i], codeboxId).then((result) => {
                 if (initialInput) {
-                    appendToCodebox(codebox, statementSplit[i], 1);
+                    appendToCodebox(codebox, statementSplit[i], 1, false);
                 }
 
                 let message = "";
@@ -261,7 +265,7 @@ function evaluateCodeBlock(codebox, initialInput = false) {
                     }
                     message += "-> " + result.result.split("\n").join("\n   ");
                 }
-                appendToCodebox(codebox, message);
+                appendToCodebox(codebox, message, 0, true);
 
                 if (!initialInput) {
                     let codeboxRect = codebox.getBoundingClientRect();
@@ -389,7 +393,7 @@ function evaluateCodeBlockFromSubmitButton(codebox) {
         preventDefault: () => {
         }
     });
-    evaluateCodeBlock(codebox);
+    evaluateCodeBlock(codebox, false);
 }
 
 function initializePage(interpreterIsAvailable = true) {
@@ -416,11 +420,11 @@ function initializePage(interpreterIsAvailable = true) {
                 for (let j = 0; j < statementSplit.length; j++) {
                     let lines = statementSplit[j].split(":NEWLINE:");
                     for (let k = 0; k < lines.length; k++) {
-                        appendToCodebox(newCodebox, lines[k], k === lines.length - 1 ? 1 : 2);
+                        appendToCodebox(newCodebox, lines[k], k === lines.length - 1 ? 1 : 2, false);
                     }
 
                     if (uninteractiveSplit[j] !== undefined) {
-                        appendToCodebox(newCodebox, "-> " + uninteractiveSplit[j], 0);
+                        appendToCodebox(newCodebox, "-> " + uninteractiveSplit[j], 0, true);
                     }
                 }
             }

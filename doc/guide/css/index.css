@@ -280,6 +280,13 @@ html, body {
     content: '|';
 }
 
+.codebox-padding {
+    padding: 0;
+    margin: 0;
+    height: 8px;
+    color: transparent;
+}
+
 code {
     font-family: monospace;
     background-color: var(--color-background-input-codebox);
