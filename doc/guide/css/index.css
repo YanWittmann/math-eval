@@ -2,29 +2,30 @@
     --color-background-base: #14171f;
     --color-background-input-codebox: #070c0e;
     --color-background-danger: #573636;
+    --color-border-base: #85827e;
     --color-text-base: #cecbc1;
     --color-text-red: #ff5454;
     --color-text-green: #c0ff90;
-    --color-text-blue: #89aeff;
+    --color-text-blue: #7ea6ff;
     --color-text-yellow: #ffff76;
     --color-text-purple: #d4abff;
-    --color-text-pink: #ff9b9b;
+    --color-text-pink: #ff8181;
     --color-text-orange: #ff9f4f;
     --color-text-cyan: #91ffff;
-    --color-text-gray: #85827e;
 }
 
 @media (prefers-color-scheme: light) {
     :root {
-        --color-background-base: #f5f5f5;
-        --color-background-input-codebox: #e1e1e1;
-        --color-text-base: #000000;
+        --color-background-base: #f7fcff;
+        --color-background-input-codebox: #efefef;
+        --color-border-base: #a9a091;
+        --color-text-base: #3a270b;
         --color-text-red: #ff5454;
-        --color-text-green: #9cff4f;
-        --color-text-blue: #6868ff;
+        --color-text-green: #31b700;
+        --color-text-blue: #1054ff;
         --color-text-yellow: #ffff76;
-        --color-text-purple: #c791ff;
-        --color-text-pink: #ff8f8f;
+        --color-text-purple: #8613ff;
+        --color-text-pink: #ff3b3b;
         --color-text-orange: #ff9f4f;
         --color-text-cyan: #91ffff;
     }
@@ -70,7 +71,7 @@ html, body {
     margin: 0;
     padding: 0;
     background-color: var(--color-background-base);
-    border-right: 2px solid var(--color-text-gray);
+    border-right: 2px solid var(--color-border-base);
 
     z-index: 1000;
 }
@@ -103,7 +104,7 @@ html, body {
     padding-top: 60px;
     padding-bottom: 30px;
 
-    border-bottom: 2px solid var(--color-text-gray);
+    border-bottom: 2px solid var(--color-border-base);
 }
 
 .sidebar-header img {
@@ -111,7 +112,7 @@ html, body {
     height: 100px;
     border-radius: 50%;
     margin-bottom: 10px;
-    border: 3px solid var(--color-text-gray);
+    border: 3px solid var(--color-border-base);
 }
 
 .sidebar-content {
@@ -337,7 +338,7 @@ code {
 }
 
 .color-text-gray {
-    color: var(--color-text-gray);
+    color: var(--color-border-base);
 }
 
 .color-background-danger {
