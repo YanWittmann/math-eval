@@ -17,13 +17,16 @@
  * @param text The text to append
  * @param isInput Whether the text is input or output
  */
-function appendToCodebox(codebox, text, isInput = false) {
+function appendToCodebox(codebox, text, isInput = 0) {
     let appender = codebox.getElementsByClassName("codebox-appender")[0];
 
     let span = document.createElement("span");
     span.classList.add("codebox-line");
-    if (isInput) {
+    if (isInput === 1) {
         span.classList.add("codebox-input-symbol");
+    } else if (isInput === 2) {
+        span.classList.add("codebox-input-symbol");
+        span.classList.add("multiline");
     }
     span.innerHTML = applyCodeFormatting(text);
     if (appender.childNodes.length > 0) {
@@ -33,6 +36,7 @@ function appendToCodebox(codebox, text, isInput = false) {
 }
 
 function applyCodeFormatting(text) {
+    let originalText = text;
     text = createStyleHighlightsForText(text);
     text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     let lines = text.split("\n");
@@ -40,11 +44,11 @@ function applyCodeFormatting(text) {
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
 
-        let maxAttempts = 100;
+        let maxAttempts = 1000;
         while (line.includes(":STYLE:")) {
             if (maxAttempts-- < 0) {
-                console.error("Too many style tags / malformed style tag in line: " + line);
-                break;
+                console.error("Too many style tags or malformed style tag in line: " + line);
+                return originalText.split("\n").join("<br>");
             }
 
             let styleStart = line.indexOf(":STYLE:");
@@ -149,6 +153,14 @@ function createStyleHighlightsForText(text) {
         }
     }
 
+    function lookaheadEquals(str, i, text) {
+        let lookahead = "";
+        for (let j = 0; j < str.length; j++) {
+            lookahead += text.charAt(i + j + 1);
+        }
+        return lookahead === str;
+    }
+
     let replacementOrder = Object.keys(replacements).sort((a, b) => b.length - a.length);
     for (let key in replacementOrder) {
         let replacement = replacements[replacementOrder[key]];
@@ -161,8 +173,14 @@ function createStyleHighlightsForText(text) {
                 console.error("Too many iterations on text highlighter");
                 break;
             }
+
             let char = text.charAt(i);
             buffer += char;
+            if (buffer.endsWith(":")) {
+                if (lookaheadEquals("STYLE:", i, text)) {
+                    canReplace = false;
+                }
+            }
             if (buffer.endsWith(":STYLE:")) {
                 canReplace = false;
             } else if (buffer.endsWith(":STYLE:END:")) {
@@ -197,7 +215,7 @@ function codeBlockInteracted(inputElement, event) {
                 bufferedInput[codeboxId] = [];
             }
             bufferedInput[codeboxId].push(inputText);
-            appendToCodebox(codebox, inputText, true);
+            appendToCodebox(codebox, inputText, event.shiftKey ? 2 : 1);
         }
 
         lastInput[codeboxId] = inputText;
@@ -226,12 +244,10 @@ function evaluateCodeBlock(codebox, initialInput = false) {
     if (codeToExecute.trim() !== "") {
         let statementSplit = initialInput ? codeToExecute.split(";;;") : [codeToExecute];
 
-        for (let i = 0; i < statementSplit.length; i++) {
-            let promise = evaluateCode(statementSplit[i], codeboxId);
-
-            promise.then((result) => {
+        function evaluateAndApplyCodeBlock(i) {
+            evaluateCode(statementSplit[i], codeboxId).then((result) => {
                 if (initialInput) {
-                    appendToCodebox(codebox, statementSplit[i], true);
+                    appendToCodebox(codebox, statementSplit[i], 1);
                 }
 
                 let message = "";
@@ -243,7 +259,7 @@ function evaluateCodeBlock(codebox, initialInput = false) {
                     if (message !== "") {
                         message += "\n";
                     }
-                    message += "-> " + result.result;
+                    message += "-> " + result.result.split("\n").join("\n   ");
                 }
                 appendToCodebox(codebox, message);
 
@@ -253,11 +269,17 @@ function evaluateCodeBlock(codebox, initialInput = false) {
                     let windowHeight = window.innerHeight;
                     let scrollOffset = codeboxBottom - windowHeight;
                     if (scrollOffset > 0) {
-                        window.scrollBy(0, scrollOffset);
+                        window.scrollBy(0, scrollOffset + 100);
                     }
+                }
+
+                if (i + 1 < statementSplit.length) {
+                    evaluateAndApplyCodeBlock(i + 1);
                 }
             });
         }
+
+        evaluateAndApplyCodeBlock(0);
     }
 }
 
@@ -384,10 +406,10 @@ function initializePage(interpreterIsAvailable = true) {
                 interactive = false;
             }
 
-            initialContent = initialContent == null ? "" : initialContent.replaceAll("\\n", "\n");
+            initialContent = initialContent == null ? "" : initialContent.replaceAll("\\\\", "\\").replaceAll("<br>", "\n");
             let newCodebox = createCodeBox(initialContent, interactive);
             if (!interactive) {
-                appendToCodebox(newCodebox, initialContent, true);
+                appendToCodebox(newCodebox, initialContent, 1);
             }
             parent.replaceChild(newCodebox, codebox);
         }

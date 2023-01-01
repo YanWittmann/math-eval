@@ -787,6 +787,6 @@ public abstract class EvaluationContext {
     }
 
     private String createDebuggerPrintIndentation(EvaluationContextLocalInformation localInformation) {
-        return IntStream.range(1, localInformation.getStackTrace().size()).mapToObj(x -> "| ").collect(Collectors.joining());
+        return IntStream.range(1, localInformation.getStackTrace().size()).mapToObj(x -> "│ ").collect(Collectors.joining());
     }
 }

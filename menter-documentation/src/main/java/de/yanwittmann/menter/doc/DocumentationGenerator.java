@@ -28,6 +28,9 @@ public class DocumentationGenerator {
         final File structureFile = new File(markdownBaseDir, "structure.txt");
         final File templateFile = new File(guideBaseDir, "template.html");
 
+        if (!targetBaseDir.exists()) {
+            targetBaseDir.mkdirs();
+        }
         FileUtils.cleanDirectory(targetBaseDir);
 
         // copy files to output directory
@@ -48,10 +51,6 @@ public class DocumentationGenerator {
 
         for (DocumentationPage documentationPage : documentationPages) {
             documentationPage.parseContent(parser);
-        }
-
-        if (!targetBaseDir.exists()) {
-            targetBaseDir.mkdirs();
         }
 
         final List<String> template = FileUtils.readLines(templateFile, StandardCharsets.UTF_8);

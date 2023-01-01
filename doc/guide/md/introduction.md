@@ -24,3 +24,7 @@ this is a non-interactive code block
 ```
 
 for loops: `for (i in ["str", "aaa"]) print(i);`
+
+```interactive
+double = x -> x * 2;;;[1, 2, 3].map(double)
+```

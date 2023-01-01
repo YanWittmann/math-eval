@@ -261,7 +261,7 @@ html, body {
     bottom: -2px;
 }
 
-.codebox-container .codebox-input-container.multiline:before {
+.codebox-input-symbol.multiline:before {
     content: '|';
 }
 
