@@ -746,18 +746,18 @@ class ParserTest {
                                "   │                    └─ NUMBER_LITERAL: 3\n" +
                                "   ├─ CONDITIONAL_BRANCH\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ EXPRESSION: % (120 l r)\n" +
-                               "   │  │     ├─ FUNCTION_CALL\n" +
-                               "   │  │     │  ├─ IDENTIFIER: var\n" +
-                               "   │  │     │  └─ PARENTHESIS_PAIR\n" +
-                               "   │  │     │     ├─ NUMBER_LITERAL: 34\n" +
-                               "   │  │     │     └─ IDENTIFIER_ACCESSED\n" +
-                               "   │  │     │        ├─ IDENTIFIER: foo\n" +
-                               "   │  │     │        └─ CODE_BLOCK\n" +
-                               "   │  │     │           └─ STRING_LITERAL: \"acc\"\n" +
-                               "   │  │     └─ EXPRESSION: == (80 l r)\n" +
-                               "   │  │        ├─ NUMBER_LITERAL: 3\n" +
-                               "   │  │        └─ NUMBER_LITERAL: 1\n" +
+                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │     ├─ EXPRESSION: % (120 l r)\n" +
+                               "   │  │     │  ├─ FUNCTION_CALL\n" +
+                               "   │  │     │  │  ├─ IDENTIFIER: var\n" +
+                               "   │  │     │  │  └─ PARENTHESIS_PAIR\n" +
+                               "   │  │     │  │     ├─ NUMBER_LITERAL: 34\n" +
+                               "   │  │     │  │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │     │  │        ├─ IDENTIFIER: foo\n" +
+                               "   │  │     │  │        └─ CODE_BLOCK\n" +
+                               "   │  │     │  │           └─ STRING_LITERAL: \"acc\"\n" +
+                               "   │  │     │  └─ NUMBER_LITERAL: 3\n" +
+                               "   │  │     └─ NUMBER_LITERAL: 1\n" +
                                "   │  └─ CODE_BLOCK\n" +
                                "   │     └─ ASSIGNMENT: = (10 l r)\n" +
                                "   │        ├─ IDENTIFIER: test\n" +
@@ -839,7 +839,7 @@ class ParserTest {
     @Test
     public void inlineFunctionTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -847,7 +847,7 @@ class ParserTest {
                                "         ├─ IDENTIFIER: x\n" +
                                "         └─ NUMBER_LITERAL: 1\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -856,7 +856,7 @@ class ParserTest {
                                "            ├─ IDENTIFIER: x\n" +
                                "            └─ NUMBER_LITERAL: 1\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -864,7 +864,7 @@ class ParserTest {
                                "         ├─ IDENTIFIER: x\n" +
                                "         └─ NUMBER_LITERAL: 1\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -945,7 +945,7 @@ class ParserTest {
                 "test.keys().size();");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -1072,7 +1072,7 @@ class ParserTest {
                                "   └─ MAP\n" +
                                "      ├─ MAP_ELEMENT\n" +
                                "      │  ├─ NUMBER_LITERAL: 1\n" +
-                               "      │  └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "      │  └─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "      │     ├─ PARENTHESIS_PAIR\n" +
                                "      │     │  └─ IDENTIFIER: x\n" +
                                "      │     └─ CODE_BLOCK\n" +
@@ -1081,7 +1081,7 @@ class ParserTest {
                                "      │           └─ NUMBER_LITERAL: 1\n" +
                                "      └─ MAP_ELEMENT\n" +
                                "         ├─ NUMBER_LITERAL: 3\n" +
-                               "         └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                               "         └─ FUNCTION_INLINE: -> (5 l r)\n" +
                                "            ├─ PARENTHESIS_PAIR\n" +
                                "            │  └─ IDENTIFIER: x\n" +
                                "            └─ CODE_BLOCK\n" +
@@ -1153,6 +1153,52 @@ class ParserTest {
     }
 
     @Test
+    public void pipelineOperatorTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ FUNCTION_CALL\n" +
+                               "   ├─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ IDENTIFIER: x\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ EXPRESSION: + (110 l r)\n" +
+                               "   │        ├─ IDENTIFIER: x\n" +
+                               "   │        └─ NUMBER_LITERAL: 5\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      └─ FUNCTION_CALL\n" +
+                               "         ├─ PARENTHESIS_PAIR\n" +
+                               "         │  └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "         │     ├─ PARENTHESIS_PAIR\n" +
+                               "         │     │  ├─ IDENTIFIER: x\n" +
+                               "         │     │  └─ IDENTIFIER: y\n" +
+                               "         │     └─ CODE_BLOCK\n" +
+                               "         │        └─ EXPRESSION: + (110 l r)\n" +
+                               "         │           ├─ IDENTIFIER: x\n" +
+                               "         │           └─ IDENTIFIER: y\n" +
+                               "         └─ PARENTHESIS_PAIR\n" +
+                               "            ├─ NUMBER_LITERAL: 3\n" +
+                               "            └─ IDENTIFIER_ACCESSED\n" +
+                               "               ├─ IDENTIFIER: math\n" +
+                               "               ├─ IDENTIFIER: min\n" +
+                               "               └─ FUNCTION_CALL\n" +
+                               "                  └─ PARENTHESIS_PAIR\n" +
+                               "                     ├─ NUMBER_LITERAL: 100\n" +
+                               "                     └─ IDENTIFIER_ACCESSED\n" +
+                               "                        ├─ IDENTIFIER: math\n" +
+                               "                        ├─ IDENTIFIER: sin\n" +
+                               "                        └─ FUNCTION_CALL\n" +
+                               "                           └─ PARENTHESIS_PAIR\n" +
+                               "                              └─ FUNCTION_CALL\n" +
+                               "                                 ├─ IDENTIFIER: double\n" +
+                               "                                 └─ PARENTHESIS_PAIR\n" +
+                               "                                    └─ FUNCTION_CALL\n" +
+                               "                                       ├─ IDENTIFIER: add\n" +
+                               "                                       └─ PARENTHESIS_PAIR\n" +
+                               "                                          ├─ NUMBER_LITERAL: 2\n" +
+                               "                                          └─ NUMBER_LITERAL: 1",
+                "1 |> add(2) |> double |> math.sin |> math.min(100) |> ((x, y) -> x + y)(3) |> x -> x + 5");
+    }
+
+    @Test
     @Disabled
     public void parseFileTest() throws IOException {
         Parser parser = new Parser(ParserTest.DEFAULT_OPERATORS);
@@ -1220,7 +1266,7 @@ class ParserTest {
                 "STATEMENT\n" +
                 "└─ ASSIGNMENT: = (10 l r)\n" +
                 "   ├─ IDENTIFIER: test\n" +
-                "   └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                "   └─ FUNCTION_INLINE: -> (5 l r)\n" +
                 "      ├─ PARENTHESIS_PAIR\n" +
                 "      │  └─ IDENTIFIER: x\n" +
                 "      └─ CODE_BLOCK\n" +
@@ -1231,7 +1277,7 @@ class ParserTest {
                 "STATEMENT\n" +
                 "└─ ASSIGNMENT: = (10 l r)\n" +
                 "   ├─ IDENTIFIER: test\n" +
-                "   └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                "   └─ FUNCTION_INLINE: -> (5 l r)\n" +
                 "      ├─ PARENTHESIS_PAIR\n" +
                 "      │  └─ IDENTIFIER: x\n" +
                 "      └─ CODE_BLOCK\n" +
@@ -1242,7 +1288,7 @@ class ParserTest {
                 "STATEMENT\n" +
                 "└─ ASSIGNMENT: = (10 l r)\n" +
                 "   ├─ IDENTIFIER: test\n" +
-                "   └─ FUNCTION_INLINE: -> (0 l r)\n" +
+                "   └─ FUNCTION_INLINE: -> (5 l r)\n" +
                 "      ├─ PARENTHESIS_PAIR\n" +
                 "      │  └─ IDENTIFIER: x\n" +
                 "      └─ CODE_BLOCK\n" +

@@ -157,7 +157,7 @@ public class EvalRuntime {
                 final List<Token> tokens = lexer.parse(moduleOptions.getAutoImportsAsString());
                 tokenTree = parser.parse(tokens);
             } else {
-                tokenTree = new ParserNode(ParserNode.NodeType.ROOT, null);
+                tokenTree = new ParserNode(ParserNode.NodeType.ROOT);
             }
 
             context = new GlobalContext(contextSource);

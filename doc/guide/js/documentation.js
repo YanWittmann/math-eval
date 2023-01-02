@@ -66,5 +66,4 @@ function addWarningText(text) {
     removeFooter.onclick = function () {
         document.body.removeChild(stickyFooter);
     }
-    console.log(removeFooter.onclick);
 }

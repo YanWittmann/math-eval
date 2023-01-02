@@ -11,10 +11,12 @@ public class ParserNode {
     private final Object value;
     private final List<Object> children;
 
+    public ParserNode(NodeType type) {
+        this(type, null);
+    }
+
     public ParserNode(NodeType type, Object value) {
-        this.type = type;
-        this.value = value;
-        this.children = new ArrayList<>();
+        this(type, value, new ArrayList<>());
     }
 
     public ParserNode(NodeType type, Object value, List<Object> children) {

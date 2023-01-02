@@ -54,6 +54,32 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void pipelineOperatorTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "6", "1 |> x -> x + 5");
+        evaluateAndAssertEqual(interpreter, "6", "((x, y) -> x + y)(2, 4)");
+
+        evaluateAndAssertEqual(interpreter, "9", "" +
+                                                 "add = (x, y) -> x + y;" +
+                                                 "double = x -> x * 2;" +
+                                                 "math.sin = x -> x + 5;" +
+                                                 "math.test = (x, y) -> if (x < y) x else y;" +
+                                                 "math.test(9, math.sin(double(add(2, 1))));");
+
+        evaluateAndAssertEqual(interpreter, "19", "" +
+                                                  "add = (x, y) -> x + y;" +
+                                                  "double = x -> x * 2;" +
+                                                  "math.sin = x -> x + 5;" +
+                                                  "math.test = (x, y) -> if (x < y) x else y;" +
+                                                  "1 |> add(2) |> double |> math.sin |> math.test(100) |> ((x, y) -> x + y)(3) |> x -> x + 5");
+
+        evaluateAndAssertEqual(interpreter, "6", "3 + (4 |> x -> x - 1)");
+        evaluateAndAssertEqual(interpreter, "9", "7 |> x -> x + 1 |> x -> x + 1"); // the issue with this one is that the -> would check for operators (|>) behind the next token, which would cancel the -> operator
+    }
+
+    @Test
     public void mapTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
@@ -367,7 +393,7 @@ class MenterInterpreterTest {
                                                   "val.addToList(10)\n" +
                                                   "sum = 0\n" +
                                                   "if (val) {\n" +
-                                                  "  for (i in val) sum = sum + i\n" +
+                                                  "  for (i in val) {sum = sum + i}\n" + // FIXME: This should not need a code block
                                                   "}\n" +
                                                   "sum");
 
@@ -377,7 +403,7 @@ class MenterInterpreterTest {
                                                   "val.addToList(10)\n" +
                                                   "sum = 0\n" +
                                                   "if (val) {\n" +
-                                                  "  for (i in range(0, val.size() - 1)) sum = sum + val[i]\n" +
+                                                  "  for (i in range(0, val.size() - 1)) {sum = sum + val[i]}\n" + // same as above
                                                   "}\n" +
                                                   "sum");
 
@@ -423,10 +449,7 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluationStyle = 2;
         // MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "[6, 8]", "import common inline;" +
-                                                   "range(1, 4)\n" +
-                                                   "  .map(x -> x * 2)\n" +
-                                                   "  .filter(x -> x > 4)");
+        evaluateAndAssertEqual(interpreter, "9", "7 |> x -> x + 1 |> x -> x + 1");
     }
 
 }

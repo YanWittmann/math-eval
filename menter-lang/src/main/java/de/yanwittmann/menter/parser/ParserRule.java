@@ -120,7 +120,7 @@ public interface ParserRule {
             }
 
             if (start != -1 && end != -1) {
-                final ParserNode node = new ParserNode(type, null);
+                final ParserNode node = new ParserNode(type);
                 for (int i = start; i <= end; i++) {
                     final Object token = tokens.get(i);
 

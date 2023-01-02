@@ -1,13 +1,23 @@
 Features:
 
-- [ ] Parser/Interpreter: while loops (?)
+- [ ] while loops
 - [ ] different types of assignments (e.g. `+=`, `-=`, `*=`, `/=`, `%=`)
 - [ ] stack trace line numbers
 - [ ] `break` and `continue` statements
 - [ ] `return` statement
-- [ ] debugger?
 - [ ] "safe-mode" in which no global variables can be changed
 
 Bugs:
 
-none at the moment
+```
+val = TestType(1)
+val.addToList(5)
+val.addToList(10)
+sum = 0
+if (val) {
+  for (i in val) { sum = sum + i } # This should not need a code block
+}
+sum
+
+= 15
+```

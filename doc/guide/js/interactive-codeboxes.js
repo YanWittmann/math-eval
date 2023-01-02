@@ -289,7 +289,7 @@ function evaluateCodeBlock(codebox, initialInput) {
 
 function evaluateCode(code, context) {
     return new Promise((resolve, reject) => {
-        let evaluationEndpoint = "http://localhost:26045/api/guide";
+        let evaluationEndpoint = apiLocation + "/api/guide";
 
         let xhr = new XMLHttpRequest();
         xhr.open("POST", evaluationEndpoint);
@@ -316,7 +316,7 @@ function evaluateCode(code, context) {
 
 function isInterpreterAvailable() {
     return new Promise((resolve, reject) => {
-        let evaluationEndpoint = "http://localhost:26045/api/ping";
+        let evaluationEndpoint = apiLocation + "/api/ping";
 
         let xhr = new XMLHttpRequest();
         xhr.timeout = 1000;
@@ -455,6 +455,8 @@ function setIntervalX(callback, delay, repetitions) {
         }
     }, delay);
 }
+
+apiLocation = localStorage.getItem("menterApiLocation") || "http://localhost:26045";
 
 isInterpreterAvailable()
     .then((available) => initializePage(available))

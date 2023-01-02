@@ -535,7 +535,7 @@ public class Value implements Comparable<Value> {
 
     @Override
     public String toString() {
-        return value + " (" + getType() + ")";
+        return toDisplayString(value) + " (" + getType() + ")";
     }
 
     public String toDisplayString() {

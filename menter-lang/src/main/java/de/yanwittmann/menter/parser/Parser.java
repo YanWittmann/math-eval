@@ -68,7 +68,7 @@ public class Parser {
             }
         }
 
-        final ParserNode root = new ParserNode(ParserNode.NodeType.ROOT, null);
+        final ParserNode root = new ParserNode(ParserNode.NodeType.ROOT);
         root.addChildren(tokenTree);
 
         return root;
@@ -159,7 +159,7 @@ public class Parser {
     }
 
     private static boolean createParenthesisRule(List<Object> tokens, Object openParenthesis, Object closeParenthesis, ParserNode.NodeType replaceNode, Object[] tokenBlacklist, Object[] tokenWhitelist, Object[] doNotInclude) {
-        final ParserNode node = new ParserNode(replaceNode, null);
+        final ParserNode node = new ParserNode(replaceNode);
         int start = -1;
         int end = -1;
 
@@ -285,6 +285,94 @@ public class Parser {
             return false;
         });
 
+        // convert the pipeline operator to a function call
+        final Operator pipelineOperator = operators.findOperator("|>", true, true);
+        rules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+
+                if (isType(currentToken, ParserNode.NodeType.EXPRESSION)) {
+                    final ParserNode currentNode = (ParserNode) currentToken;
+                    if (currentNode.getValue() == pipelineOperator) {
+
+                        final Object leftNode = currentNode.getChildren().get(0);
+                        final Object rightNode = currentNode.getChildren().get(1);
+
+                        final Object effectiveRightNode = (Parser.isType(rightNode, ParserNode.NodeType.PARENTHESIS_PAIR) && ((ParserNode) rightNode).getChildren().size() == 1)
+                                ? ((ParserNode) rightNode).getChildren().get(0)
+                                : rightNode;
+
+                        final ParserNode replacementNode;
+                        if (isType(effectiveRightNode, ParserNode.NodeType.FUNCTION_CALL)) {
+                            final ParserNode rightFunctionCall = (ParserNode) effectiveRightNode;
+                            final Object parenthesis = rightFunctionCall.getChildren().get(1);
+
+                            if (isType(parenthesis, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                                final ParserNode parenthesisPair = (ParserNode) parenthesis;
+                                parenthesisPair.addChild(leftNode);
+                                replacementNode = rightFunctionCall;
+                            } else {
+                                throw new ParsingException("Expected function call with parenthesis pair on right side of pipeline operator, but got " + currentNode.reconstructCode());
+                            }
+
+                        } else if (isType(effectiveRightNode, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+                            final ParserNode rightIdentifierAccessed = (ParserNode) effectiveRightNode;
+
+                            if (rightIdentifierAccessed.getChildren().size() > 0) {
+                                final Object lastChild = rightIdentifierAccessed.getChildren().get(rightIdentifierAccessed.getChildren().size() - 1);
+
+                                if (isType(lastChild, ParserNode.NodeType.FUNCTION_CALL)) {
+                                    final ParserNode lastChildFunctionCall = (ParserNode) lastChild;
+                                    replacementNode = rightIdentifierAccessed;
+
+                                    final Object parenthesis = lastChildFunctionCall.getChildren().get(0);
+
+                                    if (isType(parenthesis, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                                        final ParserNode parenthesisPair = (ParserNode) parenthesis;
+                                        parenthesisPair.addChild(leftNode);
+                                    } else {
+                                        throw new ParsingException("Expected function call with parenthesis pair on right side of pipeline operator, but got " + currentNode.reconstructCode());
+                                    }
+                                } else {
+                                    replacementNode = rightIdentifierAccessed;
+
+                                    final ParserNode functionCall = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
+                                    final ParserNode parenthesisPair = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
+                                    parenthesisPair.addChild(leftNode);
+                                    functionCall.addChild(parenthesisPair);
+                                    replacementNode.addChild(functionCall);
+                                }
+
+                            } else {
+                                throw new ParsingException("Expected function call with parenthesis pair on accessed identifier on right side  of pipeline operator, but got " + currentNode.reconstructCode());
+                            }
+
+                        } else if (isType(effectiveRightNode, TokenType.IDENTIFIER)) {
+                            replacementNode = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
+                            replacementNode.addChild(effectiveRightNode);
+                            final ParserNode parenthesis = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
+                            parenthesis.addChild(leftNode);
+                            replacementNode.addChild(parenthesis);
+
+                        } else if (isType(effectiveRightNode, ParserNode.NodeType.FUNCTION_INLINE)) {
+                            replacementNode = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
+                            replacementNode.addChild(effectiveRightNode);
+                            final ParserNode parenthesis = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
+                            parenthesis.addChild(leftNode);
+                            replacementNode.addChild(parenthesis);
+
+                        } else {
+                            throw new ParsingException("Invalid symbol for pipeline operator: " + currentNode.reconstructCode());
+                        }
+
+                        ParserRule.replace(tokens, replacementNode, i, i);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
+
         // check for curly bracket pairs with only map elements inside to transform into a map
         rules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
@@ -294,7 +382,7 @@ public class Parser {
                     final ParserNode node = (ParserNode) currentToken;
 
                     if (node.getChildren().stream().allMatch(token -> isType(token, ParserNode.NodeType.MAP_ELEMENT))) {
-                        final ParserNode mapNode = new ParserNode(ParserNode.NodeType.MAP, null);
+                        final ParserNode mapNode = new ParserNode(ParserNode.NodeType.MAP);
                         mapNode.addChildren(node.getChildren());
                         tokens.set(i, mapNode);
                         return true;
@@ -389,7 +477,7 @@ public class Parser {
             }
 
             if (state == 3) {
-                final ParserNode node = new ParserNode(type, null);
+                final ParserNode node = new ParserNode(type);
                 for (int i = start; i < end; i++) {
                     if (isType(tokens.get(i), TokenType.IDENTIFIER)) {
                         node.addChild(tokens.get(i));
@@ -497,7 +585,7 @@ public class Parser {
 
 
             if (state == 4) {
-                final ParserNode node = new ParserNode(ParserNode.NodeType.IDENTIFIER_ACCESSED, null);
+                final ParserNode node = new ParserNode(ParserNode.NodeType.IDENTIFIER_ACCESSED);
                 for (int i = start; i < end; i++) {
                     final Object token = tokens.get(i);
 
@@ -593,7 +681,7 @@ public class Parser {
                            ) &&
                            !isType(nextToken, TokenType.OPEN_PARENTHESIS) && !isType(nextToken, TokenType.DOT) &&
                            !isType(nextToken, TokenType.OPEN_SQUARE_BRACKET) && !isType(nextToken, TokenType.OPEN_CURLY_BRACKET) &&
-                           !isType(nextToken, TokenType.OPERATOR)) {
+                           !(isType(nextToken, TokenType.OPERATOR) && !((Token) nextToken).getValue().equals("|>"))) {
                     state = 3;
                     end = i;
                     break;
@@ -611,7 +699,7 @@ public class Parser {
 
                     if (i == start) {
                         if (isType(token, TokenType.IDENTIFIER)) {
-                            final ParserNode parenthesis = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR, null);
+                            final ParserNode parenthesis = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
                             parenthesis.addChild(token);
                             node.addChild(parenthesis);
                         } else {
@@ -668,7 +756,7 @@ public class Parser {
             }
 
             if (state == 4) {
-                final ParserNode node = new ParserNode(ParserNode.NodeType.MAP_ELEMENT, null);
+                final ParserNode node = new ParserNode(ParserNode.NodeType.MAP_ELEMENT);
                 node.addChild(tokens.get(key));
                 node.addChild(tokens.get(value));
                 ParserRule.replace(tokens, node, key, value);
@@ -692,7 +780,7 @@ public class Parser {
 
         // listed elements , separated
         rules.add(tokens -> {
-            final ParserNode node = new ParserNode(ParserNode.NodeType.LISTED_ELEMENTS, null);
+            final ParserNode node = new ParserNode(ParserNode.NodeType.LISTED_ELEMENTS);
             int start = -1;
             int end = -1;
             boolean includesNotListElements = false;
@@ -809,7 +897,7 @@ public class Parser {
         // elif CONDITIONAL_BRANCH: condition, body
         // else CONDITIONAL_BRANCH: body
         rules.add(tokens -> {
-            final ParserNode node = new ParserNode(ParserNode.NodeType.CONDITIONAL, null);
+            final ParserNode node = new ParserNode(ParserNode.NodeType.CONDITIONAL);
             int start = -1;
             int end = -1;
 
@@ -818,7 +906,7 @@ public class Parser {
                 final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
                 final Object nextNextToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
 
-                final ParserNode branch = new ParserNode(ParserNode.NodeType.CONDITIONAL_BRANCH, null);
+                final ParserNode branch = new ParserNode(ParserNode.NodeType.CONDITIONAL_BRANCH);
                 boolean isElse = false;
                 boolean conditionStarterFound = false;
 
@@ -913,7 +1001,7 @@ public class Parser {
             }
 
             if (state == 6) {
-                final ParserNode node = new ParserNode(ParserNode.NodeType.LOOP_FOR, null);
+                final ParserNode node = new ParserNode(ParserNode.NodeType.LOOP_FOR);
 
                 for (int i = start; i <= end; i++) {
                     final Object token = tokens.get(i);
@@ -1005,7 +1093,7 @@ public class Parser {
                 }
 
                 if (state == 2) {
-                    final ParserNode node = new ParserNode(ParserNode.NodeType.STATEMENT, null);
+                    final ParserNode node = new ParserNode(ParserNode.NodeType.STATEMENT);
                     int paddedValueLength = 0;
                     for (int j = start; j < i + 1; j++) {
                         final Object token = tokens.get(j);
@@ -1068,7 +1156,7 @@ public class Parser {
             return node;
         }
 
-        final ParserNode blockNode = new ParserNode(ParserNode.NodeType.CODE_BLOCK, null);
+        final ParserNode blockNode = new ParserNode(ParserNode.NodeType.CODE_BLOCK);
 
         if (isType(node, ParserNode.NodeType.CURLY_BRACKET_PAIR)) {
             for (int j = 0; j < node.getChildren().size(); j++) {
@@ -1091,7 +1179,7 @@ public class Parser {
     }
 
     private static ParserNode makeProperCodeBlock(Token node) {
-        final ParserNode blockNode = new ParserNode(ParserNode.NodeType.CODE_BLOCK, null);
+        final ParserNode blockNode = new ParserNode(ParserNode.NodeType.CODE_BLOCK);
         blockNode.addChild(node);
         return blockNode;
     }

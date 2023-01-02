@@ -255,9 +255,13 @@ public class Operators {
             return null;
         }, false));
 
-        add(Operator.make("->", 0, true, true, (arguments) -> {
+        add(Operator.make("->", 5, true, true, (arguments) -> {
             return null;
         }, false));
+
+        add(Operator.make("|>", 0, true, true, (arguments) -> {
+            return null;
+        }, true));
     }
 
     public void add(Operator operator) {
