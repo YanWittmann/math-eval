@@ -220,6 +220,21 @@ public class Parser {
         // remove double newlines
         this.applyOnceRules.add(createRemoveDoubleTokensRule(new Object[]{TokenType.NEWLINE, TokenType.SEMICOLON}));
 
+        // remove newlines in front of specific tokens that indicate that the previous line is not yet finished
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object token = tokens.get(i);
+                if (isType(token, TokenType.NEWLINE) && i + 1 < tokens.size()) {
+                    final Object nextToken = tokens.get(i + 1);
+                    if (isType(nextToken, TokenType.OPERATOR) || isType(nextToken, TokenType.DOT)) {
+                        tokens.remove(i);
+                        i--;
+                    }
+                }
+            }
+            return false;
+        });
+
         // transform else if to elif
         this.applyOnceRules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
