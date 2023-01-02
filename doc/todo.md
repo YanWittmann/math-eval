@@ -21,3 +21,5 @@ sum
 
 = 15
 ```
+
+There seems to be automatic type conversion going on here: "4" + 45  ->  49
