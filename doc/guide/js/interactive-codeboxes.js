@@ -374,6 +374,10 @@ function createCodeBox(initialContent, interactive) {
             evaluateCodeBlockFromSubmitButton(codeboxContainer);
         }
         codeboxInputContainer.appendChild(mobileOnlySubmitButton);
+
+        codeboxContainer.onclick = function () {
+            codeboxInput.focus();
+        }
     }
 
     if (initialContent !== undefined) {
@@ -434,10 +438,27 @@ function initializePage(interpreterIsAvailable = true) {
 
     if (!interpreterIsAvailable && codeboxes.length > 0) {
         addWarningText("<a href='#'>Download</a> and run <code>menter -gs</code> to enable interactive code blocks");
+        setIntervalX(() => {
+            isInterpreterAvailable().then(nowAvailable => {
+                if (nowAvailable) window.location.reload();
+            });
+        }, 8 * 1000, 10);
     }
 }
 
-isInterpreterAvailable().then((available) => initializePage(available)).catch(() => initializePage(false));
+function setIntervalX(callback, delay, repetitions) {
+    let x = 0;
+    let intervalID = window.setInterval(function () {
+        callback();
+        if (++x === repetitions) {
+            window.clearInterval(intervalID);
+        }
+    }, delay);
+}
+
+isInterpreterAvailable()
+    .then((available) => initializePage(available))
+    .catch(() => initializePage(false));
 
 function applyFormattingToAllCodeTags() {
     let codeTags = document.getElementsByTagName("code");

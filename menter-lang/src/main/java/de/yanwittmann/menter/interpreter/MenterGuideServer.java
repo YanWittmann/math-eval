@@ -58,7 +58,10 @@ public class MenterGuideServer {
 
                     final Value result;
                     try {
-                        result = interpreter.evaluateInContextOf(requestJson.getString("code"), requestJson.getString("context"));
+                        final String code = requestJson.getString("code");
+                        final String context = requestJson.getString("context");
+                        LOG.info("Executing code [{}]: {}", context, code);
+                        result = interpreter.evaluateInContextOf(code, context);
 
                         responseJson.put("result", result.toDisplayString());
                         responseJson.put("print", printBuffer[0]);

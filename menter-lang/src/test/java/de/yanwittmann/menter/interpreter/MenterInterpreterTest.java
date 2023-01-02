@@ -46,6 +46,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "6", "a.test = x -> x + 1; a.test(5);");
         evaluateAndAssertEqual(interpreter, "false", "!true\n"); // newlines at the end caused the lexer to read oob
         evaluateAndAssertEqual(interpreter, "true", "[1,2].containsValue(1)"); // contains functions would not compare the values, but the value instances
+        // FIXME: will fail because of same indentation
+        //evaluateAndAssertEqual(interpreter, "[2]", "import common inline; range(1, 4)\n  .map(x -> x * 2)\n  .filter(x -> x > 4)");
     }
 
     @Test
@@ -401,13 +403,13 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        // MenterDebugger.logLexedTokens = true;
-        // MenterDebugger.logParseProgress = true;
-        // MenterDebugger.logParsedTokens = true;
+         MenterDebugger.logLexedTokens = true;
+         MenterDebugger.logParseProgress = true;
+         MenterDebugger.logParsedTokens = true;
         MenterDebugger.logInterpreterEvaluationStyle = 2;
         // MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "-3.5", "1 + 2 * 3 / 4 % 5 - 6");
+        evaluateAndAssertEqual(interpreter, "[2]", "import common inline; range(1, 4)\n  .map(x -> x * 2)\n  .filter(x -> x > 4)");
     }
 
 }
