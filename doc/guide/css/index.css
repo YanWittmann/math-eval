@@ -145,12 +145,13 @@ html, body {
     display: none;
 }
 
-.sidebar-content a {
+.sidebar-menu-item {
     text-decoration: none;
     color: var(--color-text-base);
+    width: 90%;
 }
 
-.sidebar-content a:hover {
+.sidebar-menu-item:hover {
     color: var(--color-text-blue);
 }
 

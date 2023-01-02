@@ -65,7 +65,7 @@ public class DocumentationGenerator {
                 final String line = outLines.get(i);
                 if (line.contains("{{ content.main }}")) {
                     outLines.set(i, line.replace("{{ content.main }}", documentationPage.renderPageContent(renderer).render()));
-                } else if (line.contains("content.sidebar")) {
+                } else if (line.contains("{{ content.sidebar }}")) {
                     outLines.set(i, line.replace("{{ content.sidebar }}", sidebarContent));
                 }
             }

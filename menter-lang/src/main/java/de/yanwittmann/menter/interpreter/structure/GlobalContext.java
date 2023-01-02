@@ -1,12 +1,16 @@
 package de.yanwittmann.menter.interpreter.structure;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
+import de.yanwittmann.menter.interpreter.ModuleOptions;
 import de.yanwittmann.menter.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class GlobalContext extends EvaluationContext {
 
@@ -16,16 +20,44 @@ public class GlobalContext extends EvaluationContext {
     private final List<Module> modules = new ArrayList<>();
     private final List<Import> imports = new ArrayList<>();
 
-    public GlobalContext(ParserNode root, Object source) {
+    public GlobalContext(Object source) {
         super(null);
         this.source = source;
-
-        this.findImportExportStatements(root);
     }
 
-    public void findImportExportStatements(ParserNode root) {
+    public void findImportExportStatements(ParserNode root, ModuleOptions moduleOptions) {
+        String exceptionMessage = null;
+
         for (Object child : root.getChildren()) {
-            checkForImportStatement(child);
+            if (child instanceof ParserNode) {
+                final ParserNode childNode = (ParserNode) child;
+
+                if (childNode.getType() == ParserNode.NodeType.EXPORT_STATEMENT) {
+
+                    final Module module = new Module(this, childNode);
+                    if (isModuleRegistered(module.getName())) {
+                        exceptionMessage = "Duplicate module name: " + module.getName();
+                        break;
+                    }
+                    modules.add(module);
+
+                } else if (childNode.getType() == ParserNode.NodeType.IMPORT_STATEMENT ||
+                           childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
+                           childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
+
+                    final Import anImport = new Import(childNode);
+                    if (isImportRegistered(anImport.getName())) {
+                        exceptionMessage = "Duplicate import name: " + anImport.getName();
+                        break;
+                    } else if (moduleOptions.isImportForbidden(anImport.getName())) {
+                        exceptionMessage = "Import is forbidden: " + anImport.getName();
+                        break;
+                    }
+
+                    imports.add(anImport);
+                    inputsResolved = false;
+                }
+            }
         }
 
         root.getChildren().removeIf(child -> {
@@ -39,41 +71,24 @@ public class GlobalContext extends EvaluationContext {
             return false;
         });
 
-        {
-            final Set<String> moduleNames = new HashSet<>();
-            for (Module module : modules) {
-                if (!moduleNames.add(module.getName())) {
-                    throw new MenterExecutionException("Duplicate module name: " + module.getName());
-                }
-            }
-        }
-        {
-            final Set<String> importNames = new HashSet<>();
-            for (int i = imports.size() - 1; i >= 0; i--) {
-                Import anImport = imports.get(i);
-                final String name = firstNonNull(anImport.getAlias(), anImport.getName());
-                if (!importNames.add(name)) {
-                    imports.remove(anImport);
-                    throw new MenterExecutionException("Duplicate import: " + anImport.getAlias());
-                }
-            }
+        if (exceptionMessage != null) {
+            throw new MenterExecutionException(exceptionMessage);
         }
     }
 
-    private void checkForImportStatement(Object child) {
-        if (child instanceof ParserNode) {
-            final ParserNode childNode = (ParserNode) child;
-
-            if (childNode.getType() == ParserNode.NodeType.EXPORT_STATEMENT) {
-                modules.add(new Module(this, childNode));
-
-            } else if (childNode.getType() == ParserNode.NodeType.IMPORT_STATEMENT ||
-                       childNode.getType() == ParserNode.NodeType.IMPORT_INLINE_STATEMENT ||
-                       childNode.getType() == ParserNode.NodeType.IMPORT_AS_STATEMENT) {
-                imports.add(new Import(childNode));
-                inputsResolved = false;
-            }
+    private boolean isModuleRegistered(String name) {
+        for (Module module : modules) {
+            if (module.getName().equals(name)) return true;
         }
+        return false;
+    }
+
+    private boolean isImportRegistered(String name) {
+        for (Import anImport : imports) {
+            final String otherName = firstNonNull(anImport.getAlias(), anImport.getName());
+            if (name.equals(otherName)) return true;
+        }
+        return false;
     }
 
     public List<Module> getModules() {

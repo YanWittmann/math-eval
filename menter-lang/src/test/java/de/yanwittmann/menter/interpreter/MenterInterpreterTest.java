@@ -34,7 +34,7 @@ class MenterInterpreterTest {
     public void assignmentsTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
 
-        interpreter.loadFile(new File("src/test/resources/lang/other/functions.ter"));
+        interpreter.loadFile(new File("src/test/resources/lang/other/functions.mtr"));
         interpreter.finishLoadingContexts();
     }
 
@@ -196,11 +196,22 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluateInContextOf("", "d = 5; foo() { d }; export [foo, d] as sometestmodule", "sometestmodule");
+        interpreter.evaluateInContextOf("d = 5; foo() { d }; export [foo, d] as sometestmodule", "sometestmodule");
 
         evaluateAndAssertEqual(interpreter, "[d, foo]", "" +
                                                         "import sometestmodule\n" +
                                                         "sometestmodule.symbols.keys()");
+    }
+
+    @Test
+    public void multipleIdenticalExportsTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        interpreter.evaluateInContextOf("test = 5; export [test] as test", "test-001");
+        interpreter.evaluateInContextOf("test = 10; export [test] as test", "test-002");
+
+        evaluateAndAssertEqual(interpreter, "10", "import test; test.test");
     }
 
     @Test
@@ -319,8 +330,8 @@ class MenterInterpreterTest {
             }
         });
 
-        interpreter.addAutoImport("TestType inline");
-        interpreter.addAutoImport("common inline");
+        interpreter.getModuleOptions().addAutoImport("TestType inline");
+        interpreter.getModuleOptions().addAutoImport("common inline");
 
         evaluateAndAssertEqual(interpreter, "3", "" +
                                                  "val = TestType(3)\n" +

@@ -4,6 +4,7 @@ import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.parser.ParserNode;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,12 +71,16 @@ public class Import {
     }
 
     protected void findModule(List<GlobalContext> globalContexts) {
-        for (GlobalContext globalContext : globalContexts) {
-            for (Module module : globalContext.getModules()) {
-                if (module.getName().equals(getName())) {
-                    nameOrModule = module;
-                    return;
-                }
+        final List<Module> modules = globalContexts.stream()
+                .map(GlobalContext::getModules)
+                .flatMap(List::stream)
+                .sorted(Comparator.comparing(Module::getCreationTime).reversed())
+                .collect(Collectors.toList());
+
+        for (Module module : modules) {
+            if (module.getName().equals(getName())) {
+                nameOrModule = module;
+                return;
             }
         }
 

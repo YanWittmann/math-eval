@@ -18,7 +18,7 @@ public class MenterGuideServer {
 
     private static final Logger LOG = LogManager.getLogger(MenterGuideServer.class);
 
-    public MenterGuideServer(MenterInterpreter interpreter) throws IOException {
+    public MenterGuideServer(MenterInterpreter interpreter, boolean safeMode) throws IOException {
         LOG.info("Starting MenterGuideServer...");
 
         HttpServer server;
@@ -36,6 +36,12 @@ public class MenterGuideServer {
                 printBuffer[0] += (char) b;
             }
         });
+
+        if (!safeMode) {
+            interpreter.getModuleOptions().addForbiddenImport("io");
+            interpreter.getModuleOptions().addForbiddenImport("system");
+            interpreter.getModuleOptions().addForbiddenImport("debug");
+        }
 
         server.createContext("/api/guide", (exchange -> {
             LOG.info("Received request from " + exchange.getRemoteAddress().getAddress().getHostAddress());
@@ -71,7 +77,7 @@ public class MenterGuideServer {
                         responseJson.put("error", "Invalid request body.");
                         exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
                     } catch (Exception e) {
-                        responseJson.put("result", Value.empty());
+                        responseJson.put("result", Value.empty().toDisplayString());
                         responseJson.put("print", e.getMessage());
                         exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
                     }

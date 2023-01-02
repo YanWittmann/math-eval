@@ -1214,7 +1214,7 @@ class ParserTest {
                                 "               │              └─ NUMBER_LITERAL: 2\n" +
                                 "               └─ RETURN_STATEMENT\n" +
                                 "                  └─ IDENTIFIER: fib",
-                parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.ter")).getChildren()));
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/fib.mtr")).getChildren()));
 
         Assertions.assertEquals(
                 "STATEMENT\n" +
@@ -1270,7 +1270,7 @@ class ParserTest {
                 "         └─ EXPRESSION: + (110 l r)\n" +
                 "            ├─ IDENTIFIER: x\n" +
                 "            └─ NUMBER_LITERAL: 1",
-                parser.toString(reader.parse(new File("src/test/resources/lang/other/inlineFunctions.ter")).getChildren()));
+                parser.toString(reader.parse(new File("src/test/resources/lang/other/inlineFunctions.mtr")).getChildren()));
     }
 
     private void assertParsedTreeEquals(String expected, String expression) {

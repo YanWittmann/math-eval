@@ -2,6 +2,7 @@ package de.yanwittmann.menter;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
+import de.yanwittmann.menter.interpreter.ModuleOptions;
 import de.yanwittmann.menter.interpreter.structure.GlobalContext;
 import de.yanwittmann.menter.interpreter.structure.Import;
 import de.yanwittmann.menter.interpreter.structure.Value;
@@ -27,6 +28,7 @@ public class EvalRuntime {
     protected final Parser parser;
     protected final List<GlobalContext> globalContexts = new ArrayList<>();
     protected final Map<GlobalContext, ParserNode> unfinishedGlobalContextRootObjects = new HashMap<>();
+    private final ModuleOptions moduleOptions = new ModuleOptions();
 
     public EvalRuntime(Operators operators) {
         lexer = new Lexer(operators);
@@ -58,10 +60,15 @@ public class EvalRuntime {
     }
 
     public void loadContext(List<String> str, String source) {
+        if (moduleOptions.hasAutoImports()) {
+            str.set(0, moduleOptions.getAutoImportsAsString());
+        }
         final List<Token> tokens = lexer.parse(str);
         final ParserNode rootNode = parser.parse(tokens);
 
-        final GlobalContext globalContext = new GlobalContext(rootNode, source);
+        final GlobalContext globalContext = new GlobalContext(source);
+        globalContext.findImportExportStatements(rootNode, moduleOptions);
+
         globalContexts.add(globalContext);
         unfinishedGlobalContextRootObjects.put(globalContext, rootNode);
     }
@@ -126,15 +133,17 @@ public class EvalRuntime {
     }
 
     public Value evaluate(String expression) {
-        final List<Token> tokens = lexer.parse(expression);
+        final List<Token> tokens = lexer.parse(moduleOptions.getAutoImportsAsString() + expression);
         final ParserNode tokenTree = parser.parse(tokens);
 
-        final GlobalContext context = new GlobalContext(tokenTree, "eval");
+        final GlobalContext context = new GlobalContext("eval");
+        context.findImportExportStatements(tokenTree, moduleOptions);
+
         context.resolveImports(globalContexts);
         return context.evaluate(tokenTree);
     }
 
-    public Value evaluateInContextOf(String initialExpressions, String expression, String contextSource) {
+    public Value evaluateInContextOf(String expression, String contextSource) {
         // attempt to find a context with the given source
         GlobalContext context = globalContexts.stream()
                 .filter(globalContext -> globalContext.getSource().equals(contextSource))
@@ -144,21 +153,23 @@ public class EvalRuntime {
         // if no context was found, create a new one
         if (context == null) {
             final ParserNode tokenTree;
-            if (initialExpressions != null) {
-                final List<Token> tokens = lexer.parse(initialExpressions);
+            if (moduleOptions.hasAutoImports()) {
+                final List<Token> tokens = lexer.parse(moduleOptions.getAutoImportsAsString());
                 tokenTree = parser.parse(tokens);
             } else {
                 tokenTree = new ParserNode(ParserNode.NodeType.ROOT, null);
             }
 
-            context = new GlobalContext(tokenTree, contextSource);
+            context = new GlobalContext(contextSource);
+            context.findImportExportStatements(tokenTree, moduleOptions);
+
             globalContexts.add(context);
         }
 
         final List<Token> tokens = lexer.parse(expression);
         final ParserNode tokenTree = parser.parse(tokens);
 
-        context.findImportExportStatements(tokenTree);
+        context.findImportExportStatements(tokenTree, moduleOptions);
         context.resolveImports(globalContexts);
 
         if (tokenTree.getChildren().size() > 0) {
@@ -166,5 +177,9 @@ public class EvalRuntime {
         } else {
             return Value.empty();
         }
+    }
+
+    public ModuleOptions getModuleOptions() {
+        return moduleOptions;
     }
 }

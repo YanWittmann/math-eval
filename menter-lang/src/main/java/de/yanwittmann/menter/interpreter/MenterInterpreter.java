@@ -20,50 +20,16 @@ public class MenterInterpreter extends EvalRuntime {
 
     private static final Logger LOG = LogManager.getLogger(MenterInterpreter.class);
 
-    private final List<String> autoImports = new ArrayList<>();
-
     public MenterInterpreter(Operators operators) {
         super(operators);
         loadMenterCoreFiles();
     }
 
-    public void addAutoImport(String importStatement) {
-        autoImports.add(importStatement.startsWith("import ") ? importStatement : "import " + importStatement);
-    }
-
-    public void clearAutoImports() {
-        autoImports.clear();
-    }
-
-    @Override
-    public Value evaluate(String expression) {
-        return super.evaluate(getAutoImportsAsString() + expression);
-    }
-
-    public Value evaluateInContextOf(String expression, String contextSource) {
-        return super.evaluateInContextOf(getAutoImportsAsString(), expression, contextSource);
-    }
-
-    @Override
-    public Value evaluateInContextOf(String initialExpressions, String expression, String contextSource) {
-        return this.evaluateInContextOf(expression, contextSource);
-    }
-
-    @Override
-    public void loadContext(List<String> str, String source) {
-        str.add(0, getAutoImportsAsString());
-        super.loadContext(str, source);
-    }
-
-    private String getAutoImportsAsString() {
-        return autoImports.size() > 0 ? String.join(";", autoImports) + ";" : "";
-    }
-
     private final static String[] MENTER_SOURCE_FILES = {
-            "common.ter",
-            "io.ter",
-            "system.ter",
-            "debug.ter",
+            "common.mtr",
+            "io.mtr",
+            "system.mtr",
+            "debug.mtr",
     };
 
     private void loadMenterCoreFiles() {
@@ -119,10 +85,12 @@ public class MenterInterpreter extends EvalRuntime {
 
     public static void main(String[] args) {
         final MenterInterpreter interpreter = new MenterInterpreter(new Operators());
-        interpreter.addAutoImport("import common inline");
+        interpreter.getModuleOptions().addAutoImport("common inline");
 
         final boolean isRepl = MenterInterpreter.isAnyOf(args, "-r", "--repl", "repl");
         final boolean isGuideServer = MenterInterpreter.isAnyOf(args, "-gs", "--guide-server", "guide-server");
+        final String isGuideServerUnsafeParam = MenterInterpreter.getArgumentValue(args, "-gs", "--guide-server", "guide-server");
+        final boolean isGuideServerUnsafe = isGuideServerUnsafeParam != null && (isGuideServerUnsafeParam.equalsIgnoreCase("unsafe") || isGuideServerUnsafeParam.equalsIgnoreCase("us"));
 
         final List<File> files = MenterInterpreter.getFiles(args);
         final boolean hasFiles = files.size() > 0;
@@ -131,10 +99,10 @@ public class MenterInterpreter extends EvalRuntime {
 
         if (isHelp) {
             MenterDebugger.printer.println("Menter Interpreter");
-            MenterDebugger.printer.println("  -ef [filename]      Evaluate file");
-            MenterDebugger.printer.println("  -r, --repl, repl:   Start REPL");
-            MenterDebugger.printer.println("  -gs, --guide-server Start guide server");
-            MenterDebugger.printer.println("  -h, --help:         Show this help");
+            MenterDebugger.printer.println("  -ef [filename]                    Evaluate file");
+            MenterDebugger.printer.println("  -r, --repl, repl:                 Start REPL");
+            MenterDebugger.printer.println("  -gs, --guide-server [unsafe, us]  Start guide server and whether to allow unsafe imports (io, system, debug)");
+            MenterDebugger.printer.println("  -h, --help:                       Show this help");
             return;
         }
 
@@ -146,9 +114,8 @@ public class MenterInterpreter extends EvalRuntime {
         }
 
         if (isGuideServer) {
-            final MenterGuideServer guideServer;
             try {
-                guideServer = new MenterGuideServer(interpreter);
+                new MenterGuideServer(interpreter, isGuideServerUnsafe);
             } catch (IOException e) {
                 LOG.error("Failed to start guide server", e);
             }
@@ -259,6 +226,13 @@ public class MenterInterpreter extends EvalRuntime {
             }
         }
 
+        if (args.length == 1) {
+            final File file = new File(args[0]);
+            if (file.exists()) {
+                files.add(file);
+            }
+        }
+
         for (File file : files) {
             if (!file.exists()) {
                 throw new MenterExecutionException("Menter Interpreter: File does not exist: " + file);
@@ -270,5 +244,18 @@ public class MenterInterpreter extends EvalRuntime {
 
     private static boolean isAnyOf(String[] args, String... values) {
         return Arrays.stream(args).anyMatch(arg -> Arrays.stream(values).anyMatch(value -> value.equalsIgnoreCase(arg)));
+    }
+
+    private static String getArgumentValue(String[] args, String... values) {
+        for (int i = 0; i < args.length; i++) {
+            int finalI = i;
+            if (Arrays.stream(values).anyMatch(value -> value.equalsIgnoreCase(args[finalI]))) {
+                if (i + 1 >= args.length) {
+                    return null;
+                }
+                return args[i + 1];
+            }
+        }
+        return null;
     }
 }

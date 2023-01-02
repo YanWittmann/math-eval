@@ -85,7 +85,7 @@ public class Value implements Comparable<Value> {
 
     public String getType() {
         if (value == null) {
-            return "unknown";
+            return "empty";
         } else if (value instanceof Number) {
             return PrimitiveValueType.NUMBER.getType();
         } else if (value instanceof String) {

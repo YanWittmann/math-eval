@@ -118,7 +118,7 @@ function applyCodeFormatting(text) {
 }
 
 function createStyleHighlightsForText(text) {
-    let keywords = ["for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue", "import", "export", "in"];
+    let keywords = ["for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue", "import", "export", "in", "as"];
     let identifiers = text.match(/[a-zA-Z]+/g);
     let numbers = text.match(/-?\d+(\.\d+)?/g);
     let strings = text.match(/["'].*?["']/g);

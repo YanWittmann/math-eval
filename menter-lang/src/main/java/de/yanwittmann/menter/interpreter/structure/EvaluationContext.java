@@ -30,16 +30,16 @@ public abstract class EvaluationContext {
     protected final static Map<String[], Function<Value[], Value>> nativeFunctions = new HashMap<>();
 
     static {
-        registerNativeFunction(new String[]{"common.ter", "print"}, CoreModuleCommon::print);
-        registerNativeFunction(new String[]{"common.ter", "range"}, CoreModuleCommon::range);
+        registerNativeFunction(new String[]{"common.mtr", "print"}, CoreModuleCommon::print);
+        registerNativeFunction(new String[]{"common.mtr", "range"}, CoreModuleCommon::range);
 
-        registerNativeFunction(new String[]{"io.ter", "read"}, CoreModuleIo::apply);
+        registerNativeFunction(new String[]{"io.mtr", "read"}, CoreModuleIo::apply);
 
-        registerNativeFunction(new String[]{"system.ter", "getProperty"}, CoreModuleSystem::getProperty);
-        registerNativeFunction(new String[]{"system.ter", "getEnv"}, CoreModuleSystem::getEnv);
+        registerNativeFunction(new String[]{"system.mtr", "getProperty"}, CoreModuleSystem::getProperty);
+        registerNativeFunction(new String[]{"system.mtr", "getEnv"}, CoreModuleSystem::getEnv);
 
-        registerNativeFunction(new String[]{"debug.ter", "switch"}, CoreModuleDebug::debugSwitch);
-        registerNativeFunction(new String[]{"debug.ter", "stackTraceValues"}, CoreModuleDebug::stackTraceValues);
+        registerNativeFunction(new String[]{"debug.mtr", "switch"}, CoreModuleDebug::debugSwitch);
+        registerNativeFunction(new String[]{"debug.mtr", "stackTraceValues"}, CoreModuleDebug::stackTraceValues);
     }
 
     public static void registerNativeFunction(String[] path, Function<Value[], Value> function) {
