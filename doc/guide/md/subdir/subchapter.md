@@ -1,7 +1,11 @@
-# Title
+# Modules
 
-```interactive
-1 + 4
+```
+fun = x -> x + 1;;;export [fun] as myModule
+```
+
+```
+import myModule;;;myModule.fun(3)
 ```
 
 Content!!!
