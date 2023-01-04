@@ -51,6 +51,13 @@ class MenterInterpreterTest {
                                                       "range(1, 4)\n" +
                                                       "  .map(x -> x * 2)\n" +
                                                       "  .filter(x -> x > 4)"); // this would not have worked because of the indentation being the same on the lower two lines
+
+        evaluateAndAssertEqual(interpreter, "[6, 0, [6]]", "fun(x) {\n" +
+                                                           "  if (x.type() == \"number\") x + 5\n" +
+                                                           "  else if (x.type() == \"object\") x.map(x -> x + 5)\n" +
+                                                           "  else 0\n" +
+                                                           "}\n" +
+                                                           "[1, \"1\", [1]].map(fun)"); // this would fail because of like 3 different reasons (mainly because the brackets on the if statements would be evaluated after the + expressions)
     }
 
     @Test
@@ -136,6 +143,12 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "6", "if (2 == 2) if (3 > 4) 5 else 6 else 7");
         evaluateAndAssertEqual(interpreter, "7", "if (1 == 2) if (3 < 4) 5 else 6 else 7");
+
+        evaluateAndAssertEqual(interpreter, "[2, 3]", "" +
+                                                         "[1, 2].map(x -> x + 1)");
+        evaluateAndAssertEqual(interpreter, "[6, 7]", "" +
+                                                      "if (false) 3 + 5\n" +
+                                                      "else if (true) [1,2].map(x -> x + 5)");
     }
 
     @Test
@@ -158,6 +171,8 @@ class MenterInterpreterTest {
                                                    "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + test(1 * 5 + 2 * (3 + 2)) * 1");
 
         evaluateAndAssertEqual(interpreter, "-3.5", "1 + 2 * 3 / 4 % 5 - 6");
+
+        evaluateAndAssertEqual(interpreter, "445", "\"4\" + 45"); // would not be string concentrated, but would be parsed as a number
     }
 
     @Test
@@ -393,7 +408,7 @@ class MenterInterpreterTest {
                                                   "val.addToList(10)\n" +
                                                   "sum = 0\n" +
                                                   "if (val) {\n" +
-                                                  "  for (i in val) {sum = sum + i}\n" + // FIXME: This should not need a code block
+                                                  "  for (i in val) sum = sum + i\n" +
                                                   "}\n" +
                                                   "sum");
 
@@ -403,7 +418,7 @@ class MenterInterpreterTest {
                                                   "val.addToList(10)\n" +
                                                   "sum = 0\n" +
                                                   "if (val) {\n" +
-                                                  "  for (i in range(0, val.size() - 1)) {sum = sum + val[i]}\n" + // same as above
+                                                  "  for (i in range(0, val.size() - 1)) sum = sum + val[i]\n" + // same as above
                                                   "}\n" +
                                                   "sum");
 
@@ -431,6 +446,19 @@ class MenterInterpreterTest {
         } catch (MenterExecutionException e) {
             Assertions.assertTrue(e.getMessage().contains("a = 5 (number)"));
         }
+    }
+
+    @Test
+    public void moduleExportTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        interpreter.evaluateInContextOf("sub(x, y) = x - y\nexport [sub] as math", "math");
+
+        evaluateAndAssertEqual(interpreter, "-6",
+                "import math\n" +
+                "val = x -> {math.sub(-2, x)}\n" +
+                "val(4)");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {

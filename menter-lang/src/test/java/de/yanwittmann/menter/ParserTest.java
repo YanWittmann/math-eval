@@ -106,6 +106,18 @@ class ParserTest {
                                "      └─ PARENTHESIS_PAIR\n" +
                                "         └─ IDENTIFIER: i",
                 "for ((i, e) : list) print(i)");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CODE_BLOCK\n" +
+                               "   └─ LOOP_FOR\n" +
+                               "      ├─ IDENTIFIER: i\n" +
+                               "      ├─ IDENTIFIER: val\n" +
+                               "      └─ ASSIGNMENT: = (10 l r)\n" +
+                               "         ├─ IDENTIFIER: sum\n" +
+                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "            ├─ IDENTIFIER: sum\n" +
+                               "            └─ IDENTIFIER: i",
+                "{for (i in val) sum = sum + i}");
     }
 
     @Test
@@ -191,6 +203,16 @@ class ParserTest {
                                "      └─ PARENTHESIS_PAIR\n" +
                                "         └─ IDENTIFIER: i",
                 "a[b].c.d[e].f[\"g\"].h(i)");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ IDENTIFIER_ACCESSED\n" +
+                               "   ├─ IDENTIFIER: test\n" +
+                               "   ├─ IDENTIFIER: t\n" +
+                               "   ├─ NUMBER_LITERAL: 0\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ NUMBER_LITERAL: 2",
+                "test.t[0](2)");
     }
 
     @Test
@@ -710,6 +732,24 @@ class ParserTest {
                 "} else {\n" +
                 "    return 6;\n" +
                 "}");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │     ├─ NUMBER_LITERAL: 1\n" +
+                               "   │  │     └─ NUMBER_LITERAL: 4\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │        ├─ IDENTIFIER: test\n" +
+                               "   │        └─ NUMBER_LITERAL: 5\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      └─ CODE_BLOCK\n" +
+                               "         └─ ASSIGNMENT: = (10 l r)\n" +
+                               "            ├─ IDENTIFIER: test\n" +
+                               "            └─ NUMBER_LITERAL: 6",
+                "if (1 == 4) test = 5 else test = 6");
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ CONDITIONAL\n" +

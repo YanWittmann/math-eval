@@ -28,8 +28,6 @@ public class Operators {
         try {
             if (value.getType().equals(PrimitiveValueType.NUMBER.getType())) {
                 return Optional.of(value);
-            } else if (value.getType().equals(PrimitiveValueType.STRING.getType())) {
-                return Optional.of(new Value(new BigDecimal((String) value.getValue())));
             } else {
                 return Optional.empty();
             }

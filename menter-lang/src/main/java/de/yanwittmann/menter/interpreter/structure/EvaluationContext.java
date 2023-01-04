@@ -596,7 +596,7 @@ public abstract class EvaluationContext {
                         if (module != null) {
                             globalContext = module.getParentContext();
                             localInformation = localInformation.deriveNewContext();
-                            localInformation.setLocalSymbols(globalContext.getVariables());
+                            localInformation.putLocalSymbol(globalContext.getVariables());
                             // value = null; // is already null
                             foundImport = true;
                             if (MenterDebugger.logInterpreterResolveSymbols) {
@@ -609,7 +609,7 @@ public abstract class EvaluationContext {
                         if (module != null) {
                             globalContext = module.getParentContext();
                             localInformation = localInformation.deriveNewContext();
-                            localInformation.setLocalSymbols(globalContext.getVariables());
+                            localInformation.putLocalSymbol(globalContext.getVariables());
                             value = module.getParentContext().getVariable(stringKey);
                             foundImport = true;
                             if (MenterDebugger.logInterpreterResolveSymbols) {
