@@ -298,15 +298,19 @@ public class Parser {
         });
 
         // convert the pipeline operator to a function call
-        final Operator pipelineOperator = operators.findOperator("|>", true, true);
+        final Operator pipelineOperatorLast = operators.findOperator("|>", true, true);
+        final Operator pipelineOperatorFirst = operators.findOperator(">|", true, true);
         rules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
 
                 if (isType(currentToken, ParserNode.NodeType.EXPRESSION)) {
                     final ParserNode currentNode = (ParserNode) currentToken;
-                    if (currentNode.getValue() == pipelineOperator) {
 
+                    final boolean isAppendOperator = currentNode.getValue() == pipelineOperatorLast;
+                    final boolean isPrependOperator = currentNode.getValue() == pipelineOperatorFirst;
+
+                    if (isAppendOperator || isPrependOperator) {
                         final Object leftNode = currentNode.getChildren().get(0);
                         final Object rightNode = currentNode.getChildren().get(1);
 
@@ -321,7 +325,7 @@ public class Parser {
 
                             if (isType(parenthesis, ParserNode.NodeType.PARENTHESIS_PAIR)) {
                                 final ParserNode parenthesisPair = (ParserNode) parenthesis;
-                                parenthesisPair.addChild(leftNode);
+                                appendOrPrependValueForPipelineOperator(parenthesisPair, leftNode, isPrependOperator);
                                 replacementNode = rightFunctionCall;
                             } else {
                                 throw new ParsingException("Expected function call with parenthesis pair on right side of pipeline operator, but got " + currentNode.reconstructCode());
@@ -341,7 +345,7 @@ public class Parser {
 
                                     if (isType(parenthesis, ParserNode.NodeType.PARENTHESIS_PAIR)) {
                                         final ParserNode parenthesisPair = (ParserNode) parenthesis;
-                                        parenthesisPair.addChild(leftNode);
+                                        appendOrPrependValueForPipelineOperator(parenthesisPair, leftNode, isPrependOperator);
                                     } else {
                                         throw new ParsingException("Expected function call with parenthesis pair on right side of pipeline operator, but got " + currentNode.reconstructCode());
                                     }
@@ -350,7 +354,7 @@ public class Parser {
 
                                     final ParserNode functionCall = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
                                     final ParserNode parenthesisPair = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
-                                    parenthesisPair.addChild(leftNode);
+                                    appendOrPrependValueForPipelineOperator(parenthesisPair, leftNode, isPrependOperator);
                                     functionCall.addChild(parenthesisPair);
                                     replacementNode.addChild(functionCall);
                                 }
@@ -362,19 +366,20 @@ public class Parser {
                         } else if (isType(effectiveRightNode, TokenType.IDENTIFIER)) {
                             replacementNode = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
                             replacementNode.addChild(effectiveRightNode);
-                            final ParserNode parenthesis = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
-                            parenthesis.addChild(leftNode);
-                            replacementNode.addChild(parenthesis);
+                            final ParserNode parenthesisPair = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
+                            appendOrPrependValueForPipelineOperator(parenthesisPair, leftNode, isPrependOperator);
+                            replacementNode.addChild(parenthesisPair);
 
                         } else if (isType(effectiveRightNode, ParserNode.NodeType.FUNCTION_INLINE)) {
                             replacementNode = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
                             replacementNode.addChild(effectiveRightNode);
-                            final ParserNode parenthesis = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
-                            parenthesis.addChild(leftNode);
-                            replacementNode.addChild(parenthesis);
+                            final ParserNode parenthesisPair = new ParserNode(ParserNode.NodeType.PARENTHESIS_PAIR);
+                            appendOrPrependValueForPipelineOperator(parenthesisPair, leftNode, isPrependOperator);
+                            replacementNode.addChild(parenthesisPair);
 
                         } else {
-                            throw new ParsingException("Invalid symbol for pipeline operator: " + currentNode.reconstructCode());
+                            throw new ParsingException("Invalid symbol for pipeline operator: " + ParserNode.reconstructCode(effectiveRightNode) + " (expected function call, identifier or function inline)\n" +
+                                                       "on " + currentNode.reconstructCode());
                         }
 
                         ParserRule.replace(tokens, replacementNode, i, i);
@@ -593,6 +598,7 @@ public class Parser {
                 } else {
                     state = 0;
                     start = -1;
+                    thisChainIsInvalid = false;
                 }
             }
 
@@ -694,7 +700,7 @@ public class Parser {
                            ) &&
                            !isType(nextToken, TokenType.OPEN_PARENTHESIS) && !isType(nextToken, TokenType.DOT) &&
                            !isType(nextToken, TokenType.OPEN_SQUARE_BRACKET) && !isType(nextToken, TokenType.OPEN_CURLY_BRACKET) &&
-                           !(isType(nextToken, TokenType.OPERATOR) && !((Token) nextToken).getValue().equals("|>"))) {
+                           !(isType(nextToken, TokenType.OPERATOR) && !((Token) nextToken).getValue().equals("|>") && !((Token) nextToken).getValue().equals(">|"))) {
                     state = 3;
                     end = i;
                     break;
@@ -1210,6 +1216,14 @@ public class Parser {
 
         CACHED_PARSE_RULES.put(operators, new ArrayList<>(this.rules));
         CACHED_PARSE_ONCE_RULES.put(operators, new ArrayList<>(this.applyOnceRules));
+    }
+
+    private static void appendOrPrependValueForPipelineOperator(ParserNode parenthesisPair, Object node, boolean prepend) {
+        if (prepend) {
+            parenthesisPair.getChildren().add(0, node);
+        } else {
+            parenthesisPair.addChild(node);
+        }
     }
 
     private static ParserRule createRemoveTokensRule(Object[] removeTokens) {

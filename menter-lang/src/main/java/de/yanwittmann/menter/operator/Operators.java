@@ -260,6 +260,10 @@ public class Operators {
         add(Operator.make("|>", 0, true, true, (arguments) -> {
             return null;
         }, true));
+
+        add(Operator.make(">|", 0, true, true, (arguments) -> {
+            return null;
+        }, true));
     }
 
     public void add(Operator operator) {

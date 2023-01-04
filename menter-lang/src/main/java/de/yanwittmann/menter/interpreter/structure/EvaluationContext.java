@@ -631,8 +631,7 @@ public abstract class EvaluationContext {
 
                 if (id instanceof ParserNode) {
                     final ParserNode node = (ParserNode) id;
-                    if (node.getType() == ParserNode.NodeType.MAP || node.getType() == ParserNode.NodeType.CODE_BLOCK ||
-                        node.getType() == ParserNode.NodeType.ARRAY) {
+                    if (Parser.isEvaluableToValue(node)) {
                         value = evaluate(node, globalContext, symbolCreationMode, localInformation);
                         if (MenterDebugger.logInterpreterResolveSymbols) {
                             LOG.info("Symbol resolve: [{}] from evaluated node", value);

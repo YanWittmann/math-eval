@@ -86,7 +86,7 @@ public abstract class Operator {
     }
 
     private static OperatorMatch findEarliestMatch(List<Object> tokens, Operator checkForOperator) {
-        final boolean isPipelineOperator = checkForOperator.getSymbol().equals("|>");
+        final boolean isPipelineOperator = checkForOperator.getSymbol().equals("|>") || checkForOperator.getSymbol().equals(">|");
 
         for (int i = 0; i < tokens.size(); i++) {
             final Object token = tokens.get(i);
@@ -157,7 +157,7 @@ public abstract class Operator {
                             break;
                         }
 
-                        if (isPipelineOperator && j != i && Parser.isType(next, Lexer.TokenType.OPERATOR) && !((Token) next).getValue().equals("|>")) {
+                        if (isPipelineOperator && j != i && Parser.isType(next, Lexer.TokenType.OPERATOR) && !((Token) next).getValue().equals("|>") && !((Token) next).getValue().equals(">|")) {
                             foundUnallowedToken = true;
                             break;
                         }

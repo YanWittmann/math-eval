@@ -84,6 +84,9 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "6", "3 + (4 |> x -> x - 1)");
         evaluateAndAssertEqual(interpreter, "9", "7 |> x -> x + 1 |> x -> x + 1"); // the issue with this one is that the -> would check for operators (|>) behind the next token, which would cancel the -> operator
+
+        evaluateAndAssertEqual(interpreter, "-10 !", "double = x -> x * 2; (([1, 2].map(x -> x + 3) |> x -> [x[0], -x[1]])[1] |> double) + \" !\"");
+        evaluateAndAssertEqual(interpreter, "-10 !", "double = x -> x * 2; (([1, 2].map(x -> x + 3) >| x -> [x[0], -x[1]])[1] >| double) + \" !\"");
     }
 
     @Test
@@ -114,6 +117,10 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "3", "(x -> x + 1)(2)");
         evaluateAndAssertEqual(interpreter, "(x) -> { print(x); }", "x -> print(x)");
+
+        evaluateAndAssertEqual(interpreter, "4", "[1, 2].map(x -> x + 3) |> x -> x[0]"); // would not recognize the x[0] as accessed value, as the thisChainIsInvalid flag would never be reset
+
+        evaluateAndAssertEqual(interpreter, "2", "([2, 3])[0]"); // brackets would not be evaluated to a value in the accessor system
     }
 
     @Test
@@ -145,7 +152,7 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "7", "if (1 == 2) if (3 < 4) 5 else 6 else 7");
 
         evaluateAndAssertEqual(interpreter, "[2, 3]", "" +
-                                                         "[1, 2].map(x -> x + 1)");
+                                                      "[1, 2].map(x -> x + 1)");
         evaluateAndAssertEqual(interpreter, "[6, 7]", "" +
                                                       "if (false) 3 + 5\n" +
                                                       "else if (true) [1,2].map(x -> x + 5)");
