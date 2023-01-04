@@ -255,6 +255,7 @@ function evaluateCodeBlock(codebox, initialInput) {
                 }
 
                 let message = "";
+                result.print = result.print.replaceAll("\r", "");
                 if (result.print !== undefined && result.print !== null && result.print !== "") {
                     let lines = result.print.split("\n").filter(v => v !== "").map(v => " " + v);
                     message += lines.join("\n");
