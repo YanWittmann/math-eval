@@ -5,6 +5,8 @@ import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import j2html.tags.specialized.ATag;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,16 +19,22 @@ import java.util.stream.Collectors;
 public class DocumentationGenerator {
 
     public static void main(String[] args) throws IOException {
-        final MutableDataSet options = new MutableDataSet();
-        final Parser parser = Parser.builder(options).build();
-        final HtmlRenderer renderer = HtmlRenderer.builder(options).build();
-
         final File guideBaseDir = new File("doc/guide");
+        final File targetBaseDir = new File("target/site");
         final File markdownBaseDir = new File(guideBaseDir, "md");
-        final File targetBaseDir = new File("menter-documentation/target/site");
 
         final File structureFile = new File(markdownBaseDir, "structure.txt");
         final File templateFile = new File(guideBaseDir, "template.html");
+
+        generate(guideBaseDir, targetBaseDir, templateFile, structureFile);
+
+        upload(targetBaseDir, "/projects/menter/guide", "yanwittmann.de", "f00dbfd7", "JnJ5Ueyey7woBeUH");
+    }
+
+    public static void generate(File guideBaseDir, File targetBaseDir, File templateFile, File structureFile) throws IOException {
+        final MutableDataSet options = new MutableDataSet();
+        final Parser parser = Parser.builder(options).build();
+        final HtmlRenderer renderer = HtmlRenderer.builder(options).build();
 
         if (!targetBaseDir.exists()) {
             targetBaseDir.mkdirs();
@@ -110,5 +118,60 @@ public class DocumentationGenerator {
         }
 
         return pages;
+    }
+
+    public static void upload(File localBaseDir, String remoteBaseDir, String remoteHost, String remoteUser, String remotePassword) throws IOException {
+        final FTPClient ftpClient = new FTPClient();
+
+        ftpClient.connect(remoteHost);
+        ftpClient.login(remoteUser, remotePassword);
+        ftpClient.enterLocalPassiveMode();
+        ftpClient.setFileType(FTPClient.BINARY_FILE_TYPE);
+
+        if (!ftpClient.changeWorkingDirectory(remoteBaseDir)) {
+            System.out.println("Creating remote directory " + remoteBaseDir);
+            mkdirs(ftpClient, remoteBaseDir);
+        }
+
+        ftpClient.changeWorkingDirectory(remoteBaseDir);
+        ftpClient.makeDirectory(remoteBaseDir);
+        ftpClient.changeWorkingDirectory(remoteBaseDir);
+
+        final FTPFile[] existingFtpFiles = ftpClient.listFiles();
+        for (FTPFile existingFtpFile : existingFtpFiles) {
+            System.out.println("Deleting remote file " + existingFtpFile.getName());
+            ftpClient.deleteFile(existingFtpFile.getName());
+        }
+
+        uploadDirectory(ftpClient, localBaseDir, remoteBaseDir);
+    }
+
+    private static void mkdirs(FTPClient ftpClient, String remoteBaseDir) throws IOException {
+        final String[] split = remoteBaseDir.split("/");
+        String currentDir = "";
+        for (String dir : split) {
+            currentDir += "/" + dir;
+            if (!ftpClient.changeWorkingDirectory(currentDir)) {
+                ftpClient.makeDirectory(currentDir);
+                ftpClient.changeWorkingDirectory(currentDir);
+            }
+        }
+    }
+
+    private static void uploadDirectory(FTPClient ftpClient, File localBaseDir, String remoteBaseDir) throws IOException {
+        final File[] files = localBaseDir.listFiles();
+        for (File file : files) {
+            System.out.println("Uploading " + file.getAbsolutePath());
+            if (file.isDirectory()) {
+                ftpClient.makeDirectory(remoteBaseDir + "/" + file.getName());
+                uploadDirectory(ftpClient, file, remoteBaseDir + "/" + file.getName());
+            } else {
+                final String remoteFilePath = remoteBaseDir + "/" + file.getName();
+                final boolean uploaded = ftpClient.storeFile(remoteFilePath, FileUtils.openInputStream(file));
+                if (!uploaded) {
+                    System.out.println("Failed to upload file: " + remoteFilePath);
+                }
+            }
+        }
     }
 }

@@ -7,6 +7,16 @@ An interpreted language for evaluating expressions with functions and variables 
 
 ## Specification
 
-Check out the [loose specification](doc/requirements.md) for the language.
+Check out the [loose specification](menter-documentation/doc/requirements.md) for the language.
 
-![Menter Thumbnail](doc/thumbnail.png)
+![Menter Thumbnail](menter-documentation/doc/thumbnail.png)
+
+# Build
+
+Run these commands in the root directory of the project using mavens `mvn` command:
+
+```bash
+mvn clean install
+cd doc
+mvn clean package
+```

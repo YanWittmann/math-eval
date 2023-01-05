@@ -255,12 +255,12 @@ function evaluateCodeBlock(codebox, initialInput) {
                 }
 
                 let message = "";
-                result.print = result.print.replaceAll("\r", "");
-                if (result.print !== undefined && result.print !== null && result.print !== "") {
+                if (isNotEmpty(result.print)) {
+                    result.print = result.print.replaceAll("\r", "");
                     let lines = result.print.split("\n").filter(v => v !== "").map(v => " " + v);
                     message += lines.join("\n");
                 }
-                if (result.result !== undefined && result.result !== null && result.result !== "") {
+                if (isNotEmpty(result.result)) {
                     if (message !== "") {
                         message += "\n";
                     }
@@ -457,12 +457,6 @@ function setIntervalX(callback, delay, repetitions) {
     }, delay);
 }
 
-apiLocation = localStorage.getItem("menterApiLocation") || "http://localhost:26045";
-
-isInterpreterAvailable()
-    .then((available) => initializePage(available))
-    .catch(() => initializePage(false));
-
 function applyFormattingToAllCodeTags() {
     let codeTags = document.getElementsByTagName("code");
     for (let i = 0; i < codeTags.length; i++) {
@@ -472,4 +466,35 @@ function applyFormattingToAllCodeTags() {
     }
 }
 
-applyFormattingToAllCodeTags();
+function getGetParameters() {
+    let queryDict = {};
+    location.search.substr(1)
+        .split("&")
+        .forEach(function (item) {
+            queryDict[item.split("=")[0]] = item.split("=")[1]
+        });
+    return queryDict;
+}
+
+function isNotEmpty(variable) {
+    return variable !== null && variable !== undefined && variable !== "";
+}
+
+apiLocation = "http://localhost:26045";
+
+function initializeCodeBox() {
+    let params = getGetParameters();
+    if (isNotEmpty(params["host"]) && isNotEmpty(params["port"])) {
+        apiLocation = "http://" + params["host"] + ":" + params["port"];
+    } else if (localStorage.getItem("menterApiLocation") !== null) {
+        apiLocation = localStorage.getItem("apiLocation");
+    }
+
+    isInterpreterAvailable()
+        .then((available) => initializePage(available))
+        .catch(() => initializePage(false));
+
+    applyFormattingToAllCodeTags();
+}
+
+initializeCodeBox();

@@ -1,5 +1,6 @@
 package de.yanwittmann.menter.interpreter;
 
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import de.yanwittmann.menter.interpreter.structure.Value;
 import org.apache.commons.io.IOUtils;
@@ -11,18 +12,20 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 public class MenterGuideServer {
 
     private static final Logger LOG = LogManager.getLogger(MenterGuideServer.class);
 
-    public MenterGuideServer(MenterInterpreter interpreter, boolean safeMode) throws IOException {
-        LOG.info("Starting MenterGuideServer...");
+    private final static String REMOTE_GUIDE_URL = "http://yanwittmann.de/projects/menter/guide/introduction.html";
+
+    public MenterGuideServer(MenterInterpreter interpreter, boolean safeMode, int port) throws IOException {
+        System.out.println("Starting MenterGuideServer...");
 
         HttpServer server;
-        final int serverPort = 26045;
+        final int serverPort = port != -1 ? port : 26045;
         try {
             server = HttpServer.create(new InetSocketAddress(serverPort), 0);
         } catch (IOException e) {
@@ -32,12 +35,12 @@ public class MenterGuideServer {
         final String[] printBuffer = {""};
         MenterDebugger.printer = new PrintStream(new OutputStream() {
             @Override
-            public void write(int b) throws IOException {
+            public void write(int b) {
                 printBuffer[0] += (char) b;
             }
         });
 
-        if (!safeMode) {
+        if (safeMode) {
             interpreter.getModuleOptions().addForbiddenImport("io");
             interpreter.getModuleOptions().addForbiddenImport("system");
             interpreter.getModuleOptions().addForbiddenImport("debug");
@@ -56,7 +59,7 @@ public class MenterGuideServer {
                 final String requestBody = IOUtils.toString(exchange.getRequestBody(), StandardCharsets.UTF_8);
 
                 if (requestBody.trim().isEmpty()) {
-                    responseJson.put("error", "No request body.");
+                    responseJson.put("error", "No request body");
                     exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
 
                 } else {
@@ -102,12 +105,33 @@ public class MenterGuideServer {
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Access-Control-Allow-Origin");
 
-            exchange.sendResponseHeaders(200, 0);
-            exchange.close();
+            final JSONObject responseJson = new JSONObject();
+            responseJson.put("status", "ok");
+            responseJson.put("version", MenterInterpreter.VERSION);
+            responseJson.put("safeMode", safeMode);
+
+            setRequestResponseAndClose(exchange, 200, responseJson);
         }));
         server.setExecutor(null); // creates a default executor
         server.start();
 
-        LOG.info("MenterGuideServer started on port [{}]", serverPort);
+        System.out.println("MenterGuideServer started on " + REMOTE_GUIDE_URL + "?host=" + getInternalIp() + "&port=" + serverPort);
+    }
+
+    private String getInternalIp() {
+        try (final DatagramSocket socket = new DatagramSocket()) {
+            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            return socket.getLocalAddress().getHostAddress();
+        } catch (SocketException | UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setRequestResponseAndClose(HttpExchange exchange, int code, JSONObject responseJson) throws IOException {
+        exchange.sendResponseHeaders(code, responseJson.toString().getBytes().length);
+        final OutputStream output = exchange.getResponseBody();
+        output.write(responseJson.toString().getBytes());
+        output.flush();
+        exchange.close();
     }
 }

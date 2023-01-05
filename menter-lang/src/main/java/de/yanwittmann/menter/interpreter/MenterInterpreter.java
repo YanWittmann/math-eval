@@ -10,14 +10,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class MenterInterpreter extends EvalRuntime {
 
+    public static final String VERSION = "0.0.1-SNAPSHOT";
     private static final Logger LOG = LogManager.getLogger(MenterInterpreter.class);
 
     public MenterInterpreter(Operators operators) {
@@ -83,26 +82,95 @@ public class MenterInterpreter extends EvalRuntime {
         }
     }
 
+    private static Map<String, List<String>> extractCommandLineArguments(String[] args, String[][] argumentNamesAliases) {
+        final Map<String, List<String>> arguments = new HashMap<>();
+
+        String currentArgumentName = null;
+
+        for (final String arg : args) {
+            String normalizedArgName = null;
+            for (String[] argumentNamesAlias : argumentNamesAliases) {
+                for (String argumentName : argumentNamesAlias) {
+                    if (arg.equals(argumentName)) {
+                        normalizedArgName = argumentNamesAlias[0];
+                        break;
+                    }
+                }
+                if (normalizedArgName != null) break;
+            }
+
+            if (normalizedArgName != null) {
+                currentArgumentName = normalizedArgName;
+                arguments.put(currentArgumentName, new ArrayList<>());
+                continue;
+            }
+
+            if (currentArgumentName == null) {
+                throw new MenterExecutionException("Invalid argument: " + arg);
+            }
+
+            arguments.get(currentArgumentName).add(arg);
+        }
+
+        return arguments;
+    }
+
     public static void main(String[] args) {
+        final Map<String, List<String>> commandLineArguments = new LinkedHashMap<>();
+        try {
+            commandLineArguments.putAll(extractCommandLineArguments(args, new String[][]{
+                    {"-h", "--help"},
+                    {"-v", "--version"},
+                    {"-f", "--file"},
+                    {"-e", "--eval"},
+                    {"-repl", "--repl", "repl"},
+                    {"-gs", "--guide-server", "guide-server"},
+            }));
+
+        } catch (MenterExecutionException e) {
+            for (String arg : args) {
+                final File file = new File(arg);
+                if (file.exists() && file.isFile()) {
+                    commandLineArguments.put("-f", Collections.singletonList(arg));
+                    break;
+                }
+            }
+
+            if (commandLineArguments.isEmpty()) {
+                System.out.println(e.getMessage());
+                commandLineArguments.put("-h", Collections.emptyList());
+            }
+        }
+
         final MenterInterpreter interpreter = new MenterInterpreter(new Operators());
-        interpreter.getModuleOptions().addAutoImport("common inline");
 
-        final boolean isRepl = MenterInterpreter.isAnyOf(args, "-r", "--repl", "repl");
-        final boolean isGuideServer = MenterInterpreter.isAnyOf(args, "-gs", "--guide-server", "guide-server");
-        final String isGuideServerUnsafeParam = MenterInterpreter.getArgumentValue(args, "-gs", "--guide-server", "guide-server");
-        final boolean isGuideServerUnsafe = isGuideServerUnsafeParam != null && (isGuideServerUnsafeParam.equalsIgnoreCase("unsafe") || isGuideServerUnsafeParam.equalsIgnoreCase("us"));
+        final boolean isRepl = commandLineArguments.containsKey("-repl");
+        final boolean isGuideServer = commandLineArguments.containsKey("-gs");
+        final boolean isGuideServerUnsafe = commandLineArguments.containsKey("-gs") && commandLineArguments.get("-gs").contains("unsafe");
+        final int guideServerPort = commandLineArguments.containsKey("-gs") &&
+                                    commandLineArguments.get("-gs").stream().anyMatch(s -> s.matches("\\d+"))
+                ? Integer.parseInt(commandLineArguments.get("-gs").stream().filter(s -> s.matches("\\d+")).findFirst().get())
+                : -1;
 
-        final List<File> files = MenterInterpreter.getFiles(args);
+        final List<File> files = new ArrayList<>();
+        if (commandLineArguments.containsKey("-f")) {
+            for (String file : commandLineArguments.get("-f")) {
+                files.add(new File(file));
+            }
+        }
         final boolean hasFiles = files.size() > 0;
 
-        final boolean isHelp = MenterInterpreter.isAnyOf(args, "-h", "--help") || (!isRepl && !hasFiles && !isGuideServer);
+        final boolean isHelp = commandLineArguments.containsKey("-h") || (!isRepl && !hasFiles && !isGuideServer);
 
         if (isHelp) {
             MenterDebugger.printer.println("Menter Interpreter");
-            MenterDebugger.printer.println("  -ef [filename]                    Evaluate file");
-            MenterDebugger.printer.println("  -r, --repl, repl:                 Start REPL");
-            MenterDebugger.printer.println("  -gs, --guide-server [unsafe, us]  Start guide server and whether to allow unsafe imports (io, system, debug)");
-            MenterDebugger.printer.println("  -h, --help:                       Show this help");
+            MenterDebugger.printer.println("  [-f, --file] <file> ... - load Menter source files");
+            MenterDebugger.printer.println("  [-e, --eval] <code> - evaluate Menter code");
+            MenterDebugger.printer.println("  [-repl, --repl, repl] - start REPL");
+            MenterDebugger.printer.println("  [-gs, --guide-server, guide-server] <unsafe, us> <port> - start guide server (unsafe mode, port)");
+            MenterDebugger.printer.println("  [-h, --help] - print this help");
+            MenterDebugger.printer.println("  [-v, --version] - print version");
+            MenterDebugger.printer.println();
             return;
         }
 
@@ -113,15 +181,16 @@ public class MenterInterpreter extends EvalRuntime {
             interpreter.finishLoadingContexts();
         }
 
+        interpreter.getModuleOptions().addAutoImport("common inline");
+
         if (isGuideServer) {
             try {
-                new MenterGuideServer(interpreter, isGuideServerUnsafe);
+                new MenterGuideServer(interpreter, !isGuideServerUnsafe, guideServerPort);
             } catch (IOException e) {
                 LOG.error("Failed to start guide server", e);
             }
-        }
 
-        if (isRepl) {
+        } else if (isRepl) {
             final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             boolean debugShowEntireStackTrace = false;
             boolean isMultilineMode = false;
@@ -161,14 +230,14 @@ public class MenterInterpreter extends EvalRuntime {
                         } else {
                             MenterDebugger.printer.println("Unknown debug target: " + input.substring(5));
                             MenterDebugger.printer.println("  interpreter         " + MenterDebugger.logInterpreterEvaluationStyle + "\n" +
-                                               "  interpreter resolve " + MenterDebugger.logInterpreterResolveSymbols + "\n" +
-                                               "  parser              " + MenterDebugger.logParsedTokens + "\n" +
-                                               "  parser progress     " + MenterDebugger.logParseProgress + "\n" +
-                                               "  lexer               " + MenterDebugger.logLexedTokens + "\n" +
-                                               "  import order        " + MenterDebugger.logInterpreterEvaluationOrder + "\n" +
-                                               "  stack trace         " + debugShowEntireStackTrace + "\n" +
-                                               "  breakpoint          " + MenterDebugger.breakpointActivationCode + "\n" +
-                                               "  breakpoint halt     " + MenterDebugger.haltOnEveryExecutionStep);
+                                                           "  interpreter resolve " + MenterDebugger.logInterpreterResolveSymbols + "\n" +
+                                                           "  parser              " + MenterDebugger.logParsedTokens + "\n" +
+                                                           "  parser progress     " + MenterDebugger.logParseProgress + "\n" +
+                                                           "  lexer               " + MenterDebugger.logLexedTokens + "\n" +
+                                                           "  import order        " + MenterDebugger.logInterpreterEvaluationOrder + "\n" +
+                                                           "  stack trace         " + debugShowEntireStackTrace + "\n" +
+                                                           "  breakpoint          " + MenterDebugger.breakpointActivationCode + "\n" +
+                                                           "  breakpoint halt     " + MenterDebugger.haltOnEveryExecutionStep);
                         }
                         continue;
 
@@ -211,51 +280,5 @@ public class MenterInterpreter extends EvalRuntime {
                 }
             }
         }
-    }
-
-    private static List<File> getFiles(String[] args) {
-        final List<File> files = new ArrayList<>();
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("-ef")) {
-                if (i + 1 >= args.length) {
-                    throw new MenterExecutionException("Menter Interpreter: Expected file name after -ef");
-                }
-                files.add(new File(args[i + 1]));
-                i++;
-            }
-        }
-
-        if (args.length == 1) {
-            final File file = new File(args[0]);
-            if (file.exists()) {
-                files.add(file);
-            }
-        }
-
-        for (File file : files) {
-            if (!file.exists()) {
-                throw new MenterExecutionException("Menter Interpreter: File does not exist: " + file);
-            }
-        }
-
-        return files;
-    }
-
-    private static boolean isAnyOf(String[] args, String... values) {
-        return Arrays.stream(args).anyMatch(arg -> Arrays.stream(values).anyMatch(value -> value.equalsIgnoreCase(arg)));
-    }
-
-    private static String getArgumentValue(String[] args, String... values) {
-        for (int i = 0; i < args.length; i++) {
-            int finalI = i;
-            if (Arrays.stream(values).anyMatch(value -> value.equalsIgnoreCase(args[finalI]))) {
-                if (i + 1 >= args.length) {
-                    return null;
-                }
-                return args[i + 1];
-            }
-        }
-        return null;
     }
 }

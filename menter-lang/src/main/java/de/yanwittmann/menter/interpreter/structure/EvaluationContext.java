@@ -566,7 +566,6 @@ public abstract class EvaluationContext {
             final Object id = identifiers.get(i);
             final Object nextId = i + 1 < identifiers.size() ? identifiers.get(i + 1) : null;
             final String stringKey = Module.ID_TO_KEY_MAPPER.apply(id);
-            final String nextStringKey = Module.ID_TO_KEY_MAPPER.apply(nextId);
 
             final boolean isFinalIdentifier = id == identifiers.get(identifiers.size() - 1);
             final Value previousValue = value;
