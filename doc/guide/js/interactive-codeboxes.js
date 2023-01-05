@@ -486,8 +486,11 @@ function initializeCodeBox() {
     let params = getGetParameters();
     if (isNotEmpty(params["host"]) && isNotEmpty(params["port"])) {
         apiLocation = "http://" + params["host"] + ":" + params["port"];
+        sessionStorage.setItem("menterApiLocation", apiLocation);
     } else if (localStorage.getItem("menterApiLocation") !== null) {
         apiLocation = localStorage.getItem("apiLocation");
+    } else if (sessionStorage.getItem("menterApiLocation") !== null) {
+        apiLocation = sessionStorage.getItem("menterApiLocation");
     }
 
     isInterpreterAvailable()
