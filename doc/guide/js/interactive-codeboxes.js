@@ -1,4 +1,3 @@
-
 let apiLocation = "http://localhost:26045";
 
 let bufferedInput = {};
@@ -330,8 +329,8 @@ function isInterpreterAvailable() {
         xhr.timeout = 1000;
         xhr.open("GET", evaluationEndpoint);
 
-        xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
-        xhr.setRequestHeader("Content-Type", "application/json");
+        //xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+        //xhr.setRequestHeader("Content-Type", "application/json");
 
         xhr.send();
 
@@ -464,8 +463,10 @@ function initializePage(interpreterIsAvailable = true) {
         setIntervalX(() => {
             isInterpreterAvailable().then(nowAvailable => {
                 if (nowAvailable) window.location.reload();
+            }).catch(() => {
+                console.error("Failed to check interpreter availability");
             });
-        }, 8 * 1000, 10);
+        }, 8 * 1000, 3);
     }
 }
 
@@ -522,7 +523,7 @@ function initializeCodeBox() {
 
     if (loadedFromStorage) {
         setTimeout(() => {
-            addWarningText("<code>" + apiLocation + "</code> - " +
+            addWarningText("Server: <code>" + apiLocation + "</code> - " +
                 "<a href='#' onclick='localStorage.removeItem(\"menterApiLocation\"); sessionStorage.removeItem(\"menterApiLocation\"); window.location.reload();'>Reset</a>");
         }, 500);
     }

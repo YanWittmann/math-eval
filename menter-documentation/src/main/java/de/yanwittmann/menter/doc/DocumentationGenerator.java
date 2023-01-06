@@ -7,6 +7,7 @@ import j2html.tags.specialized.ATag;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
+import org.json.JSONArray;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,6 +79,13 @@ public class DocumentationGenerator {
             }
             FileUtils.write(outFile, String.join("\n", outLines), StandardCharsets.UTF_8);
         }
+
+        // generate an index.json file for the search
+        final JSONArray indexArray = new JSONArray();
+        for (DocumentationPage documentationPage : documentationPages) {
+            indexArray.put(documentationPage.toIndexObject());
+        }
+        FileUtils.write(new File(targetBaseDir, "index.json"), indexArray.toString(), StandardCharsets.UTF_8);
     }
 
     private static String renderSidebarContent(List<DocumentationPage> documentationPages) {

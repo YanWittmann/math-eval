@@ -1,3 +1,5 @@
+@import url(https://fonts.bunny.net/css?family=amethysta:400);
+
 :root {
     --color-background-base: #14171f;
     --color-background-input-codebox: #070c0e;
@@ -49,7 +51,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    font-family: linux_biolinum_gregular, Arial, Helvetica, sans-serif;
+    font-family: linux_biolinum_gregular, 'Amethysta', Arial, Helvetica, sans-serif;
     font-size: 20px;
     color: var(--color-text-base);
     background-color: var(--color-background-base);
@@ -298,22 +300,35 @@ code {
     font-size: 17px;
 }
 
+.sticky-footer-icon {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+
+    width: 20px;
+    height: 20px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-weight: bold;
+
+    background-color: var(--color-background-danger);
+    border-radius: 50%;
+    border: 2px solid var(--color-border-base);
+    padding: 10px;
+    margin: 20px;
+    z-index: 1000;
+}
+
 .sticky-footer {
     position: fixed;
     bottom: 0;
     right: 0;
     padding: 15px;
     border-radius: 7px 0 0 0;
-}
-
-.remove-footer {
-    position: absolute;
-    top: -17px;
-    left: -15px;
-    padding: 12px;
-
-    font-size: 18px;
-    cursor: pointer;
+    line-height: 26px;
 }
 
 a {

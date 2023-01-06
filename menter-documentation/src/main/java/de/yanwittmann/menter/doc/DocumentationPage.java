@@ -9,6 +9,7 @@ import j2html.tags.DomContent;
 import j2html.tags.specialized.ATag;
 import j2html.tags.specialized.DivTag;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -112,5 +113,18 @@ public class DocumentationPage {
     @Override
     public String toString() {
         return (parent != null ? parent.title + " >> " : "") + title;
+    }
+
+    public JSONObject toIndexObject() {
+        final JSONObject object = new JSONObject();
+        object.put("title", title);
+        object.put("file", getOutFileName());
+        if (subPages.size() > 0) {
+            final List<JSONObject> subPagesObjects = subPages.stream()
+                    .map(DocumentationPage::toIndexObject)
+                    .collect(Collectors.toList());
+            object.put("subPages", subPagesObjects);
+        }
+        return object;
     }
 }
