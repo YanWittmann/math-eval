@@ -177,7 +177,7 @@ public class MenterGuideServer {
 
         System.out.println("\n" +
                            "                    MenterGuideServer started on: http://localhost:" + serverPort + "/docs/introduction?host=" + getInternalIp() + "&port=" + serverPort);
-        System.out.println("   ... or on the source page if you disabled SSL: " + REMOTE_GUIDE_INTRODUCTION_URL + "?host=" + getInternalIp() + "&port=" + serverPort);
+        System.out.println("   ... or on the source page if you disabled SSL: " + REMOTE_GUIDE_INTRODUCTION_URL + "?host=" + getInternalIp() + "&port=" + serverPort + "\n");
     }
 
     private void mirrorDocumentationIntoTempDir() {

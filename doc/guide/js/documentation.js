@@ -42,8 +42,9 @@ if (window.innerWidth > 1500) {
 }
 
 let isWarningTextHovered = false;
+let highestWarningLevel = 0;
 
-function addWarningText(text) {
+function addWarningText(text, level) {
     let stickyFooter = document.getElementById("sticky-footer");
     if (!stickyFooter) {
         stickyFooter = document.createElement("div");
@@ -83,5 +84,15 @@ function addWarningText(text) {
             }
         }
         document.body.appendChild(stickyFooterIcon);
+    }
+
+    if (level > highestWarningLevel) {
+        highestWarningLevel = level;
+
+        if (level === 1) {
+            stickyFooterIcon.classList.add("level-1");
+        } else if (level === 2) {
+            stickyFooterIcon.classList.add("level-2");
+        }
     }
 }

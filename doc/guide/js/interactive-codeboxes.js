@@ -459,7 +459,7 @@ function initializePage(interpreterIsAvailable = true) {
     }
 
     if (!interpreterIsAvailable && codeboxes.length > 0) {
-        addWarningText("<a href='#'>Download</a> and run <code>menter -gs</code> to enable interactive code blocks");
+        addWarningText("Learn how to enable <a href='Hints_evaluation_server.html'>interactive code blocks</a>", 2);
         setIntervalX(() => {
             isInterpreterAvailable().then(nowAvailable => {
                 if (nowAvailable) window.location.reload();
@@ -524,7 +524,7 @@ function initializeCodeBox() {
     if (loadedFromStorage) {
         setTimeout(() => {
             addWarningText("Server: <code>" + apiLocation + "</code> - " +
-                "<a href='#' onclick='localStorage.removeItem(\"menterApiLocation\"); sessionStorage.removeItem(\"menterApiLocation\"); window.location.reload();'>Reset</a>");
+                "<a href='#' onclick='localStorage.removeItem(\"menterApiLocation\"); sessionStorage.removeItem(\"menterApiLocation\"); window.location.reload();'>Reset</a>", 1);
         }, 500);
     }
 

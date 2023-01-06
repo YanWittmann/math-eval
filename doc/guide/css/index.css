@@ -4,6 +4,7 @@
     --color-background-base: #14171f;
     --color-background-input-codebox: #070c0e;
     --color-background-danger: #2b4667;
+    --color-background-red: #b34444;
     --color-border-base: #85827e;
     --color-text-base: #cecbc1;
     --color-text-red: #ff5454;
@@ -24,6 +25,7 @@
         --color-background-base: #f7fcff;
         --color-background-input-codebox: #efefef;
         --color-background-danger: #ffcebf;
+        --color-background-red: #ff5454;
         --color-border-base: #a9a091;
         --color-text-base: #3a270b;
         --color-text-red: #ff5454;
@@ -314,12 +316,20 @@ code {
 
     font-weight: bold;
 
-    background-color: var(--color-background-danger);
+    background-color: var(--color-background-red);
     border-radius: 50%;
     border: 2px solid var(--color-border-base);
     padding: 10px;
     margin: 20px;
     z-index: 1000;
+}
+
+.sticky-footer-icon.level-1 {
+    background-color: var(--color-background-danger);
+}
+
+.sticky-footer-icon.level-2 {
+    background-color: var(--color-background-red);
 }
 
 .sticky-footer {
