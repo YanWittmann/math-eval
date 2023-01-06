@@ -19,8 +19,9 @@ import java.util.stream.Collectors;
 public class DocumentationGenerator {
 
     public static void main(String[] args) throws IOException {
-        final File guideBaseDir = new File("doc/guide");
-        final File targetBaseDir = new File("target/site");
+        final File baseDir = new File("doc");
+        final File guideBaseDir = new File(baseDir, "guide");
+        final File targetBaseDir = new File(baseDir, "target/site");
         final File markdownBaseDir = new File(guideBaseDir, "md");
 
         final File structureFile = new File(markdownBaseDir, "structure.txt");

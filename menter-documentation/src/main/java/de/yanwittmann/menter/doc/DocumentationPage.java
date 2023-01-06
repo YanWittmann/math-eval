@@ -14,7 +14,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static j2html.TagCreator.*;
@@ -66,15 +68,25 @@ public class DocumentationPage {
                 while (codeBlockLines.get(codeBlockLines.size() - 1).isEmpty())
                     codeBlockLines.remove(codeBlockLines.size() - 1);
 
-                final boolean isStatic = codeBlockType.startsWith("static");
-                final String[] presetResult = codeBlockType.contains("=") ? codeBlockType.split("=", 2) : null;
+                final String[] typeArguments = codeBlockType.split("---");
+                final Map<String, String> typeArgumentsMap = Arrays.stream(typeArguments)
+                        .map(e -> e.split("=", 2))
+                        .collect(Collectors.toMap(e -> e[0], e -> e.length > 1 ? e[1] : ""));
 
-                div.with(
-                        div().withClass("codebox-container")
-                                .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
-                                .attr("interactive", !isStatic)
-                                .attr("result", presetResult != null ? presetResult[1] : "")
-                );
+                final boolean isStatic = typeArgumentsMap.containsKey("static");
+                final String presetResult = typeArgumentsMap.getOrDefault("result", null);
+                final String id = typeArgumentsMap.getOrDefault("id", null);
+                final String after = typeArgumentsMap.getOrDefault("after", null);
+
+                final DivTag actualCodeboxTag = div().withClass("codebox-container")
+                        .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
+                        .attr("interactive", !isStatic);
+
+                if (id != null) actualCodeboxTag.attr("id", id);
+                if (after != null) actualCodeboxTag.attr("after", after);
+                if (presetResult != null) actualCodeboxTag.attr("result", presetResult);
+
+                div.with(actualCodeboxTag);
             } else {
                 div.with(rawHtml(renderer.render(child)));
             }

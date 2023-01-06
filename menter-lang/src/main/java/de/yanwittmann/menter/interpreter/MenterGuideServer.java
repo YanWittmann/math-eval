@@ -19,7 +19,7 @@ public class MenterGuideServer {
 
     private static final Logger LOG = LogManager.getLogger(MenterGuideServer.class);
 
-    private final static String REMOTE_GUIDE_URL = "http://yanwittmann.de/projects/menter/guide/introduction.html";
+    private final static String REMOTE_GUIDE_URL = "https://yanwittmann.de/projects/menter/guide/introduction.html";
 
     public MenterGuideServer(MenterInterpreter interpreter, boolean safeMode, int port) throws IOException {
         System.out.println("Starting MenterGuideServer...");
