@@ -27,8 +27,6 @@ public class DocumentationGenerator {
         final File templateFile = new File(guideBaseDir, "template.html");
 
         generate(guideBaseDir, targetBaseDir, templateFile, structureFile);
-
-        upload(targetBaseDir, "/projects/menter/guide", "yanwittmann.de", "f00dbfd7", "JnJ5Ueyey7woBeUH");
     }
 
     public static void generate(File guideBaseDir, File targetBaseDir, File templateFile, File structureFile) throws IOException {
