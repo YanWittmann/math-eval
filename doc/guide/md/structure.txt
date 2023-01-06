@@ -1,3 +1,6 @@
 
 Introduction >> introduction.md
     Subchapter >> subdir/subchapter.md
+
+Hints >> hints.md
+    Evaluation Server >> hints/evaluation_server.md

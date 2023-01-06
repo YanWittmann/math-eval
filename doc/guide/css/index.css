@@ -331,6 +331,10 @@ code {
     line-height: 26px;
 }
 
+ul p, ol p {
+    margin: 0;
+}
+
 a {
     text-decoration: none;
     color: var(--color-text-link);

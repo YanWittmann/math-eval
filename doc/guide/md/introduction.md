@@ -8,6 +8,8 @@ It is a dynamically typed language, which means that you don't have to specify t
 Menter is also a compiled language, which means that you have to compile your code before you can run it.  
 This guide will teach you how to use Menter.
 
+- Reference to the [Eval server](Hints_evaluation_server.html)!
+
 ```=6;;;10
 test = if (23 == 4) 5 else 6;;;test + 4
 ```

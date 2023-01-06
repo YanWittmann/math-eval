@@ -175,7 +175,9 @@ public class MenterGuideServer {
         server.setExecutor(null); // creates a default executor
         server.start();
 
-        System.out.println("MenterGuideServer started on http://localhost:" + serverPort + "/docs/introduction?host=" + getInternalIp() + "&port=" + serverPort);
+        System.out.println("\n" +
+                           "                    MenterGuideServer started on: http://localhost:" + serverPort + "/docs/introduction?host=" + getInternalIp() + "&port=" + serverPort);
+        System.out.println("   ... or on the source page if you disabled SSL: " + REMOTE_GUIDE_INTRODUCTION_URL + "?host=" + getInternalIp() + "&port=" + serverPort);
     }
 
     private void mirrorDocumentationIntoTempDir() {

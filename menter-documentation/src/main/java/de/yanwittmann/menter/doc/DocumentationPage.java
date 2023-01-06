@@ -1,10 +1,11 @@
 package de.yanwittmann.menter.doc;
 
-import com.vladsch.flexmark.ast.FencedCodeBlock;
+import com.vladsch.flexmark.ast.*;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.sequence.BasedSequence;
+import j2html.tags.ContainerTag;
 import j2html.tags.DomContent;
 import j2html.tags.specialized.ATag;
 import j2html.tags.specialized.DivTag;
@@ -56,6 +57,8 @@ public class DocumentationPage {
     public DomContent renderPageContent(HtmlRenderer renderer) {
         final DivTag div = div();
 
+        System.out.println("Rendering " + getOutFileName());
+
         for (Node child : content.getChildren()) {
             if (child instanceof FencedCodeBlock) {
                 final String codeBlockType = ((FencedCodeBlock) child).getInfo().toString();
@@ -89,11 +92,74 @@ public class DocumentationPage {
 
                 div.with(actualCodeboxTag);
             } else {
-                div.with(rawHtml(renderer.render(child)));
+                // div.with(rawHtml(renderer.render(child)));
+                div.with(render(renderer, child));
             }
         }
 
         return div;
+    }
+
+    public DomContent render(HtmlRenderer renderer, Object input) {
+        if (input instanceof Node) {
+            final Node node = (Node) input;
+
+            final DomContent tag;
+
+            if (node instanceof Paragraph) {
+                tag = p();
+            } else if (node instanceof Heading) {
+                final int level = ((Heading) node).getLevel();
+                if (level == 1) {
+                    tag = h1();
+                } else if (level == 2) {
+                    tag = h2();
+                } else if (level == 3) {
+                    tag = h3();
+                } else if (level == 4) {
+                    tag = h4();
+                } else if (level == 5) {
+                    tag = h5();
+                } else if (level == 6) {
+                    tag = h6();
+                } else {
+                    tag = h1();
+                }
+            } else if (node instanceof Text) {
+                tag = text(node.getChars().toString());
+            } else if (node instanceof HardLineBreak) {
+                tag = br();
+            } else if (node instanceof BulletList) {
+                tag = ul();
+            } else if (node instanceof BulletListItem) {
+                tag = li();
+            } else if (node instanceof OrderedList) {
+                tag = ol();
+            } else if (node instanceof OrderedListItem) {
+                tag = li();
+            } else if (node instanceof Link) {
+                tag = a().withHref(((Link) node).getUrl().toString());
+            } else if (node instanceof Code) {
+                tag = code();
+            } else if (node instanceof Emphasis) {
+                tag = em();
+            } else {
+                System.err.println("Unknown input: " + input.getClass().getSimpleName() + ", using default renderer");
+                return rawHtml(renderer.render(node));
+            }
+
+            if (tag != null) {
+                if (tag instanceof ContainerTag) {
+                    for (Node child : node.getChildren()) {
+                        ((ContainerTag<?>) tag).with(render(renderer, child));
+                    }
+                }
+
+                return tag;
+            }
+        }
+
+        return null;
     }
 
     public File getOutFile(File targetBaseDir) {
