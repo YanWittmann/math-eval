@@ -175,9 +175,13 @@ public class MenterGuideServer {
         server.setExecutor(null); // creates a default executor
         server.start();
 
+        final String internalIp = getInternalIp();
+        final String externalIp = getExternalIp();
         System.out.println("\n" +
-                           "                    MenterGuideServer started on: http://localhost:" + serverPort + "/docs/introduction?host=" + getInternalIp() + "&port=" + serverPort);
-        System.out.println("   ... or on the source page if you disabled SSL: " + REMOTE_GUIDE_INTRODUCTION_URL + "?host=" + getInternalIp() + "&port=" + serverPort + "\n");
+                           "                               Server started on: http://" + internalIp + ":" + serverPort + "/docs/introduction?host=" + internalIp + "&port=" + serverPort + "\n" +
+                           "              ... using your external IP address: http://" + externalIp + ":" + serverPort + "/docs/introduction?host=" + internalIp + "&port=" + serverPort + "\n" +
+                           "   ... or on the source page if you disabled SSL: " + REMOTE_GUIDE_INTRODUCTION_URL + "?host=" + internalIp + "&port=" + serverPort +
+                           "\n");
     }
 
     private void mirrorDocumentationIntoTempDir() {
@@ -252,7 +256,15 @@ public class MenterGuideServer {
             socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
             return socket.getLocalAddress().getHostAddress();
         } catch (SocketException | UnknownHostException e) {
-            throw new RuntimeException(e);
+            return "localhost";
+        }
+    }
+
+    private String getExternalIp() {
+        try {
+            return new BufferedReader(new InputStreamReader(new URL("http://checkip.amazonaws.com").openStream())).readLine();
+        } catch (IOException e) {
+            return "localhost";
         }
     }
 
