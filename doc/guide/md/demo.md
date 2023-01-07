@@ -10,8 +10,6 @@ This guide will teach you how to use Menter.
 
 - Reference to the [Eval server](Hints_evaluation_server.html)!
 
-![testimg](guide/navbar_icon.png)
-
 ```result=6;;;10
 test = if (23 == 4) 5 else 6;;;test + 4
 ```
@@ -39,3 +37,5 @@ test = {
     b: 2
 };;;test.a
 ```
+
+![testimg](guide/navbar_icon.png)

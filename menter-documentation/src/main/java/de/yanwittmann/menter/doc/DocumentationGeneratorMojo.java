@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 
 @Mojo(name = "generate-documentation")
-public class DocumentationGeneratorGoal extends AbstractMojo {
+public class DocumentationGeneratorMojo extends AbstractMojo {
 
     @Parameter(required = true)
     private File guideBaseDir;

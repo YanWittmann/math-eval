@@ -33,14 +33,6 @@ function adjustSidebarVisibility() {
     }
 }
 
-window.onresize = function () {
-    setTimeout(adjustSidebarVisibility, 400);
-}
-
-if (window.innerWidth > 1500) {
-    sidebar.classList.remove("hidden");
-}
-
 let isWarningTextHovered = false;
 let highestWarningLevel = 0;
 
@@ -96,3 +88,22 @@ function addWarningText(text, level) {
         }
     }
 }
+
+function initDocumentation() {
+    window.onresize = function () {
+        setTimeout(adjustSidebarVisibility, 400);
+    }
+
+    if (window.innerWidth > 1500) {
+        sidebar.classList.remove("hidden");
+    }
+
+    if (typeof activePageFilename !== "undefined") {
+        let activePage = document.querySelector("a[href='" + activePageFilename + "'].sidebar-menu-item");
+        if (activePage) {
+            activePage.classList.add("active");
+        }
+    }
+}
+
+initDocumentation();

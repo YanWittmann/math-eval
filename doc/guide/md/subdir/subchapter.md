@@ -1,6 +1,6 @@
 # Modules
 
-```id=testmodule
+```id=testmodule---result=(x) -> { x + 1; };;;null
 fun = x -> x + 1;;;export [fun] as myModule
 ```
 

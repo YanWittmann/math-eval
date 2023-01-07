@@ -60,41 +60,8 @@ public class DocumentationPage {
         System.out.println("Rendering " + getOutFileName());
 
         for (Node child : content.getChildren()) {
-            if (child instanceof FencedCodeBlock) {
-                final String codeBlockType = ((FencedCodeBlock) child).getInfo().toString();
-                final List<String> codeBlockLines = ((FencedCodeBlock) child).getContentLines().stream()
-                        .map(BasedSequence::toString)
-                        .map(e -> e.replace("\n", ""))
-                        .collect(Collectors.toList());
-
-                // trim empty lines from start and end
-                while (codeBlockLines.get(0).isEmpty()) codeBlockLines.remove(0);
-                while (codeBlockLines.get(codeBlockLines.size() - 1).isEmpty())
-                    codeBlockLines.remove(codeBlockLines.size() - 1);
-
-                final String[] typeArguments = codeBlockType.split("---");
-                final Map<String, String> typeArgumentsMap = Arrays.stream(typeArguments)
-                        .map(e -> e.split("=", 2))
-                        .collect(Collectors.toMap(e -> e[0], e -> e.length > 1 ? e[1] : ""));
-
-                final boolean isStatic = typeArgumentsMap.containsKey("static");
-                final String presetResult = typeArgumentsMap.getOrDefault("result", null);
-                final String id = typeArgumentsMap.getOrDefault("id", null);
-                final String after = typeArgumentsMap.getOrDefault("after", null);
-
-                final DivTag actualCodeboxTag = div().withClass("codebox-container")
-                        .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
-                        .attr("interactive", !isStatic);
-
-                if (id != null) actualCodeboxTag.attr("id", id);
-                if (after != null) actualCodeboxTag.attr("after", after);
-                if (presetResult != null) actualCodeboxTag.attr("result", presetResult);
-
-                div.with(actualCodeboxTag);
-            } else {
-                // div.with(rawHtml(renderer.render(child)));
-                div.with(render(renderer, child));
-            }
+            // div.with(rawHtml(renderer.render(child)));
+            div.with(render(renderer, child));
         }
 
         return div;
@@ -153,6 +120,37 @@ public class DocumentationPage {
                 } else {
                     tag = img().withSrc(imageUrl).withAlt(alt);
                 }
+            } else if (node instanceof FencedCodeBlock) {
+                final String codeBlockType = ((FencedCodeBlock) node).getInfo().toString();
+                final List<String> codeBlockLines = ((FencedCodeBlock) node).getContentLines().stream()
+                        .map(BasedSequence::toString)
+                        .map(e -> e.replace("\n", ""))
+                        .collect(Collectors.toList());
+
+                // trim empty lines from start and end
+                while (codeBlockLines.get(0).isEmpty()) codeBlockLines.remove(0);
+                while (codeBlockLines.get(codeBlockLines.size() - 1).isEmpty())
+                    codeBlockLines.remove(codeBlockLines.size() - 1);
+
+                final String[] typeArguments = codeBlockType.split("---");
+                final Map<String, String> typeArgumentsMap = Arrays.stream(typeArguments)
+                        .map(e -> e.split("=", 2))
+                        .collect(Collectors.toMap(e -> e[0], e -> e.length > 1 ? e[1] : ""));
+
+                final boolean isStatic = typeArgumentsMap.containsKey("static");
+                final String presetResult = typeArgumentsMap.getOrDefault("result", null);
+                final String id = typeArgumentsMap.getOrDefault("id", null);
+                final String after = typeArgumentsMap.getOrDefault("after", null);
+
+                final DivTag actualCodeboxTag = div().withClasses("codebox-container", "codebox-fake")
+                        .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
+                        .attr("interactive", !isStatic);
+
+                if (id != null) actualCodeboxTag.attr("id", id);
+                if (after != null) actualCodeboxTag.attr("after", after);
+                if (presetResult != null) actualCodeboxTag.attr("result", presetResult);
+
+                tag = actualCodeboxTag;
             } else {
                 System.err.println("Unknown input: " + input.getClass().getSimpleName() + ", using default renderer");
                 return rawHtml(renderer.render(node));
@@ -178,6 +176,10 @@ public class DocumentationPage {
 
     public String getOutFileName() {
         return (parent != null ? parent.title + "_" : "") + originFile.getName().replace(".md", ".html");
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public ATag renderSidebarItem() {

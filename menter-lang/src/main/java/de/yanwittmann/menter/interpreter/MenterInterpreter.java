@@ -146,7 +146,7 @@ public class MenterInterpreter extends EvalRuntime {
 
         final boolean isRepl = commandLineArguments.containsKey("-repl");
         final boolean isGuideServer = commandLineArguments.containsKey("-gs");
-        final boolean isGuideServerUnsafe = commandLineArguments.containsKey("-gs") && commandLineArguments.get("-gs").contains("unsafe");
+        final boolean isGuideServerUnsafe = commandLineArguments.containsKey("-gs") && (commandLineArguments.get("-gs").contains("unsafe") || commandLineArguments.get("-gs").contains("us"));
         final int guideServerPort = commandLineArguments.containsKey("-gs") &&
                                     commandLineArguments.get("-gs").stream().anyMatch(s -> s.matches("\\d+"))
                 ? Integer.parseInt(commandLineArguments.get("-gs").stream().filter(s -> s.matches("\\d+")).findFirst().get())

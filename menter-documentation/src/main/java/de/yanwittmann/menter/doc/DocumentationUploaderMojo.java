@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 
 @Mojo(name = "upload-documentation")
-public class DocumentationUploaderGoal extends AbstractMojo {
+public class DocumentationUploaderMojo extends AbstractMojo {
 
     @Parameter(required = true)
     private File localBaseDir;

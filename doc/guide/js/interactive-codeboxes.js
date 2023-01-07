@@ -244,7 +244,7 @@ function codeBlockInteracted(inputElement, event) {
     }
 }
 
-function evaluateCodeBlock(codebox, initialInput, originalCodeboxId) {
+function evaluateCodeBlock(codebox, initialInput, originalCodeboxId = null, initialCodebox = null) {
     let codeboxId = codebox.getAttribute("id");
     let codeToExecute = bufferedInput[codeboxId].join("\n").replaceAll(":NEWLINE:", "\n");
     bufferedInput[codeboxId] = [];
@@ -285,7 +285,12 @@ function evaluateCodeBlock(codebox, initialInput, originalCodeboxId) {
                 if (i + 1 < statementSplit.length) {
                     evaluateAndApplyCodeBlock(i + 1);
                 } else {
-                    loadedCodeboxIds.push(originalCodeboxId);
+                    if (originalCodeboxId !== null) {
+                        loadedCodeboxIds.push(originalCodeboxId);
+                    }
+                    if (initialCodebox !== null) {
+                        initialCodebox.parentElement.replaceChild(codebox, initialCodebox);
+                    }
                 }
             });
         }
@@ -349,12 +354,21 @@ function isInterpreterAvailable() {
     });
 }
 
-function createCodeBox(initialContent, interactive, originalCodeboxId) {
-    let codeboxContainer = document.createElement("div");
-    codeboxContainer.classList.add("codebox-container");
-    codeboxContainer.setAttribute("initialized", "true");
+function createCodeBox(initialContent, interactive, originalCodeboxId, initialCodebox, setInitialized = true) {
     let codeboxId = "codebox-" + Math.floor(Math.random() * 1000000);
+
+    let codeboxContainer = document.createElement("div");
+
+    for (let i = 0; i < initialCodebox.attributes.length; i++) {
+        let attribute = initialCodebox.attributes[i];
+        if (attribute.name !== "id" && attribute.name !== "class" && attribute.name !== "style" && attribute.name !== "initialized") {
+            codeboxContainer.setAttribute(attribute.name, attribute.value);
+        }
+    }
+    codeboxContainer.classList.add("codebox-container");
+    codeboxContainer.setAttribute("initialized", "" + setInitialized);
     codeboxContainer.setAttribute("id", codeboxId);
+
 
     let codeboxAppender = document.createElement("div");
     codeboxAppender.classList.add("codebox-appender");
@@ -391,10 +405,10 @@ function createCodeBox(initialContent, interactive, originalCodeboxId) {
         });
     }
 
-    if (initialContent !== undefined) {
+    if (initialContent !== undefined && initialContent !== null && setInitialized) {
         bufferedInput[codeboxId] = [initialContent];
         if (interactive) {
-            evaluateCodeBlock(codeboxContainer, true, originalCodeboxId);
+            evaluateCodeBlock(codeboxContainer, true, originalCodeboxId, initialCodebox);
         }
     }
 
@@ -415,44 +429,34 @@ function initializePage(interpreterIsAvailable = true) {
     let codeboxes = document.getElementsByClassName("codebox-container");
 
     for (let i = 0; i < codeboxes.length; i++) {
-        let codebox = codeboxes[i];
-        let parent = codebox.parentElement;
+        let initialCodebox = codeboxes[i];
+        let parent = initialCodebox.parentElement;
 
-        if (codebox.getAttribute("initialized") === null) {
-            let initialContent = codebox.getAttribute("initialContent");
+        if (initialCodebox.getAttribute("initialized") === null || initialCodebox.getAttribute("initialized") === "false") {
+            let initialContent = initialCodebox.getAttribute("initialContent");
             initialContent = initialContent == null ? "" : initialContent.replaceAll("\\\\", "\\").replaceAll("<br>", "\n");
 
-            let uninteractiveResult = codebox.getAttribute("result");
-            uninteractiveResult = uninteractiveResult === null || uninteractiveResult === undefined || uninteractiveResult === "" ? null : uninteractiveResult;
+            let uninteractiveResult = initialCodebox.getAttribute("result");
+            let uninteractiveResultSplit = uninteractiveResult === null || uninteractiveResult === undefined || uninteractiveResult === "" ? [] : uninteractiveResult.split(";;;");
 
-            let interactive = codebox.getAttribute("interactive") !== "false";
+            let interactive = initialCodebox.getAttribute("interactive") !== "false";
             if (!interpreterIsAvailable) {
                 interactive = false;
             }
 
-            let originalCodeboxId = isNotEmpty(codebox.getAttribute("id")) ? "codebox-" + codebox.getAttribute("id") : null;
-            let afterCodeboxWithId = isNotEmpty(codebox.getAttribute("after")) ? "codebox-" + codebox.getAttribute("after") : null;
+            let statementSplit = initialContent.split(";;;");
+
+            let originalCodeboxId = isNotEmpty(initialCodebox.getAttribute("id")) ? "codebox-" + initialCodebox.getAttribute("id") : null;
+            let afterCodeboxWithId = isNotEmpty(initialCodebox.getAttribute("after")) ? "codebox-" + initialCodebox.getAttribute("after") : null;
 
             let interval = setInterval(() => {
                 if (!interactive || isEmpty(afterCodeboxWithId) || loadedCodeboxIds.includes(afterCodeboxWithId)) {
                     clearInterval(interval);
 
-                    let newCodebox = createCodeBox(initialContent, interactive, originalCodeboxId);
+                    let newCodebox = createCodeBox(initialContent, interactive, originalCodeboxId, initialCodebox);
                     if (!interactive) {
-                        let statementSplit = initialContent.split(";;;");
-                        let uninteractiveSplit = uninteractiveResult !== null ? uninteractiveResult.split(";;;") : [];
-                        for (let j = 0; j < statementSplit.length; j++) {
-                            let lines = statementSplit[j].split(":NEWLINE:");
-                            for (let k = 0; k < lines.length; k++) {
-                                appendToCodebox(newCodebox, lines[k], k === lines.length - 1 ? 1 : 2, k > 0);
-                            }
-
-                            if (uninteractiveSplit[j] !== undefined) {
-                                appendToCodebox(newCodebox, "-> " + uninteractiveSplit[j], 0, true);
-                            }
-                        }
+                        appendCodeboxOutput(newCodebox, statementSplit, uninteractiveResultSplit);
                     }
-                    parent.replaceChild(newCodebox, codebox);
                 }
             }, 500);
         }
@@ -467,6 +471,42 @@ function initializePage(interpreterIsAvailable = true) {
                 console.error("Failed to check interpreter availability");
             });
         }, 8 * 1000, 3);
+    }
+}
+
+function preLoadCodeBoxesOnPage() {
+    let codeboxes = document.getElementsByClassName("codebox-container");
+
+    for (let i = 0; i < codeboxes.length; i++) {
+        let initialCodebox = codeboxes[i];
+        let parent = initialCodebox.parentElement;
+
+        if (initialCodebox.getAttribute("initialized") === null || initialCodebox.getAttribute("initialized") === "false") {
+            let initialContent = initialCodebox.getAttribute("initialContent");
+            initialContent = initialContent == null ? "" : initialContent.replaceAll("\\\\", "\\").replaceAll("<br>", "\n");
+
+            let uninteractiveResult = initialCodebox.getAttribute("result");
+            let uninteractiveResultSplit = uninteractiveResult === null || uninteractiveResult === undefined || uninteractiveResult === "" ? [] : uninteractiveResult.split(";;;");
+
+            let statementSplit = initialContent.split(";;;");
+
+            let tempCodebox = createCodeBox(initialContent, false, null, initialCodebox, false);
+            appendCodeboxOutput(tempCodebox, statementSplit, uninteractiveResultSplit);
+            parent.replaceChild(tempCodebox, initialCodebox);
+        }
+    }
+}
+
+function appendCodeboxOutput(codebox, statements, results) {
+    for (let j = 0; j < statements.length; j++) {
+        let lines = statements[j].split(":NEWLINE:");
+        for (let k = 0; k < lines.length; k++) {
+            appendToCodebox(codebox, lines[k], k === lines.length - 1 ? 1 : 2, k > 0);
+        }
+
+        if (results[j] !== undefined) {
+            appendToCodebox(codebox, "-> " + results[j], 0, true);
+        }
     }
 }
 
@@ -507,7 +547,7 @@ function isEmpty(variable) {
     return !isNotEmpty(variable);
 }
 
-function initializeCodeBox() {
+function initializeCodeBoxesOnPage() {
     let params = getGetParameters();
     let loadedFromStorage = false;
     if (isNotEmpty(params["host"]) && isNotEmpty(params["port"])) {
@@ -528,6 +568,7 @@ function initializeCodeBox() {
         }, 500);
     }
 
+    preLoadCodeBoxesOnPage();
     isInterpreterAvailable()
         .then((available) => initializePage(available))
         .catch(() => initializePage(false));
@@ -535,4 +576,4 @@ function initializeCodeBox() {
     applyFormattingToAllCodeTags();
 }
 
-initializeCodeBox();
+initializeCodeBoxesOnPage();

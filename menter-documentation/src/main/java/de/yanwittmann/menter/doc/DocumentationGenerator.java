@@ -66,15 +66,19 @@ public class DocumentationGenerator {
         final String sidebarContent = renderSidebarContent(documentationPages);
 
         for (DocumentationPage documentationPage : documentationPages) {
-            final File outFile = documentationPage.getOutFile(targetBaseDir);
+            final String additionalJsContent = "let activePageFilename = '" + documentationPage.getOutFileName() + "';";
 
+            final File outFile = documentationPage.getOutFile(targetBaseDir);
             final List<String> outLines = new ArrayList<>(template);
+
             for (int i = 0; i < outLines.size(); i++) {
                 final String line = outLines.get(i);
                 if (line.contains("{{ content.main }}")) {
                     outLines.set(i, line.replace("{{ content.main }}", documentationPage.renderPageContent(renderer).render()));
                 } else if (line.contains("{{ content.sidebar }}")) {
                     outLines.set(i, line.replace("{{ content.sidebar }}", sidebarContent));
+                } else if (line.contains("{{ script.js }}")) {
+                    outLines.set(i, line.replace("{{ script.js }}", additionalJsContent));
                 }
             }
             FileUtils.write(outFile, String.join("\n", outLines), StandardCharsets.UTF_8);
