@@ -201,7 +201,7 @@ public class MenterGuideServer {
                 return line
                         .replace("js/interactive-codeboxes.js", REMOTE_GUIDE_BASE_DIR_URL + "/js/interactive-codeboxes.js")
                         .replace("js/documentation.js", REMOTE_GUIDE_BASE_DIR_URL + "/js/documentation.js")
-                        .replace("img/navbar_icon.png", REMOTE_GUIDE_BASE_DIR_URL + "/img/navbar_icon.png");
+                        .replaceAll("<img src=\"img/([^\"]+)\"", "<img src=\"" + REMOTE_GUIDE_BASE_DIR_URL + "/img/$1\"");
             });
         }
 

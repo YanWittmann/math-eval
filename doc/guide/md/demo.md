@@ -10,7 +10,9 @@ This guide will teach you how to use Menter.
 
 - Reference to the [Eval server](Hints_evaluation_server.html)!
 
-```=6;;;10
+![testimg](guide/navbar_icon.png)
+
+```result=6;;;10
 test = if (23 == 4) 5 else 6;;;test + 4
 ```
 
@@ -27,11 +29,11 @@ this is a non-interactive code block
 
 for loops: `for (i in ["str", "aaa"]) print(i);`
 
-```=(x) -> { x * 2; };;;[2, 4, 6]
+```result=(x) -> { x * 2; };;;[2, 4, 6]
 double = x -> x * 2;;;[1, 2, 3].map(double)
 ```
 
-```={a: 1, b: 2};;;1
+```result={a: 1, b: 2};;;1
 test = {
     a: 1,
     b: 2

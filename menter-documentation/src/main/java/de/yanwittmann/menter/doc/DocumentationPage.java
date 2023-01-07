@@ -143,6 +143,16 @@ public class DocumentationPage {
                 tag = code();
             } else if (node instanceof Emphasis) {
                 tag = em();
+            } else if (node instanceof Image) {
+                final String imageUrl = ((Image) node).getUrl().toString();
+                final String alt = ((Image) node).getText().toString();
+
+                if (imageUrl.startsWith("guide/")) {
+                    final String guideImagePath = "img/" + imageUrl.substring("guide/".length());
+                    tag = img().withSrc(guideImagePath).withAlt(alt);
+                } else {
+                    tag = img().withSrc(imageUrl).withAlt(alt);
+                }
             } else {
                 System.err.println("Unknown input: " + input.getClass().getSimpleName() + ", using default renderer");
                 return rawHtml(renderer.render(node));

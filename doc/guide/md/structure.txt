@@ -4,3 +4,4 @@ Introduction >> introduction.md
 
 Hints >> hints.md
     Evaluation Server >> hints/evaluation_server.md
+    Testing >> demo.md
