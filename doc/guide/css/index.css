@@ -168,6 +168,10 @@ html, body {
     display: none;
 }
 
+#main-content-container {
+    margin-bottom: 200px;
+}
+
 @media (max-width: 767px) {
     .segment-center {
         width: 80vw;
@@ -242,7 +246,7 @@ html, body {
     display: none;
 }
 
-.codebox-container:hover {
+.codebox-container:hover:not(.loading) {
     box-shadow: 0 0 0 2px var(--color-background-input-codebox);
 }
 
@@ -255,7 +259,7 @@ html, body {
     font-size: 16px;
     font-family: monospace;
     color: var(--color-text-base);
-    background-color: var(--color-background-input-codebox);
+    background-color: transparent;
     resize: none;
 }
 
@@ -298,7 +302,7 @@ html, body {
 .codebox-padding {
     padding: 0;
     margin: 0;
-    height: 8px;
+    height: 14px;
     color: transparent;
     border: 0;
 }
@@ -367,6 +371,14 @@ img {
     max-width: 100%;
     border-radius: 7px;
     box-shadow: 2px 2px 2px 1px var(--color-background-input-codebox);
+}
+
+h2 {
+    margin-top: 60px;
+}
+
+h1 + h2  {
+    margin-top: 25px;
 }
 
 .hidden {

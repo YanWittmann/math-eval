@@ -36,7 +36,8 @@ function appendToCodebox(codebox, text, inputType, belowPadding) {
         span.classList.add("codebox-input-symbol");
         span.classList.add("multiline");
     }
-    span.innerHTML = applyCodeFormatting(text);
+    let lang = codebox.hasAttribute("lang") ? codebox.getAttribute("lang") : "menter";
+    span.innerHTML = applyCodeFormatting(text, lang);
     if (appender.childNodes.length > 0 && appender.lastChild.classList.contains("codebox-line")) {
         appender.innerHTML += "<br>";
     }
@@ -46,9 +47,9 @@ function appendToCodebox(codebox, text, inputType, belowPadding) {
     }
 }
 
-function applyCodeFormatting(text) {
+function applyCodeFormatting(text, lang = "menter") {
     let originalText = text;
-    text = createStyleHighlightsForText(text);
+    text = createStyleHighlightsForText(text, lang);
     text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     let lines = text.split("\n");
 
@@ -124,12 +125,26 @@ function applyCodeFormatting(text) {
     return lines.join("<br>");
 }
 
-function createStyleHighlightsForText(text) {
-    let keywords = ["for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue", "import", "export", "in", "as"];
-    let identifiers = text.match(/[a-zA-Z]+/g);
-    let numbers = text.match(/-?\d+(\.\d+)?/g);
-    let strings = text.match(/["'].*?["']/g);
-    let comments = text.match(/###(.|\n)*?###|#.*?(\n|$)/g);
+function createStyleHighlightsForText(text, lang = "menter") {
+    let isMenter = lang === "menter";
+    let isXml = lang === "xml";
+
+    let keywords = [];
+    let identifiers = [];
+    let numbers = [];
+    let strings = [];
+    let comments = [];
+    let xmlTags = [];
+
+    if (isMenter) {
+        keywords = ["for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue", "import", "export", "in", "as"];
+        identifiers = text.match(/[a-zA-Z]+/g);
+        numbers = text.match(/-?\d+(\.\d+)?/g);
+        strings = text.match(/["'].*?["']/g);
+        comments = text.match(/###(.|\n)*?###|#.*?(\n|$)/g);
+    } else if (isXml) {
+        xmlTags = text.match(/<\/?[a-zA-Z]+.*?>/g);
+    }
 
     let replacements = {};
 
@@ -161,6 +176,12 @@ function createStyleHighlightsForText(text) {
     if (comments !== null) {
         for (let i = 0; i < comments.length; i++) {
             replacements[comments[i]] = ":STYLE:COLOR:GRAY:" + comments[i] + ":STYLE:END:";
+        }
+    }
+
+    if (xmlTags !== null) {
+        for (let i = 0; i < xmlTags.length; i++) {
+            replacements[xmlTags[i]] = ":STYLE:COLOR:BLUE:" + xmlTags[i] + ":STYLE:END:";
         }
     }
 
@@ -255,7 +276,11 @@ function evaluateCodeBlock(codebox, initialInput, originalCodeboxId = null, init
         function evaluateAndApplyCodeBlock(i) {
             evaluateCode(statementSplit[i], codeboxId).then((result) => {
                 if (initialInput) {
-                    appendToCodebox(codebox, statementSplit[i], 1, false);
+                    let statementLines = statementSplit[i].split("\n");
+                    for (let j = 0; j < statementLines.length; j++) {
+                        let statementLine = statementLines[j];
+                        appendToCodebox(codebox, statementLine, j === statementLines.length - 1 ? 1 : 2, false);
+                    }
                 }
 
                 let message = "";
@@ -291,11 +316,36 @@ function evaluateCodeBlock(codebox, initialInput, originalCodeboxId = null, init
                     if (initialCodebox !== null) {
                         initialCodebox.parentElement.replaceChild(codebox, initialCodebox);
                     }
+                    setLoadingStateOnCodeBox([codebox, initialCodebox], false);
                 }
+            }).catch((error) => {
+                appendToCodebox(codebox, "It seems that the connection to the Menter server has been lost.", 0, true);
+                setLoadingStateOnCodeBox([codebox, initialCodebox], false);
             });
         }
 
+        setLoadingStateOnCodeBox([codebox, initialCodebox], true);
         evaluateAndApplyCodeBlock(0);
+    }
+}
+
+let codeBoxLoadingState = {};
+
+function setLoadingStateOnCodeBox(codebox, loading) {
+    for (let i = 0; i < codebox.length; i++) {
+        if (codebox[i] !== null && codebox[i].classList !== undefined) {
+            codeBoxLoadingState[codebox[i].getAttribute("id")] = loading;
+            if (loading) {
+                setTimeout(() => {
+                    let isInconsistentState = codeBoxLoadingState[codebox[i].getAttribute("id")] !== undefined && codeBoxLoadingState[codebox[i].getAttribute("id")] !== loading;
+                    if (!isInconsistentState) {
+                        codebox[i].classList.add("loading");
+                    }
+                }, 600);
+            } else {
+                codebox[i].classList.remove("loading");
+            }
+        }
     }
 }
 
@@ -498,10 +548,14 @@ function preLoadCodeBoxesOnPage() {
 }
 
 function appendCodeboxOutput(codebox, statements, results) {
+    let isNotMenter = codebox.hasAttribute("lang") && codebox.getAttribute("lang") !== "menter";
+
     for (let j = 0; j < statements.length; j++) {
         let lines = statements[j].split(":NEWLINE:");
         for (let k = 0; k < lines.length; k++) {
-            appendToCodebox(codebox, lines[k], k === lines.length - 1 ? 1 : 2, k > 0);
+            let inputType = isNotMenter ? 0 : (k === lines.length - 1 ? 1 : 2);
+            let belowPadding = k === lines.length - 1 && results[j] === undefined && isNotMenter;
+            appendToCodebox(codebox, lines[k], inputType, belowPadding);
         }
 
         if (results[j] !== undefined) {

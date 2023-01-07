@@ -96,6 +96,8 @@ public class DocumentationPage {
                 tag = text(node.getChars().toString());
             } else if (node instanceof HardLineBreak) {
                 tag = br();
+            } else if (node instanceof SoftLineBreak) {
+                tag = text(" ");
             } else if (node instanceof BulletList) {
                 tag = ul();
             } else if (node instanceof BulletListItem) {
@@ -110,6 +112,8 @@ public class DocumentationPage {
                 tag = code();
             } else if (node instanceof Emphasis) {
                 tag = em();
+            } else if (node instanceof StrongEmphasis) {
+                tag = strong();
             } else if (node instanceof Image) {
                 final String imageUrl = ((Image) node).getUrl().toString();
                 final String alt = ((Image) node).getText().toString();
@@ -141,6 +145,7 @@ public class DocumentationPage {
                 final String presetResult = typeArgumentsMap.getOrDefault("result", null);
                 final String id = typeArgumentsMap.getOrDefault("id", null);
                 final String after = typeArgumentsMap.getOrDefault("after", null);
+                final String lang = typeArgumentsMap.getOrDefault("lang", null);
 
                 final DivTag actualCodeboxTag = div().withClasses("codebox-container", "codebox-fake")
                         .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
@@ -149,6 +154,7 @@ public class DocumentationPage {
                 if (id != null) actualCodeboxTag.attr("id", id);
                 if (after != null) actualCodeboxTag.attr("after", after);
                 if (presetResult != null) actualCodeboxTag.attr("result", presetResult);
+                if (lang != null) actualCodeboxTag.attr("lang", lang);
 
                 tag = actualCodeboxTag;
             } else {

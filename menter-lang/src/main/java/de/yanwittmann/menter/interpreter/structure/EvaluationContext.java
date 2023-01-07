@@ -37,6 +37,7 @@ public abstract class EvaluationContext {
 
         registerNativeFunction(new String[]{"system.mtr", "getProperty"}, CoreModuleSystem::getProperty);
         registerNativeFunction(new String[]{"system.mtr", "getEnv"}, CoreModuleSystem::getEnv);
+        registerNativeFunction(new String[]{"system.mtr", "sleep"}, CoreModuleSystem::sleep);
 
         registerNativeFunction(new String[]{"debug.mtr", "switch"}, CoreModuleDebug::debugSwitch);
         registerNativeFunction(new String[]{"debug.mtr", "stackTraceValues"}, CoreModuleDebug::stackTraceValues);
@@ -682,7 +683,8 @@ public abstract class EvaluationContext {
             if (SymbolCreationMode.THROW_IF_NOT_EXISTS == symbolCreationMode) {
                 final List<String> candidates = findMostLikelyCandidates(globalContext, previousValue, stringKey);
 
-                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on [" + ParserNode.reconstructCode(identifier) + "]; Evaluation stopped at value: " + ParserNode.reconstructCode(previousValue) +
+                throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on [" + ParserNode.reconstructCode(identifier) + "]" +
+                                                       (previousValue != null ? "; Evaluation stopped at value: " + ParserNode.reconstructCode(previousValue) : "") +
                                                        (candidates.isEmpty() ? "" : "\nDid you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
 
             } else if (SymbolCreationMode.CREATE_IF_NOT_EXISTS == symbolCreationMode) {

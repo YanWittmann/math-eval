@@ -12,4 +12,13 @@ public class CoreModuleSystem {
     public static Value getEnv(Value[] arguments) {
         return new Value(System.getenv(arguments[0].toString()));
     }
+
+    public static Value sleep(Value[] arguments) {
+        try {
+            Thread.sleep(arguments[0].getNumericValue().longValue());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return arguments[0];
+    }
 }

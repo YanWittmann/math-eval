@@ -1,5 +1,6 @@
 
 native getProperty(x)
 native getEnv(x)
+native sleep(x)
 
 export [getProperty, getEnv] as system
