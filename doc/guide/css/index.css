@@ -1,7 +1,7 @@
 @import url(https://fonts.bunny.net/css?family=amethysta:400);
 
 :root {
-    --color-background-base: #14171f;
+    --color-background-base: #1b1f29;
     --color-background-input-codebox: #070c0e;
     --color-background-danger: #2b4667;
     --color-background-red: #b34444;
@@ -18,22 +18,25 @@
 
     --color-text-link: #7ea6ff;
     --color-text-link-hover: #578aff;
+
+    --color-apple-close-window-fill: #ff5454;
+    --color-apple-close-window-fill-hover: #fa3a3a;
 }
 
 @media (prefers-color-scheme: light) {
     :root {
-        --color-background-base: #f7fcff;
+        --color-background-base: #fffcf8;
         --color-background-input-codebox: #efefef;
-        --color-background-danger: #ffcebf;
+        --color-background-danger: #bddaff;
         --color-background-red: #ff5454;
         --color-border-base: #a9a091;
         --color-text-base: #3a270b;
         --color-text-red: #ff5454;
-        --color-text-green: #31b700;
+        --color-text-green: #2ba100;
         --color-text-blue: #1054ff;
         --color-text-yellow: #ffff76;
-        --color-text-purple: #8613ff;
-        --color-text-pink: #ff3b3b;
+        --color-text-purple: #6700d4;
+        --color-text-pink: #e11919;
         --color-text-orange: #ff9f4f;
         --color-text-cyan: #91ffff;
 
@@ -169,7 +172,7 @@ html, body {
 }
 
 #main-content-container {
-    margin-bottom: 200px;
+    margin-bottom: 150px;
 }
 
 @media (max-width: 767px) {
@@ -209,6 +212,8 @@ html, body {
 }
 
 .codebox-container {
+    position: relative;
+
     width: calc(100% - 35px);
     border: 0;
     padding: 10px;
@@ -289,6 +294,31 @@ html, body {
     cursor: pointer;
 }
 
+.codebox-reset-button {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    width: 13px;
+    height: 13px;
+    font-size: 16px;
+    font-family: monospace;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 0;
+
+    background-color: var(--color-apple-close-window-fill);
+    transition: background-color 0.1s ease-in-out;
+    box-shadow: 0 0 2px 2px rgba(255, 114, 114, 0.2);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.codebox-reset-button:hover {
+    background-color: var(--color-apple-close-window-fill-hover);
+}
+
 .codebox-input-symbol:before {
     content: '>';
     position: absolute;
@@ -333,6 +363,7 @@ code {
     align-items: center;
 
     font-weight: bold;
+    font-size: 25px;
 
     background-color: var(--color-background-red);
     border-radius: 50%;
@@ -380,6 +411,17 @@ img {
 
 h2 {
     margin-top: 60px;
+    position: relative;
+}
+
+h2::before {
+    position: absolute;
+    left: -28px;
+    top: 3px;
+
+    content: ">";
+    font-size: 18px;
+    font-family: monospace;
 }
 
 h1 + h2 {

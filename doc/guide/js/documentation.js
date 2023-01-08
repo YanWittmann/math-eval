@@ -57,7 +57,7 @@ function addWarningText(text, level) {
         stickyFooterIcon = document.createElement("div");
         stickyFooterIcon.id = "sticky-footer-icon";
         stickyFooterIcon.classList.add("sticky-footer-icon");
-        stickyFooterIcon.innerText = "!";
+        stickyFooterIcon.innerText = "i";
         stickyFooterIcon.onmouseenter = function () {
             if (!isWarningTextHovered) {
                 stickyFooter.classList.remove("hidden");

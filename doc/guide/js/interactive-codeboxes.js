@@ -453,6 +453,14 @@ function createCodeBox(initialContent, interactive, originalCodeboxId, initialCo
         codeboxContainer.addEventListener('mouseup', () => {
             if (!drag) codeboxInput.focus();
         });
+
+        let resetCodeboxButton = document.createElement("button");
+        resetCodeboxButton.classList.add("codebox-reset-button");
+        resetCodeboxButton.classList.add("fade-in");
+        resetCodeboxButton.onclick = function () {
+            resetCodebox(codeboxContainer);
+        }
+        codeboxContainer.appendChild(resetCodeboxButton);
     }
 
     if (initialContent !== undefined && initialContent !== null && setInitialized) {
@@ -464,6 +472,17 @@ function createCodeBox(initialContent, interactive, originalCodeboxId, initialCo
 
     return codeboxContainer;
 }
+
+function resetCodebox(codeboxContainer) {
+    let codeboxId = codeboxContainer.getAttribute("id");
+    let codeboxAppender = codeboxContainer.getElementsByClassName("codebox-appender")[0];
+    codeboxAppender.innerHTML = "";
+    let initialContent = codeboxContainer.getAttribute("initialContent");
+    initialContent = initialContent == null ? "" : initialContent.replaceAll("\\\\", "\\").replaceAll("<br>", "\n");
+    bufferedInput[codeboxId] = initialContent === "" ? [] : [initialContent];
+    evaluateCodeBlock(codeboxContainer, true, codeboxId, codeboxContainer);
+}
+
 
 function evaluateCodeBlockFromSubmitButton(codebox) {
     codeBlockInteracted(codebox.getElementsByClassName("codebox-input-container")[0].childNodes[0], {

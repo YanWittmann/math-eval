@@ -17,8 +17,8 @@ By the end, you should be able to create your own programs in Menter.
 
 Here's a small program that creates an array, filters the values and maps them to new values:
 
-```result=[1, 2, 3, 4];;;[6, 8]
-numbers = range(1, 4);;;numbers.map(x -> x * 2).filter(x -> x > 4)
+```result=[1, 2, 3, 4];;;(x) -> { x > 4; };;;[6, 8]
+numbers = range(1, 4);;;filterFunction = x -> x > 4;;;numbers.map(x -> x * 2).filter(filterFunction)
 ```
 
 Did you know that you can make these code boxes interactive by running a local Menter server?
