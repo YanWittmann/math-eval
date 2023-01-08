@@ -4,7 +4,7 @@
 fun = x -> x + 1;;;export [fun] as myModule
 ```
 
-```after=testmodule---result=5;;;3
+```after=testmodule---result=null;;;4
 import myModule;;;myModule.fun(3)
 ```
 

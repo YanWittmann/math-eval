@@ -480,7 +480,6 @@ function initializePage(interpreterIsAvailable = true) {
 
     for (let i = 0; i < codeboxes.length; i++) {
         let initialCodebox = codeboxes[i];
-        let parent = initialCodebox.parentElement;
 
         if (initialCodebox.getAttribute("initialized") === null || initialCodebox.getAttribute("initialized") === "false") {
             let initialContent = initialCodebox.getAttribute("initialContent");
@@ -496,7 +495,7 @@ function initializePage(interpreterIsAvailable = true) {
 
             let statementSplit = initialContent.split(";;;");
 
-            let originalCodeboxId = isNotEmpty(initialCodebox.getAttribute("id")) ? "codebox-" + initialCodebox.getAttribute("id") : null;
+            let originalCodeboxId = isNotEmpty(initialCodebox.getAttribute("codebox-id")) ? "codebox-" + initialCodebox.getAttribute("codebox-id") : null;
             let afterCodeboxWithId = isNotEmpty(initialCodebox.getAttribute("after")) ? "codebox-" + initialCodebox.getAttribute("after") : null;
 
             let interval = setInterval(() => {
@@ -554,7 +553,7 @@ function appendCodeboxOutput(codebox, statements, results) {
         let lines = statements[j].split(":NEWLINE:");
         for (let k = 0; k < lines.length; k++) {
             let inputType = isNotMenter ? 0 : (k === lines.length - 1 ? 1 : 2);
-            let belowPadding = k === lines.length - 1 && results[j] === undefined && isNotMenter;
+            let belowPadding = k === lines.length - 1 && results[j] === undefined && !isNotMenter;
             appendToCodebox(codebox, lines[k], inputType, belowPadding);
         }
 

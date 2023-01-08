@@ -151,7 +151,7 @@ public class DocumentationPage {
                         .attr("initialContent", String.join(":NEWLINE:", codeBlockLines))
                         .attr("interactive", !isStatic);
 
-                if (id != null) actualCodeboxTag.attr("id", id);
+                if (id != null) actualCodeboxTag.attr("codebox-id", id);
                 if (after != null) actualCodeboxTag.attr("after", after);
                 if (presetResult != null) actualCodeboxTag.attr("result", presetResult);
                 if (lang != null) actualCodeboxTag.attr("lang", lang);
