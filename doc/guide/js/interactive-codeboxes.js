@@ -457,6 +457,7 @@ function createCodeBox(initialContent, interactive, originalCodeboxId, initialCo
         let resetCodeboxButton = document.createElement("button");
         resetCodeboxButton.classList.add("codebox-reset-button");
         resetCodeboxButton.classList.add("fade-in");
+        resetCodeboxButton.setAttribute("title", "Reset codebox");
         resetCodeboxButton.onclick = function () {
             resetCodebox(codeboxContainer);
         }

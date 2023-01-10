@@ -306,13 +306,17 @@ html, body {
     cursor: pointer;
     border: 0;
 
-    background-color: var(--color-apple-close-window-fill);
+    background-color: var(--color-background-input-codebox);
     transition: background-color 0.1s ease-in-out;
     box-shadow: 0 0 2px 2px rgba(255, 114, 114, 0.2);
 
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.codebox-container:hover .codebox-reset-button {
+    background-color: var(--color-apple-close-window-fill);
 }
 
 .codebox-reset-button:hover {

@@ -9,23 +9,21 @@ import java.util.stream.Collectors;
 public class MenterNodeFunction {
 
     private final GlobalContext parentContext;
-    private final List<Object> parameters;
+    private final List<String> parameters;
     private final ParserNode body;
 
     public MenterNodeFunction(GlobalContext parentContext, List<Object> parameters, ParserNode body) {
         this.parentContext = parentContext;
-        this.parameters = parameters;
+        this.parameters = parameters.stream().map(o -> ((Token) o).getValue()).collect(Collectors.toList());
         this.body = body;
     }
 
     public MenterNodeFunction(GlobalContext parentContext, List<Object> parameters) {
-        this.parentContext = parentContext;
-        this.parameters = parameters;
-        this.body = null;
+        this(parentContext, parameters, null);
     }
 
     public List<String> getArgumentNames() {
-        return parameters.stream().map(o -> ((Token) o).getValue()).collect(Collectors.toList());
+        return parameters;
     }
 
     public ParserNode getBody() {
@@ -38,6 +36,6 @@ public class MenterNodeFunction {
 
     @Override
     public String toString() {
-        return "(" + parameters.stream().map(Value::toDisplayString).collect(Collectors.joining(", ")) + ") -> " + (body != null ? body.reconstructCode() : null);
+        return "(" + String.join(", ", parameters) + ") -> " + (body != null ? body.reconstructCode() : null);
     }
 }
