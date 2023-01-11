@@ -2,7 +2,7 @@ package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

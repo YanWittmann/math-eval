@@ -5,7 +5,7 @@ import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.interpreter.ModuleOptions;
 import de.yanwittmann.menter.interpreter.structure.GlobalContext;
 import de.yanwittmann.menter.interpreter.structure.Import;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.lexer.Lexer;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.operator.Operators;

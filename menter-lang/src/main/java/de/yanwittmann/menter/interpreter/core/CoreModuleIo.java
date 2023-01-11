@@ -1,7 +1,7 @@
 package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;

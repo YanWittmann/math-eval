@@ -2,6 +2,7 @@ package de.yanwittmann.menter.interpreter.structure;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 import java.util.*;
 

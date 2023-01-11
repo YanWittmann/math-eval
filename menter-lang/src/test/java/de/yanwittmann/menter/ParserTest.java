@@ -121,6 +121,33 @@ class ParserTest {
     }
 
     @Test
+    public void constructorTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONSTRUCTOR_CALL\n" +
+                               "   ├─ IDENTIFIER: Type001\n" +
+                               "   └─ PARENTHESIS_PAIR",
+                "new Type001()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONSTRUCTOR_CALL\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: test\n" +
+                               "   │  └─ IDENTIFIER: Type001\n" +
+                               "   └─ PARENTHESIS_PAIR",
+                "new test.Type001()");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: val\n" +
+                               "   └─ CONSTRUCTOR_CALL\n" +
+                               "      ├─ IDENTIFIER_ACCESSED\n" +
+                               "      │  ├─ IDENTIFIER: test\n" +
+                               "      │  └─ IDENTIFIER: Type001\n" +
+                               "      └─ PARENTHESIS_PAIR",
+                "val = new test.Type001()");
+    }
+
+    @Test
     public void correctOperatorOrder() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ EXPRESSION: + (110 l r)\n" +

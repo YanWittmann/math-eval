@@ -2,7 +2,7 @@ package de.yanwittmann.menter.interpreter;
 
 import de.yanwittmann.menter.EvalRuntime;
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.operator.Operators;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;

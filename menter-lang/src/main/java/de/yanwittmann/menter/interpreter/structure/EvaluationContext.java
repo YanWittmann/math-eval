@@ -5,6 +5,9 @@ import de.yanwittmann.menter.interpreter.core.CoreModuleCommon;
 import de.yanwittmann.menter.interpreter.core.CoreModuleDebug;
 import de.yanwittmann.menter.interpreter.core.CoreModuleIo;
 import de.yanwittmann.menter.interpreter.core.CoreModuleSystem;
+import de.yanwittmann.menter.interpreter.structure.value.CustomType;
+import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.lexer.Lexer;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.operator.Operator;
@@ -13,6 +16,7 @@ import de.yanwittmann.menter.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -66,6 +70,10 @@ public abstract class EvaluationContext {
 
     public void addVariable(String name, Value value) {
         variables.put(name, value);
+    }
+
+    public void removeVariable(String name) {
+        variables.remove(name);
     }
 
     public Value getVariable(String name) {
@@ -297,7 +305,8 @@ public abstract class EvaluationContext {
                 if (!foundMatchingBranch) {
                     result = Value.empty();
                 }
-            } else if (node.getType() == ParserNode.NodeType.LOOP_FOR) { // for each loop
+
+            } else if (node.getType() == ParserNode.NodeType.LOOP_FOR) {
                 final Object iteratorVariable = node.getChildren().get(0);
                 final Value iteratorValue = evaluate(node.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
                 final Object loopCode = node.getChildren().get(2);
@@ -367,6 +376,12 @@ public abstract class EvaluationContext {
 
                     result = evaluate(loopCode, globalContext, symbolCreationMode, loopLocalInformation);
                 }
+
+            } else if (node.getType() == ParserNode.NodeType.CONSTRUCTOR_CALL) {
+                final Value constructorIdentifier = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
+                final List<Value> constructorParameters = makeFunctionArguments(node, globalContext, localInformation);
+
+                result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorIdentifier.getValue(), constructorParameters));
             }
 
             if (result == null) {
@@ -439,7 +454,7 @@ public abstract class EvaluationContext {
         }
     }
 
-    protected Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
+    public Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
         try {
             localInformation.provideFunctionNameForNextStackTraceElement(originalFunctionName);
 
@@ -466,10 +481,17 @@ public abstract class EvaluationContext {
 
                 return evaluate(executableFunction.getBody(), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
 
-            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) { // native functions
+            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
                 final Function<Value[], Value> nativeFunction = (Function<Value[], Value>) functionValue.getValue();
                 final Value[] nativeFunctionArguments = functionParameters.toArray(new Value[0]);
                 return nativeFunction.apply(nativeFunctionArguments);
+
+            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
+                final Method executableFunction = (Method) functionValue.getValue();
+                final Value calledOnValue = functionValue.getSecondaryValue();
+                final CustomType calledOnCustomType = (CustomType) calledOnValue.getValue();
+
+                return calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
 
             } else { // otherwise it must be a value function
                 final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
@@ -660,7 +682,11 @@ public abstract class EvaluationContext {
 
                 } else {
                     final Value accessAs = id instanceof Value ? (Value) id : new Value(getTokenOrNodeValue(id));
-                    value = value.access(accessAs);
+                    try {
+                        value = value.access(accessAs);
+                    } catch (Exception e) {
+                        value = null;
+                    }
 
                     if (value != null) {
                         if (MenterDebugger.logInterpreterResolveSymbols) {
@@ -711,11 +737,17 @@ public abstract class EvaluationContext {
             if (previousValue.getType().equals(PrimitiveValueType.OBJECT.getType())) {
                 candidates.addAll(previousValue.getMap().keySet());
             }
+
             candidates.addAll(previousValue.getValueFunctionCandidates().stream()
                     .map(Map.Entry::getValue)
                     .map(Map::keySet)
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList()));
+
+            if (previousValue.getValue() instanceof CustomType) {
+                candidates.addAll(((CustomType) previousValue.getValue()).findReflectiveMethodNames());
+            }
+
         } else {
             candidates.addAll(globalContext.getVariables().keySet());
             for (Import anImport : globalContext.getImports()) {

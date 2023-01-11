@@ -1,6 +1,6 @@
 package de.yanwittmann.menter.interpreter.core;
 
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 public class CoreModuleSystem {
 

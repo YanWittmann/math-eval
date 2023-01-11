@@ -1,7 +1,7 @@
 package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.interpreter.MenterDebugger;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 public abstract class CoreModuleDebug {
     public static Value debugSwitch(Value[] arguments) {

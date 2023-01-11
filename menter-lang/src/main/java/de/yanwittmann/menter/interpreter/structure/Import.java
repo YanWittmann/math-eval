@@ -87,6 +87,10 @@ public class Import {
         throw new MenterExecutionException("Could not find module '" + getName() + "'. Modules available: " + globalContexts.stream().flatMap(context -> context.getModules().stream()).map(Module::getName).collect(Collectors.toList()));
     }
 
+    public void setReferencingModule(Object nameOrModule) {
+        this.nameOrModule = nameOrModule;
+    }
+
     @Override
     public String toString() {
         return "import " + nameOrModule + (alias != null ? " as " + alias : "") + (inline ? " inline" : "");

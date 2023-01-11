@@ -1,6 +1,6 @@
 package de.yanwittmann.menter.operator;
 
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.lexer.Lexer;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.parser.Parser;

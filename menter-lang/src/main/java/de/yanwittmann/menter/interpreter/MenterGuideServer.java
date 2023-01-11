@@ -2,7 +2,7 @@ package de.yanwittmann.menter.interpreter;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -177,11 +177,12 @@ public class MenterGuideServer {
 
         final String internalIp = getInternalIp();
         final String externalIp = getExternalIp();
-        System.out.println("\n" +
-                           "                               Server started on: http://" + internalIp + ":" + serverPort + "/docs/introduction?host=" + internalIp + "&port=" + serverPort + "\n" +
-                           "              ... using your external IP address: http://" + externalIp + ":" + serverPort + "/docs/introduction?host=" + internalIp + "&port=" + serverPort + "\n" +
-                           "   ... or on the source page if you disabled SSL: " + REMOTE_GUIDE_INTRODUCTION_URL + "?host=" + internalIp + "&port=" + serverPort +
-                           "\n");
+        System.out.printf("\n" +
+                          "                               Server started on: http://%s:%d/docs/introduction?host=%s&port=%d\n" +
+                          "              ... using your external IP address: http://%s:%d/docs/introduction?host=%s&port=%d\n" +
+                          "   ... or on the source page if you disabled SSL: %s?host=%s&port=%d\n" +
+                          "%n",
+                internalIp, serverPort, internalIp, serverPort, externalIp, serverPort, internalIp, serverPort, REMOTE_GUIDE_INTRODUCTION_URL, internalIp, serverPort);
     }
 
     private void mirrorDocumentationIntoTempDir() {

@@ -2,15 +2,14 @@ package de.yanwittmann.menter.interpreter.structure;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.ModuleOptions;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GlobalContext extends EvaluationContext {
 
@@ -121,6 +120,13 @@ public class GlobalContext extends EvaluationContext {
         for (int i = imports.size() - 1; i >= 0; i--) {
             final Import anImport = imports.get(i);
             try {
+                final Module customTypeModule = Value.findCustomTypeModule(anImport.getName());
+                if (customTypeModule != null) {
+                    anImport.setReferencingModule(customTypeModule);
+                    continue;
+                }
+
+                // otherwise search for a module in the global contexts
                 anImport.findModule(globalContexts);
             } catch (Exception e) {
                 imports.remove(anImport);

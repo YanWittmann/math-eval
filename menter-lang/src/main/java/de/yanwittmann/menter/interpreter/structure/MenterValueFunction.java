@@ -1,5 +1,7 @@
 package de.yanwittmann.menter.interpreter.structure;
 
+import de.yanwittmann.menter.interpreter.structure.value.Value;
+
 import java.util.List;
 
 @FunctionalInterface

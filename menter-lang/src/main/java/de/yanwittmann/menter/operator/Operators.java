@@ -1,8 +1,8 @@
 package de.yanwittmann.menter.operator;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
-import de.yanwittmann.menter.interpreter.structure.PrimitiveValueType;
-import de.yanwittmann.menter.interpreter.structure.Value;
+import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
+import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

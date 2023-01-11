@@ -109,7 +109,7 @@ public class Parser {
                isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
                isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE) ||
-               isType(token, ParserNode.NodeType.LOOP_FOR);
+               isType(token, ParserNode.NodeType.LOOP_FOR) || isType(token, ParserNode.NodeType.CONSTRUCTOR_CALL);
     }
 
     public static boolean isListable(Object token) {
@@ -795,6 +795,34 @@ public class Parser {
                 new Object[]{TokenType.OPEN_PARENTHESIS, TokenType.OPEN_SQUARE_BRACKET, TokenType.OPEN_CURLY_BRACKET},
                 new Object[]{},
                 new Object[]{}
+        ));
+
+        // find constructor calls
+        this.rules.add(ParserRule.inOrderRule(ParserNode.NodeType.CONSTRUCTOR_CALL, (t) -> null, 0, (t, i) -> !isType(t, TokenType.KEYWORD), (t, i) -> true,
+                (t, i) -> {
+                    if (isType(t, ParserNode.NodeType.FUNCTION_CALL)) {
+                        return ((ParserNode) t).getChildren();
+
+                    } else if (isType(t, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+                        final ParserNode node = (ParserNode) t;
+                        final Object lastChild = node.getChildren().get(node.getChildren().size() - 1);
+
+                        if (isType(lastChild, ParserNode.NodeType.FUNCTION_CALL)) {
+                            final ParserNode function = (ParserNode) lastChild;
+                            node.removeChild(function);
+                            if (isType(function.getChildren().get(0), ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                                final ParserNode parenthesis = (ParserNode) function.getChildren().get(0);
+                                return Arrays.asList(node, parenthesis);
+                            }
+                        }
+
+                        throw new ParsingException("Expected constructor call to be terminated by a parenthesis pair: " + node.reconstructCode());
+                    } else {
+                        return t;
+                    }
+                },
+                t -> isKeyword(t, "new"),
+                t -> isIdentifier(t) || isType(t, ParserNode.NodeType.FUNCTION_CALL)
         ));
 
         // listed elements , separated

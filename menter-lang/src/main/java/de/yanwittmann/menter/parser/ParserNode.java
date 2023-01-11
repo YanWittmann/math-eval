@@ -117,7 +117,8 @@ public class ParserNode {
         ARRAY, LISTED_ELEMENTS,
         MAP, MAP_ELEMENT,
         CONDITIONAL, CONDITIONAL_BRANCH, CONDITIONAL_BRACKET,
-        LOOP_FOR, LOOP_FOR_BRACKET, LOOP_WHILE
+        LOOP_FOR, LOOP_FOR_BRACKET, LOOP_WHILE,
+        CONSTRUCTOR_CALL
     }
 
     public String reconstructCode() {
@@ -378,6 +379,11 @@ public class ParserNode {
                     reconstructCode(node.getChildren().get(1), sb);
                     sb.append(") ");
                     reconstructCode(node.getChildren().get(2), sb);
+                    break;
+
+                case CONSTRUCTOR_CALL:
+                    sb.append("new ");
+                    reconstructCode(node.getChildren(), sb);
                     break;
 
                 default:
