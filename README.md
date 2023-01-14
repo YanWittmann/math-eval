@@ -9,7 +9,7 @@ An interpreted language for evaluating expressions with functions and variables 
 
 Check out the [loose specification](menter-documentation/doc/requirements.md) for the language.
 
-![Menter Thumbnail](menter-documentation/doc/thumbnail.png)
+![Menter Thumbnail](doc/thumbnail.png)
 
 # Build
 
