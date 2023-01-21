@@ -8,11 +8,16 @@ import java.util.*;
 
 public class EvaluationContextLocalInformation {
 
-    private final Map<String, Value> localSymbols;
+    private final List<Map<String, Value>> localSymbolHierarchy;
     private final Stack<MenterStackTraceElement> stackTrace;
 
     public EvaluationContextLocalInformation(Map<String, Value> localSymbols, Stack<MenterStackTraceElement> stackTrace) {
-        this.localSymbols = localSymbols;
+        this(new ArrayList<>(), localSymbols, stackTrace);
+    }
+
+    public EvaluationContextLocalInformation(List<Map<String, Value>> previousParentLocalSymbols, Map<String, Value> localSymbols, Stack<MenterStackTraceElement> stackTrace) {
+        this.localSymbolHierarchy = previousParentLocalSymbols;
+        this.localSymbolHierarchy.add(localSymbols);
         this.stackTrace = stackTrace;
     }
 
@@ -20,29 +25,45 @@ public class EvaluationContextLocalInformation {
         this(localSymbols, new Stack<>());
     }
 
-    public EvaluationContextLocalInformation() {
-        this(new HashMap<>(), new Stack<>());
-    }
-
     public void putLocalSymbol(String name, Value value) {
-        localSymbols.put(name, value);
+        for (int i = localSymbolHierarchy.size() - 1; i >= 0; i--) {
+            final Map<String, Value> parentLocalSymbol = localSymbolHierarchy.get(i);
+            if (parentLocalSymbol.containsKey(name)) {
+                parentLocalSymbol.put(name, value);
+                return;
+            }
+        }
+        localSymbolHierarchy.get(localSymbolHierarchy.size() - 1).put(name, value);
     }
 
     public void putLocalSymbol(Map<String, Value> localSymbols) {
-        this.localSymbols.putAll(localSymbols);
+        localSymbols.forEach(this::putLocalSymbol);
+    }
+
+    public void putLocalSymbol(EvaluationContextLocalInformation context) {
+        for (Map<String, Value> symbols : context.localSymbolHierarchy) {
+            putLocalSymbol(symbols);
+        }
     }
 
     public Value getLocalSymbol(String name) {
-        return localSymbols.get(name);
+        for (int i = localSymbolHierarchy.size() - 1; i >= 0; i--) {
+            final Map<String, Value> parentLocalSymbol = localSymbolHierarchy.get(i);
+            if (parentLocalSymbol.containsKey(name)) {
+                return parentLocalSymbol.get(name);
+            }
+        }
+        return null;
     }
 
     public boolean hasLocalSymbol(String name) {
-        return localSymbols.containsKey(name);
-    }
-
-    public void setLocalSymbols(Map<String, Value> localSymbols) {
-        this.localSymbols.clear();
-        this.localSymbols.putAll(localSymbols);
+        for (int i = localSymbolHierarchy.size() - 1; i >= 0; i--) {
+            final Map<String, Value> parentLocalSymbol = localSymbolHierarchy.get(i);
+            if (parentLocalSymbol.containsKey(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void putStackFrame(GlobalContext context, Object token) {
@@ -53,12 +74,17 @@ public class EvaluationContextLocalInformation {
         }
     }
 
-    public MenterStackTraceElement popStackFrame() {
-        return stackTrace.pop();
+    private Map<String, Value> getEffectiveLocalSymbols() {
+        final Map<String, Value> effectiveLocalSymbols = new HashMap<>();
+        for (int i = localSymbolHierarchy.size() - 1; i >= 0; i--) {
+            final Map<String, Value> parentLocalSymbol = localSymbolHierarchy.get(i);
+            effectiveLocalSymbols.putAll(parentLocalSymbol);
+        }
+        return effectiveLocalSymbols;
     }
 
-    public void provideFunctionNameForLatestStackTraceElement(String functionName) {
-        stackTrace.peek().setFunctionName(functionName);
+    public MenterStackTraceElement popStackFrame() {
+        return stackTrace.pop();
     }
 
     private String nextFunctionName;
@@ -70,8 +96,7 @@ public class EvaluationContextLocalInformation {
     private void rippleFunctionNamesDownwards() {
         String functionName = null;
         GlobalContext context = null; // if context changes, the function name is not valid anymore
-        for (int i = 0; i < stackTrace.size(); i++) {
-            MenterStackTraceElement stackFrame = stackTrace.get(i);
+        for (MenterStackTraceElement stackFrame : stackTrace) {
             if (stackFrame.getFunctionName() != null) {
                 functionName = stackFrame.getFunctionName();
                 context = stackFrame.getContext();
@@ -83,16 +108,18 @@ public class EvaluationContextLocalInformation {
         }
     }
 
-    public Map<String, Value> getLocalSymbols() {
-        return localSymbols;
-    }
-
     public Stack<MenterStackTraceElement> getStackTrace() {
         return stackTrace;
     }
 
     public EvaluationContextLocalInformation deriveNewContext() {
-        final EvaluationContextLocalInformation info = new EvaluationContextLocalInformation(new HashMap<>(localSymbols), stackTrace);
+        final EvaluationContextLocalInformation info = new EvaluationContextLocalInformation(new ArrayList<>(localSymbolHierarchy), new HashMap<>(), stackTrace);
+        info.nextFunctionName = nextFunctionName;
+        return info;
+    }
+
+    public EvaluationContextLocalInformation deriveNewFunctionContext() {
+        final EvaluationContextLocalInformation info = new EvaluationContextLocalInformation(new HashMap<>(), stackTrace);
         info.nextFunctionName = nextFunctionName;
         return info;
     }
@@ -114,7 +141,7 @@ public class EvaluationContextLocalInformation {
     }
 
     public void appendStackTraceSymbols(StringBuilder sb, MenterStackTraceElement stackTraceElementOfInterest, boolean variableValueDisplayMode) {
-        HashMap<String, Value> localSymbolsReduced = new HashMap<>(localSymbols);
+        final Map<String, Value> localSymbolsReduced = getEffectiveLocalSymbols();
         final boolean hasContext = stackTraceElementOfInterest.getContext() != null;
         if (hasContext) {
             stackTraceElementOfInterest.getContext().getVariables().forEach((name, value) -> localSymbolsReduced.remove(name));
@@ -125,7 +152,8 @@ public class EvaluationContextLocalInformation {
             List<String> lines = new ArrayList<>();
             for (String symbol : MenterDebugger.stackTracePrintValues) {
                 Value value = localSymbolsReduced.get(symbol);
-                if (value == null && hasContext) value = stackTraceElementOfInterest.getContext().getVariables().get(symbol);
+                if (value == null && hasContext)
+                    value = stackTraceElementOfInterest.getContext().getVariables().get(symbol);
                 if (value == null) value = Value.empty();
                 lines.add(symbol + " = " + value);
             }
@@ -141,7 +169,7 @@ public class EvaluationContextLocalInformation {
                 }
                 sb.append(String.join("\n\t\t", lines));
             }
-        } else if(localSymbolsReduced.size() > 0) {
+        } else if (localSymbolsReduced.size() > 0) {
             sb.append("\n\tLocal symbols:  ").append(formatVariables(localSymbolsReduced));
         }
 

@@ -19,19 +19,22 @@ import java.util.stream.Collectors;
 public class Value implements Comparable<Value> {
 
     private final static Logger LOG = LogManager.getLogger(Value.class);
+    public final static String TAG_KEY_FUNCTION_PARENT_VALUE = "functionParentValue";
+    public final static String TAG_KEY_FUNCTION_PARENT_CONTEXT = "functionParentContext";
 
     private final static List<Module> CUSTOM_TYPES = new ArrayList<>();
 
+    private final int uuidHash = UUID.randomUUID().toString().hashCode();
     private Object value;
-    private Value secondaryValue;
+    private Map.Entry<String, Value>[] taggedAdditionalInformation = new Map.Entry[0];
 
     public Value(Object value) {
-        this(value, null);
+        setValue(value);
     }
 
-    public Value(Object value, Value secondaryValue) {
+    public Value(Object value, String taggedInformationKey, Value taggedInformationValue) {
         setValue(value);
-        this.secondaryValue = secondaryValue;
+        setTaggedAdditionalInformation(taggedInformationKey, taggedInformationValue);
     }
 
     public Object getValue() {
@@ -43,8 +46,45 @@ public class Value implements Comparable<Value> {
         else throw new MenterExecutionException("Cannot transform type " + getType() + " to map");
     }
 
-    public Value getSecondaryValue() {
-        return secondaryValue;
+    public void setTaggedAdditionalInformation(String key, Value value) {
+        if (key != null && value != null) {
+            removeTaggedAdditionalInformation(key);
+            final Map.Entry<String, Value>[] taggedInfo = new Map.Entry[taggedAdditionalInformation.length + 1];
+            System.arraycopy(taggedAdditionalInformation, 0, taggedInfo, 0, taggedAdditionalInformation.length);
+            taggedInfo[taggedAdditionalInformation.length] = new AbstractMap.SimpleEntry<>(key, value);
+            taggedAdditionalInformation = taggedInfo;
+        }
+    }
+
+    private Value getTaggedAdditionalInformation(String key) {
+        for (Map.Entry<String, Value> entry : taggedAdditionalInformation) {
+            if (entry.getKey().equals(key)) return entry.getValue();
+        }
+        return null;
+    }
+
+    public void clearTaggedAdditionalInformation() {
+        taggedAdditionalInformation = new Map.Entry[0];
+    }
+
+    public void removeTaggedAdditionalInformation(String key) {
+        final List<Map.Entry<String, Value>> taggedInfo = new ArrayList<>(Arrays.asList(taggedAdditionalInformation));
+        taggedInfo.removeIf(entry -> entry.getKey().equals(key));
+        taggedAdditionalInformation = taggedInfo.toArray(new Map.Entry[0]);
+    }
+
+    public boolean hasTaggedAdditionalInformation(String key) {
+        return getTaggedAdditionalInformation(key) != null;
+    }
+
+    public Value getTagParentFunctionValue() {
+        return getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_VALUE);
+    }
+
+    public EvaluationContextLocalInformation getTagParentFunctionContext() {
+        final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_CONTEXT);
+        if (element != null) return (EvaluationContextLocalInformation) element.getValue();
+        else return null;
     }
 
     public void inheritValue(Value value) {
@@ -52,6 +92,10 @@ public class Value implements Comparable<Value> {
             throw new MenterExecutionException("Cannot inherit value from null");
         }
         this.value = value.value;
+        clearTaggedAdditionalInformation();
+        for (Map.Entry<String, Value> entry : value.taggedAdditionalInformation) {
+            setTaggedAdditionalInformation(entry.getKey(), entry.getValue());
+        }
     }
 
     public void setValue(Object value) {
@@ -59,6 +103,7 @@ public class Value implements Comparable<Value> {
         else if (value instanceof Long) this.value = new BigDecimal((Long) value);
         else if (value instanceof Float) this.value = BigDecimal.valueOf((Float) value);
         else if (value instanceof Double) this.value = BigDecimal.valueOf((Double) value);
+        else if (value instanceof Character) this.value = String.valueOf(value);
         else if (value instanceof List) {
             final Map<Object, Value> map = new LinkedHashMap<>();
             int i = 0;
@@ -228,10 +273,10 @@ public class Value implements Comparable<Value> {
         }
 
         if (VALUE_FUNCTIONS.containsKey(this.getType()) && VALUE_FUNCTIONS.get(this.getType()).containsKey(String.valueOf(identifier.getValue()))) {
-            return new Value(VALUE_FUNCTIONS.get(this.getType()).get(identifier.getValue().toString()), this);
+            return new Value(VALUE_FUNCTIONS.get(this.getType()).get(identifier.getValue().toString()), TAG_KEY_FUNCTION_PARENT_VALUE, this);
         }
         if (VALUE_FUNCTIONS.get(PrimitiveValueType.ANY.getType()).containsKey(String.valueOf(identifier.getValue()))) {
-            return new Value(VALUE_FUNCTIONS.get(PrimitiveValueType.ANY.getType()).get(identifier.getValue().toString()), this);
+            return new Value(VALUE_FUNCTIONS.get(PrimitiveValueType.ANY.getType()).get(identifier.getValue().toString()), TAG_KEY_FUNCTION_PARENT_VALUE, this);
         }
 
         if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
@@ -467,6 +512,21 @@ public class Value implements Comparable<Value> {
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
                         return new Value(((Map<Object, Value>) self.getValue()).values().stream().min(comparator).orElse(Value.empty()));
                     });
+
+                    put("head", (context, self, values, localInformation) -> {
+                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                            return ((Map<Object, Value>) self.getValue()).values().stream().findFirst().orElse(Value.empty());
+                        } else {
+                            return ((Map<Object, Value>) self.getValue()).entrySet().stream().findFirst().map(Entry::getValue).orElse(Value.empty());
+                        }
+                    });
+                    put("tail", (context, self, values, localInformation) -> {
+                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                            return new Value(((Map<Object, Value>) self.getValue()).values().stream().skip(1).collect(Collectors.toList()));
+                        } else {
+                            return new Value(((Map<Object, Value>) self.getValue()).entrySet().stream().skip(1).collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
+                        }
+                    });
                 }
             });
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
@@ -572,23 +632,36 @@ public class Value implements Comparable<Value> {
     }
 
     public static String toDisplayString(Object object) {
+        return toDisplayStringInternal(object, new HashSet<>());
+    }
+
+    private static String toDisplayStringInternal(Object object, Set<Object> visited) {
+        if (object == null) {
+            return "null";
+        } else if (visited.contains(object)) {
+            return "<circular-reference-" +
+                   (object instanceof Value ? ((Value) object).getType() : object.getClass().getSimpleName()) + "@" + Objects.hashCode(object)
+                   + ">";
+        } else if (!(object instanceof String || object instanceof BigDecimal || object instanceof Pattern || object instanceof Boolean || object instanceof Iterator)) {
+            visited.add(object);
+        }
+
         if (object instanceof Value) {
-            return toDisplayString(((Value) object).getValue());
+            return toDisplayStringInternal(((Value) object).getValue(), visited);
 
         } else if (object instanceof List) {
             return ((List<?>) object).stream()
-                    .map(v -> v instanceof Value ? ((Value) v).toDisplayString() : v)
-                    .collect(Collectors.toList())
-                    .toString();
+                    .map(v -> toDisplayStringInternal(v, visited))
+                    .collect(Collectors.joining(", ", "[", "]"));
 
         } else if (object instanceof Map) {
             final Map<?, ?> map = (Map<?, ?>) object;
             if (isMapAnArray(map)) {
-                return toDisplayString(map.values().stream().map(v -> v instanceof Value ? ((Value) v).toDisplayString() : v).collect(Collectors.toList()));
+                return toDisplayStringInternal(new ArrayList<>(map.values()), visited);
             } else {
                 final StringJoiner joiner = new StringJoiner(", ", "{", "}");
                 for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    joiner.add(toDisplayString(entry.getKey()) + ": " + toDisplayString(entry.getValue()));
+                    joiner.add(toDisplayStringInternal(entry.getKey(), visited) + ": " + toDisplayStringInternal(entry.getValue(), visited));
                 }
                 return joiner.toString();
             }
@@ -623,6 +696,10 @@ public class Value implements Comparable<Value> {
     }
 
     private static boolean isMapAnArray(Map<?, ?> map) {
+        if (map.isEmpty()) {
+            return true;
+        }
+
         if (!map.keySet().stream().allMatch(k -> k instanceof BigDecimal)) {
             return false;
         }
@@ -684,6 +761,6 @@ public class Value implements Comparable<Value> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(value);
+        return uuidHash;
     }
 }

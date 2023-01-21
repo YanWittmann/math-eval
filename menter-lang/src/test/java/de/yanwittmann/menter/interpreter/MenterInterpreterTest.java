@@ -52,6 +52,20 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void closureTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "7", "test = if (true) { var = 4; x -> { x + var } }; test(3)");
+        evaluateAndAssertEqual(interpreter, "[22, Yan]", "Person = (name, age) -> { functions.getName = () -> name; functions.getAge = () -> age; functions }; [Person(\"Yan\", 22).getAge(), Person(\"Yan\", 22).getName()]");
+        evaluateAndAssertEqual(interpreter, "[23, Yan]", "Person = (name, age) -> { p.age = age; p.name = name; functions.getName = () -> p.name; functions.getAge = () -> p.age; functions.altern = () -> p.age = p.age + 1; functions }; yan = Person(\"Yan\", 22); yan.altern(); [yan.getAge(), yan.getName()]");
+
+        evaluateAndAssertEqual(interpreter, "7", "x = 4; f = x -> x + 1; f(6);");
+
+        evaluateAndAssertEqual(interpreter, "7", "creator(a) {test.test = a;f.setTest = (a) -> { test.test = a };f.getTest = () -> { test.test };f}; test = creator(34); test.setTest(7); test.getTest()");
+    }
+
+    @Test
     public void pipelineOperatorTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();

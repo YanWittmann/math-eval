@@ -33,7 +33,7 @@ public abstract class CustomType implements Comparable<CustomType> {
     }
 
     public Value accessValue(Value identifier) {
-        return new Value(findReflectiveMethod(identifier.toDisplayString()), new Value(this));
+        return new Value(findReflectiveMethod(identifier.toDisplayString()), Value.TAG_KEY_FUNCTION_PARENT_VALUE, new Value(this));
     }
 
     public boolean createAccessedValue(Value identifier, Value accessedValue, boolean isFinalIdentifier) {

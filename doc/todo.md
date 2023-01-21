@@ -11,6 +11,7 @@ Features:
       isPrime(n) { n >| isPrimeUtil(2) }  
       range(1, 100).filter(isPrime)  
       range(2, 100).filter(isPrime).size()
+- [ ] foldl = (funct, acc, list) -> { if (list.size() == 0) acc else foldl(funct, funct(list.head(), acc), list.tail()) }
 - [ ] null --> empty value
 - [ ] static symbols in custom types (java)
 - [ ] if ...: ... elif ...: ... else: ...
@@ -22,25 +23,31 @@ Features:
 - [ ] different types of assignments (e.g. `+=`, `-=`, `*=`, `/=`, `%=`)  
       *= += via a combined operator, is detected as + and = and then combined
 - [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
+- [ ] empty pass statement, like in python
 
 Bugs:
 
+```
 {test:[1], hey: 4}[0]
 accessors on maps
 import system inline --> sleep(1000) --> Cannot resolve symbol 'sleep' on [sleep]
+```
 
-
+```
 creator(a) {
-test = a * 3;
+test.test = a * 3;
 
-setTest(a) { test = a };
-getTest() { test };
+f.setTest(a) { test.test = a };
+f.getTest() { test.test };
+f
 }
 
 created = creator(4)
 print(created.getTest())
 print(created.setTest(34))
 print(created.getTest())
+```
 
-
+```
 ?? NUMBER_LITERAL: 3 on documentation
+```
