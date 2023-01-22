@@ -277,6 +277,85 @@ public class Parser {
             return false;
         });
 
+        // check for invalid constructor calls with 'new'
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isKeyword(currentToken, "new") && !(isType(nextToken, TokenType.IDENTIFIER) || isType(nextToken, TokenType.OPEN_CURLY_BRACKET))) {
+                    throw new ParsingException("'new' is a reserved keyword and cannot be used as an identifier", currentToken, tokens);
+                }
+            }
+
+            return false;
+        });
+
+        // validate parentheses [] {} ()
+        this.applyOnceRules.add(tokens -> {
+            final Stack<Object> stack = new Stack<>();
+
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                if (isType(currentToken, TokenType.OPEN_PARENTHESIS) || isType(currentToken, TokenType.OPEN_SQUARE_BRACKET) || isType(currentToken, TokenType.OPEN_CURLY_BRACKET)) {
+                    stack.push(currentToken);
+                } else if (isType(currentToken, TokenType.CLOSE_PARENTHESIS) || isType(currentToken, TokenType.CLOSE_SQUARE_BRACKET) || isType(currentToken, TokenType.CLOSE_CURLY_BRACKET)) {
+                    if (stack.isEmpty()) {
+                        throw new ParsingException("Unexpected closing parenthesis", currentToken, tokens);
+                    }
+                    final Object lastToken = stack.pop();
+                    if (isType(currentToken, TokenType.CLOSE_PARENTHESIS) && !isType(lastToken, TokenType.OPEN_PARENTHESIS)) {
+                        throw new ParsingException("Unexpected closing parenthesis", currentToken, tokens);
+                    } else if (isType(currentToken, TokenType.CLOSE_SQUARE_BRACKET) && !isType(lastToken, TokenType.OPEN_SQUARE_BRACKET)) {
+                        throw new ParsingException("Unexpected closing square bracket", currentToken, tokens);
+                    } else if (isType(currentToken, TokenType.CLOSE_CURLY_BRACKET) && !isType(lastToken, TokenType.OPEN_CURLY_BRACKET)) {
+                        throw new ParsingException("Unexpected closing curly bracket", currentToken, tokens);
+                    }
+                }
+            }
+
+            if (!stack.isEmpty()) {
+                throw new ParsingException("Unexpected opening parenthesis", stack.pop(), tokens);
+            }
+
+            return false;
+        });
+
+        // validate that there are no keywords/identifiers right after closed square/curly brackets
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isType(currentToken, TokenType.CLOSE_SQUARE_BRACKET) || isType(currentToken, TokenType.CLOSE_CURLY_BRACKET)) {
+                    if (isType(nextToken, TokenType.IDENTIFIER) || isType(nextToken, TokenType.KEYWORD)) {
+                        if (isType(currentToken, TokenType.CLOSE_SQUARE_BRACKET) && isKeyword(nextToken, "as")) {
+                            continue;
+                        } else if (isType(currentToken, TokenType.CLOSE_CURLY_BRACKET) && (isKeyword(nextToken, "else") || isKeyword(nextToken, "elif"))) {
+                            continue;
+                        }
+                        throw new ParsingException("Unexpected identifier or keyword after closing parenthesis (are you missing a semicolon or newline?)", nextToken, tokens);
+                    }
+                }
+            }
+
+            return false;
+        });
+
+        // validate that there are no two literals right after each other
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isLiteral(currentToken) && isLiteral(nextToken)) {
+                    throw new ParsingException("Unexpected literal after literal", nextToken, tokens);
+                }
+            }
+
+            return false;
+        });
+
         // flatten successive identifier accesses
         rules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {

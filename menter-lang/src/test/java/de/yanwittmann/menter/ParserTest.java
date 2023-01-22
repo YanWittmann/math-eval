@@ -1,5 +1,6 @@
 package de.yanwittmann.menter;
 
+import de.yanwittmann.menter.exceptions.ParsingException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.io.ExpressionFileReader;
 import de.yanwittmann.menter.lexer.Lexer;
@@ -137,6 +138,11 @@ class ParserTest {
     }
 
     @Test
+    public void parsingErrorsTest() {
+        Assertions.assertThrows(ParsingException.class, () -> assertParsedTreeEquals("", "creator(a) { test.test = a * 3; f.setTest = (a) -> { test.test = a }; f.getTest = () -> { test.test }; f } created = creator(4);"));
+    }
+
+    @Test
     public void constructorTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ CONSTRUCTOR_CALL\n" +
@@ -161,6 +167,9 @@ class ParserTest {
                                "      │  └─ IDENTIFIER: Type001\n" +
                                "      └─ PARENTHESIS_PAIR",
                 "val = new test.Type001()");
+
+        Assertions.assertThrows(ParsingException.class, () -> assertParsedTreeEquals("",
+                "cas(var, old, new) { if (var != old) false else { var = new; true } }"));
     }
 
     @Test

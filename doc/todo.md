@@ -27,6 +27,9 @@ Features:
   *= += via a combined operator, is detected as + and = and then combined
 - [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
 - [ ] empty pass statement, like in python
+- [ ] import will search for files in the same directory with a fitting name/export, for which the files in the
+  directory have to be indexed before parsing them, to prevent execution of the file. i.e. rewrite the import system
+- [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.
 
 ```
 Person = (name, alter) -> {
@@ -53,10 +56,6 @@ Bugs:
 accessors on maps
 import system inline --> sleep(1000) --> Cannot resolve symbol 'sleep' on [sleep]
 ```
-
-Better explanation of why this is wrong (missing semicolon):
-creator(a) { test.test = a * 3; f.setTest = (a) -> { test.test = a }; f.getTest = () -> { test.test }; f } created =
-creator(4);
 
 ```
 ?? NUMBER_LITERAL: 3 on documentation
