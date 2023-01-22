@@ -1,6 +1,7 @@
 package de.yanwittmann.menter.interpreter;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
+import de.yanwittmann.menter.exceptions.ParsingException;
 import de.yanwittmann.menter.operator.Operators;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -49,6 +50,9 @@ class MenterInterpreterTest {
                                                            "  else 0\n" +
                                                            "}\n" +
                                                            "[1, \"1\", [1]].map(fun)"); // this would fail because of like 3 different reasons (mainly because the brackets on the if statements would be evaluated after the + expressions)
+
+        Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("test = 4; test.f = () -> test; test.f() = 43;")); // function calls should not be assignable
+        Assertions.assertThrows(ParsingException.class, () -> interpreter.evaluate("a.a(a, b) {}")); // function declaration via object.child() { ... } is not supported
     }
 
     @Test
@@ -63,6 +67,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "7", "x = 4; f = x -> x + 1; f(6);");
 
         evaluateAndAssertEqual(interpreter, "7", "creator(a) {test.test = a;f.setTest = (a) -> { test.test = a };f.getTest = () -> { test.test };f}; test = creator(34); test.setTest(7); test.getTest()");
+
+        evaluateAndAssertEqual(interpreter, "[12, 7]", "creator(a) { test.test = a * 3; f.setTest = (a) -> { test.test = a }; f.getTest = () -> { test.test }; f }; created = creator(4); data[0] = created.getTest(); created.setTest(7); data[1] = created.getTest(); data");
     }
 
     @Test

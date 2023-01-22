@@ -121,6 +121,22 @@ class ParserTest {
     }
 
     @Test
+    public void functionDeclarationsTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "   ├─ IDENTIFIER: a\n" +
+                               "   └─ EXPRESSION: * (120 l r)\n" +
+                               "      ├─ IDENTIFIER: a\n" +
+                               "      └─ NUMBER_LITERAL: 3\n" +
+                               "STATEMENT\n" +
+                               "└─ FUNCTION_DECLARATION\n" +
+                               "   ├─ IDENTIFIER: a\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   └─ CODE_BLOCK",
+                "a = a * 3; a() {}");
+    }
+
+    @Test
     public void constructorTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ CONSTRUCTOR_CALL\n" +

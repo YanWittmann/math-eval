@@ -517,15 +517,39 @@ public class Parser {
         ));
 
         // function calls
-        rules.add(ParserRule.inOrderWithoutPrefixRule(ParserNode.NodeType.FUNCTION_CALL,
-                (pp, p) -> false, // isType(p, TokenType.DOT)
-                (t, i) -> true,
+        rules.add(tokens -> {
+            int state = 0;
+            int start = -1;
 
-                t -> isIdentifier(t) || isEvaluableToValue(t) || (isType(t, ParserNode.NodeType.SQUARE_BRACKET_PAIR) && ((ParserNode) t).getChildren().size() == 1),
-                t -> isType(t, ParserNode.NodeType.PARENTHESIS_PAIR)
-        ));
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
 
-        // rewrite the accessor rules from above, but better this time.
+                if (state == 0 && (isIdentifier(currentToken) || isEvaluableToValue(currentToken) || (isType(currentToken, ParserNode.NodeType.SQUARE_BRACKET_PAIR) && ((ParserNode) currentToken).getChildren().size() == 1))) {
+                    state = 1;
+                    start = i;
+                } else if (state == 1 && isType(currentToken, ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                    state = 2;
+                    break;
+                } else {
+                    if (state == 1) {
+                        i = i - 1;
+                    }
+                    state = 0;
+                    start = -1;
+                }
+            }
+
+            if (state == 2) {
+                final ParserNode node = new ParserNode(ParserNode.NodeType.FUNCTION_CALL);
+                node.addChild(tokens.get(start));
+                node.addChild(tokens.get(start + 1));
+                ParserRule.replace(tokens, node, start, start + 1);
+                return true;
+            }
+            return false;
+        });
+
+        // accessor rule, this is a bit complicated
         rules.add(tokens -> {
             int state = 0;
             int start = -1;
@@ -1157,8 +1181,9 @@ public class Parser {
                 },
                 t -> isType(t, ParserNode.NodeType.FUNCTION_CALL),
                 t -> isOperator(t, "="),
-                token -> isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)
+                token -> isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) || (isType(token, ParserNode.NodeType.MAP) && ((ParserNode) token).isLeaf()) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)
         ));
+        // ... or directly followed by a code block
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_DECLARATION, (t) -> null, 1, (t, i) -> !isOperator(t, "="), (t, i) -> true,
                 (t, i) -> {
                     if (i == 0) {
@@ -1170,7 +1195,22 @@ public class Parser {
                     }
                 },
                 t -> isType(t, ParserNode.NodeType.FUNCTION_CALL),
-                token -> isType(token, ParserNode.NodeType.CODE_BLOCK) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)
+                token -> isType(token, ParserNode.NodeType.CODE_BLOCK) || (isType(token, ParserNode.NodeType.MAP) && ((ParserNode) token).isLeaf()) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)
+        ));
+        // ... same as above, but for IDENTIFIER_ACCESSED
+        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_DECLARATION, (t) -> null, 1, (t, i) -> !isOperator(t, "="), (t, i) -> true,
+                (t, i) -> {
+                    if (i == 0) {
+                        // extract the parenthesis pair, which is the last child of the IDENTIFIER_ACCESSED
+                        final ParserNode identifierAccessed = (ParserNode) t;
+                        final ParserNode parenthesisPair = (ParserNode) identifierAccessed.getChildren().get(identifierAccessed.getChildren().size() - 1);
+                        identifierAccessed.removeChild(identifierAccessed.getChildren().get(identifierAccessed.getChildren().size() - 1));
+                        throw new ParsingException("Function declaration via object.child() { ... } is not supported.\nUse: " + identifierAccessed.reconstructCode() + " = " + parenthesisPair.reconstructCode() + " -> { ... }");
+                    }
+                    return t;
+                },
+                t -> isType(t, ParserNode.NodeType.IDENTIFIER_ACCESSED),
+                token -> isType(token, ParserNode.NodeType.CODE_BLOCK) || (isType(token, ParserNode.NodeType.MAP) && ((ParserNode) token).isLeaf()) || isType(token, ParserNode.NodeType.RETURN_STATEMENT)
         ));
         // function declaration via inline function
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.FUNCTION_DECLARATION, (t) -> null, 1, (t, i) -> !isOperator(t, "="), (t, i) -> true, (t, i) -> t,
@@ -1191,6 +1231,7 @@ public class Parser {
                 t -> isType(t, ParserNode.NodeType.FUNCTION_CALL)
         ));
 
+        // important: this rule must be the last one to make sure, that statements are created last
         rules.add(ParserRule.inOrderRule(ParserNode.NodeType.RETURN_STATEMENT, (t) -> null, 0, (t, i) -> !isStatementFinisher(t) && !isKeyword(t, "return"), (t, i) -> !isType(t, TokenType.CLOSE_CURLY_BRACKET), (t, i) -> t,
                 t -> isKeyword(t, "return"),
                 Parser::isEvaluableToValue,
@@ -1284,6 +1325,9 @@ public class Parser {
     private static ParserNode makeProperCodeBlock(ParserNode node) {
         if (isType(node, ParserNode.NodeType.CODE_BLOCK)) {
             return node;
+        }
+        if (isType(node, ParserNode.NodeType.MAP) && node.isLeaf()) {
+            return new ParserNode(ParserNode.NodeType.CODE_BLOCK, node.getValue(), node.getChildren());
         }
 
         final ParserNode blockNode = new ParserNode(ParserNode.NodeType.CODE_BLOCK);

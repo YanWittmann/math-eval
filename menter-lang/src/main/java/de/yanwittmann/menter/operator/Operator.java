@@ -1,11 +1,13 @@
 package de.yanwittmann.menter.operator;
 
 import de.yanwittmann.menter.interpreter.structure.value.Value;
-import de.yanwittmann.menter.lexer.Lexer;
+import de.yanwittmann.menter.lexer.Lexer.TokenType;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.parser.Parser;
 import de.yanwittmann.menter.parser.ParserNode;
 import de.yanwittmann.menter.parser.ParserRule;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.function.Function;
 
 public abstract class Operator {
+    private static final Logger LOG = LogManager.getLogger(Operator.class);
 
     public abstract String getSymbol();
 
@@ -95,11 +98,11 @@ public abstract class Operator {
                 final Token operatorCandidate = (Token) token;
                 final boolean symbolEqual = checkForOperator.getSymbol().equals(operatorCandidate.getValue());
 
-                if (operatorCandidate.getType() == Lexer.TokenType.OPERATOR && symbolEqual) {
+                if (operatorCandidate.getType() == TokenType.OPERATOR && symbolEqual) {
 
                     final Object nextAfterToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
-                    if (Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_PARENTHESIS) || Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_SQUARE_BRACKET) ||
-                        Parser.isType(nextAfterToken, Lexer.TokenType.OPEN_CURLY_BRACKET)) {
+                    if (Parser.isType(nextAfterToken, TokenType.OPEN_PARENTHESIS) || Parser.isType(nextAfterToken, TokenType.OPEN_SQUARE_BRACKET) ||
+                        Parser.isType(nextAfterToken, TokenType.OPEN_CURLY_BRACKET)) {
                         i++;
                         continue;
                     }
@@ -122,7 +125,7 @@ public abstract class Operator {
                     final Object beforeBefore = i > 1 ? tokens.get(i - 2) : null;
                     final Object afterAfter = i < tokens.size() - 2 ? tokens.get(i + 2) : null;
 
-                    if (Parser.isType(beforeBefore, Lexer.TokenType.DOT) || Parser.isType(afterAfter, Lexer.TokenType.DOT)) {
+                    if (Parser.isType(beforeBefore, TokenType.DOT) || Parser.isType(afterAfter, TokenType.DOT)) {
                         continue;
                     } else if (isBlockCloser(before)) {
                         continue;
@@ -134,6 +137,12 @@ public abstract class Operator {
                     int currentDepthDiff = 0;
                     for (int j = depthStartPosition; j > 0; j--) {
                         final Object tokenBefore = tokens.get(j);
+
+                        if (currentDepthDiff == 0 && isStatementSeparator(tokenBefore)) {
+                            depthStartPosition = j + 1;
+                            break;
+                        }
+
                         if (isBlockOpener(tokenBefore)) {
                             currentDepthDiff--;
                         } else if (isBlockCloser(tokenBefore)) {
@@ -149,15 +158,16 @@ public abstract class Operator {
                     boolean foundUnallowedToken = false;
                     for (int j = depthStartPosition; j < tokens.size(); j++) {
                         final Object next = tokens.get(j);
+
                         if (isBlockOpener(next)) {
                             foundUnallowedToken = true;
                             break;
                         }
-                        if (isBlockCloser(next)) {
+                        if (isBlockCloser(next) || isStatementSeparator(next)) {
                             break;
                         }
 
-                        if (isPipelineOperator && j != i && Parser.isType(next, Lexer.TokenType.OPERATOR) && !((Token) next).getValue().equals("|>") && !((Token) next).getValue().equals(">|")) {
+                        if (isPipelineOperator && j != i && Parser.isType(next, TokenType.OPERATOR) && !((Token) next).getValue().equals("|>") && !((Token) next).getValue().equals(">|")) {
                             foundUnallowedToken = true;
                             break;
                         }
@@ -182,13 +192,18 @@ public abstract class Operator {
     }
 
     private static boolean isBlockCloser(Object before) {
-        return Parser.isType(before, Lexer.TokenType.CLOSE_PARENTHESIS) || Parser.isType(before, Lexer.TokenType.CLOSE_SQUARE_BRACKET) ||
-               Parser.isType(before, Lexer.TokenType.CLOSE_CURLY_BRACKET);
+        return Parser.isType(before, TokenType.CLOSE_PARENTHESIS) || Parser.isType(before, TokenType.CLOSE_SQUARE_BRACKET) ||
+               Parser.isType(before, TokenType.CLOSE_CURLY_BRACKET);
     }
 
     private static boolean isBlockOpener(Object after) {
-        return Parser.isType(after, Lexer.TokenType.OPEN_PARENTHESIS) || Parser.isType(after, Lexer.TokenType.OPEN_SQUARE_BRACKET) ||
-               Parser.isType(after, Lexer.TokenType.OPEN_CURLY_BRACKET);
+        return Parser.isType(after, TokenType.OPEN_PARENTHESIS) || Parser.isType(after, TokenType.OPEN_SQUARE_BRACKET) ||
+               Parser.isType(after, TokenType.OPEN_CURLY_BRACKET);
+    }
+
+    private static boolean isStatementSeparator(Object after) {
+        return Parser.isType(after, TokenType.SEMICOLON) || Parser.isType(after, TokenType.NEWLINE) ||
+               Parser.isType(after, TokenType.EOF) || Parser.isType(after, ParserNode.NodeType.ASSIGNMENT);
     }
 
     static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value[], Value> evaluator) {

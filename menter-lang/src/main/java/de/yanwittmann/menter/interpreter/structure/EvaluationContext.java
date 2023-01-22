@@ -182,6 +182,18 @@ public abstract class EvaluationContext {
                 result = resolveSymbol(node, symbolCreationMode, globalContext, localInformation);
 
             } else if (node.getType() == ParserNode.NodeType.ASSIGNMENT) {
+                if (!isAssignmentTargetFunctionCall(node.getChildren().get(0))) {
+                    final String hint;
+                    if (Parser.isType(node.getChildren().get(0), ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+                        final ParserNode identifierNode = (ParserNode) node.getChildren().get(0);
+                        final ParserNode identifierNodeClone = new ParserNode(identifierNode.getType(), identifierNode.getValue(), identifierNode.getChildren().subList(0, identifierNode.getChildren().size() - 1));
+                        hint = "Assignments are not allowed on function calls. Try removing the parentheses: " + identifierNodeClone.reconstructCode() + " = ...";
+                    } else {
+                        hint = "Assignments are not allowed on function calls. Try removing the parentheses.";
+                    }
+                    throw localInformation.createException("Cannot assign to " + ParserNode.reconstructCode(node.getChildren().get(0)) + "\n" + hint);
+                }
+
                 final Value value = evaluate(node.getChildren().get(1), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                 final Value variable = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_NEW_ANYWAYS, localInformation);
 
@@ -254,6 +266,9 @@ public abstract class EvaluationContext {
                     final List<Object> functionArguments = Parser.isType(node.getChildren().get(1), ParserNode.NodeType.PARENTHESIS_PAIR) ? ((ParserNode) node.getChildren().get(1)).getChildren() : null;
                     if (functionArguments == null) {
                         throw localInformation.createException("Function arguments are not a parenthesis pair");
+                    }
+                    if (!(node.getChildren().get(2) instanceof ParserNode)) {
+                        node.getChildren().set(2, new ParserNode(ParserNode.NodeType.CODE_BLOCK, null, Collections.singletonList(node.getChildren().get(2))));
                     }
                     final ParserNode functionCode = (ParserNode) node.getChildren().get(2);
 
@@ -548,6 +563,22 @@ public abstract class EvaluationContext {
         return functionArguments.stream()
                 .map(argument -> evaluate(argument, parameterGlobalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation))
                 .collect(Collectors.toList());
+    }
+
+    private boolean isAssignmentTargetFunctionCall(Object o) {
+        if (Parser.isType(o, ParserNode.NodeType.FUNCTION_CALL)) {
+            return false;
+        } else if (Parser.isType(o, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+            // last child must not be a function call or parenthesis pair
+            final ParserNode identifierAccessedNode = (ParserNode) o;
+            final List<Object> children = identifierAccessedNode.getChildren();
+            if (children.isEmpty()) {
+                return true;
+            }
+            final Object lastChild = children.get(children.size() - 1);
+            return !Parser.isType(lastChild, ParserNode.NodeType.FUNCTION_CALL) && !Parser.isType(lastChild, ParserNode.NodeType.PARENTHESIS_PAIR);
+        }
+        return true;
     }
 
     enum SymbolCreationMode {
