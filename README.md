@@ -1,5 +1,7 @@
 # Menter
 
+![Menter Thumbnail](doc/guide/img/navbar_icon.png)
+
 An interpreted language for evaluating expressions with functions and variables originally written for the
 [LaunchAnything Bar](https://github.com/YanWittmann/launch-anything). This is the third iteration of the evaluator.
 
@@ -8,8 +10,6 @@ An interpreted language for evaluating expressions with functions and variables 
 ## Specification
 
 Check out the [loose specification](menter-documentation/doc/requirements.md) for the language.
-
-![Menter Thumbnail](doc/thumbnail.png)
 
 # Build
 
@@ -20,3 +20,5 @@ mvn clean install
 cd doc
 mvn clean package
 ```
+
+![Menter Thumbnail](doc/guide/img/navbar_icon_original.png)
