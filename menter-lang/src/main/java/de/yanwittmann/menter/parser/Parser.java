@@ -329,7 +329,7 @@ public class Parser {
                     for (Operator option : options) {
                         optionsString.add((option.isLeftAssociative() ? "(" : "[") + option.getSymbol() + (option.isRightAssociative() ? ")" : "]"));
                     }
-                    throw new ParsingException(errorMessage + ", use on of: " + optionsString, currentToken, tokens);
+                    throw new ParsingException(errorMessage + ", use one of: " + optionsString, currentToken, tokens);
                 }
             }
 

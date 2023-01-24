@@ -502,6 +502,10 @@ public class Value implements Comparable<Value> {
                         return new Value(sb.toString());
                     });
 
+                    put("reduce", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, true));
+                    put("foldl", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, true));
+                    put("foldr", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, false));
+
                     put("sum", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0))));
                     put("avg", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
                     put("max", (context, self, values, localInformation) -> {
@@ -575,6 +579,27 @@ public class Value implements Comparable<Value> {
             });
         }
     };
+
+    private static Value fold(GlobalContext context, Value self, List<Value> values, EvaluationContextLocalInformation localInformation, boolean left) {
+        final List<Value> list = new ArrayList<>(((Map<Object, Value>) self.getValue()).values());
+        if (list.isEmpty()) {
+            return Value.empty();
+        }
+
+        Value aggregator;
+        if (left) {
+            aggregator = list.get(0);
+            for (int i = 1; i < list.size(); i++) {
+                aggregator = applyFunction(toList(aggregator, list.get(i)), values.get(0), context, localInformation, "foldl");
+            }
+        } else {
+            aggregator = list.get(list.size() - 1);
+            for (int i = list.size() - 2; i >= 0; i--) {
+                aggregator = applyFunction(toList(aggregator, list.get(i)), values.get(0), context, localInformation, "foldr");
+            }
+        }
+        return aggregator;
+    }
 
     public static Comparator<Value> extractComparatorFromParameters(GlobalContext context, List<Value> values, EvaluationContextLocalInformation localInformation) {
         final Comparator<Value> comparator;

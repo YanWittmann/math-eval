@@ -110,7 +110,7 @@ public class OperatorUtilities {
         }
 
         throw new MenterExecutionException("No matching type combination found for " + left + " " + symbol + " " + right + "\n" +
-                                           "Available combinations: " + Arrays.stream(actions)
+                                           "Available combination" + (actions.length == 1 ? "" : "s") + ": " + Arrays.stream(actions)
                                                    .map(action -> action.leftTypes[0] + " " + symbol + " " + action.rightTypes[0])
                                                    .reduce((s, s2) -> s + ", " + s2)
                                                    .orElse("none")

@@ -30,6 +30,8 @@ Features:
 - [ ] import will search for files in the same directory with a fitting name/export, for which the files in the
   directory have to be indexed before parsing them, to prevent execution of the file. i.e. rewrite the import system
 - [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.
+- [ ] operator operation with both sides as list, where each side must have the same keys in order for the operation to
+  be valid
 
 ```
 Person = (name, alter) -> {

@@ -198,6 +198,21 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void concatenateOperatorTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "[1, 2, 3, 4]", "[1, 2] :: [3, 4]");
+        evaluateAndAssertEqual(interpreter, "[1, 2, 3]", "[1, 2] :: 3");
+        evaluateAndAssertEqual(interpreter, "[1, 2, 3]", "1 :: [2, 3]");
+        evaluateAndAssertEqual(interpreter, "[1, 2]", "1 :: 2");
+
+        evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 0: 3}", "{1: 1, 2: 2} :: 3");
+        evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 3}", "{1: 1, 2: 2} :: {3: 3}");
+        evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 3}", "{1: 1, 2: 2, 3: 4} :: {3: 3}");
+    }
+
+    @Test
     public void fibonacciTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();

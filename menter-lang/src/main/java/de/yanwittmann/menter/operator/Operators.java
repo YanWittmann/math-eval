@@ -1,6 +1,5 @@
 package de.yanwittmann.menter.operator;
 
-import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 
@@ -189,6 +188,13 @@ public class Operators {
                         PrimitiveValueType.NUMBER.getType(),
                         PrimitiveValueType.NUMBER.getType(),
                         (left, right) -> new Value(left.getNumericValue().subtract(right.getNumericValue()))
+                )
+        )));
+        add(OperatorUtilities.makeDouble("::", 105, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("::", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()},
+                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType()},
+                        Operators::combineMapValues
                 )
         )));
 
@@ -380,5 +386,44 @@ public class Operators {
     @Override
     public int hashCode() {
         return Objects.hash(operators);
+    }
+
+    private static Value combineMapValues(Value... elements) {
+        final boolean canTreatAsList = Arrays.stream(elements).allMatch(value -> !(value.getValue() instanceof Map) || Value.isMapAnArray(value));
+
+        if (canTreatAsList) {
+            final List<Value> list = new ArrayList<>();
+
+            for (Value element : elements) {
+                if (element.getValue() instanceof Map) {
+                    for (Map.Entry<Object, Value> entry : ((Map<Object, Value>) element.getValue()).entrySet()) {
+                        list.add(entry.getValue());
+                    }
+                } else {
+                    list.add(element);
+                }
+            }
+
+            return new Value(list);
+        } else {
+            final Map<Object, Value> map = new LinkedHashMap<>();
+            BigDecimal index = new BigDecimal(-1);
+
+            for (Value element : elements) {
+                if (element.getValue() instanceof Map) {
+                    for (Map.Entry<Object, Value> entry : ((Map<Object, Value>) element.getValue()).entrySet()) {
+                        map.put(entry.getKey(), entry.getValue());
+                        if (entry.getKey() instanceof BigDecimal) {
+                            index = ((BigDecimal) entry.getKey()).max(index);
+                        }
+                    }
+                } else {
+                    index = index.add(BigDecimal.ONE);
+                    map.put(index, element);
+                }
+            }
+
+            return new Value(map);
+        }
     }
 }
