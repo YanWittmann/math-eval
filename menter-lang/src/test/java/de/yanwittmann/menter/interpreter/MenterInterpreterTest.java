@@ -191,6 +191,10 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "-3.5", "1 + 2 * 3 / 4 % 5 - 6");
 
         evaluateAndAssertEqual(interpreter, "445", "\"4\" + 45"); // would not be string concentrated, but would be parsed as a number
+
+        evaluateAndAssertEqual(interpreter, "5", "(+)(2, 3)");
+        evaluateAndAssertEqual(interpreter, "[false, true]", "[true, false].map([!))");
+        evaluateAndAssertEqual(interpreter, "[1, 2, 6, 24]", "[1, 2, 3, 4].map((!])");
     }
 
     @Test

@@ -128,7 +128,7 @@ public abstract class CustomType implements Comparable<CustomType> {
                     availableTypes[j] = false;
                     continue;
                 }
-                if (!type[i].equals(parameterType) && !type[i].equals("unknown")) {
+                if (!type[i].equals(parameterType) && !type[i].equals(PrimitiveValueType.ANY.getType())) {
                     availableTypes[j] = false;
                 }
             }

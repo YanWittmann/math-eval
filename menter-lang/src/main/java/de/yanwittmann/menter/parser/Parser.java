@@ -109,12 +109,13 @@ public class Parser {
                isLiteral(token) || isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) ||
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
                isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE) ||
-               isType(token, ParserNode.NodeType.LOOP_FOR) || isType(token, ParserNode.NodeType.CONSTRUCTOR_CALL);
+               isType(token, ParserNode.NodeType.LOOP_FOR) || isType(token, ParserNode.NodeType.CONSTRUCTOR_CALL) ||
+               isType(token, ParserNode.NodeType.OPERATOR_FUNCTION);
     }
 
     public static boolean isListable(Object token) {
         return isEvaluableToValue(token) || isType(token, ParserNode.NodeType.LISTED_ELEMENTS) ||
-               isType(token, ParserNode.NodeType.MAP_ELEMENT) || isType(token, ParserNode.NodeType.FUNCTION_INLINE);
+               isType(token, ParserNode.NodeType.MAP_ELEMENT);
     }
 
     public static boolean isListFinisher(Object token) {
@@ -126,7 +127,7 @@ public class Parser {
         return isEvaluableToValue(token) || isType(token, ParserNode.NodeType.ASSIGNMENT) ||
                isType(token, ParserNode.NodeType.FUNCTION_CALL) || isType(token, ParserNode.NodeType.CURLY_BRACKET_PAIR) ||
                isType(token, ParserNode.NodeType.FUNCTION_DECLARATION) || isType(token, ParserNode.NodeType.CONDITIONAL) ||
-               isType(token, ParserNode.NodeType.CODE_BLOCK);
+               isType(token, ParserNode.NodeType.CODE_BLOCK) || isType(token, ParserNode.NodeType.OPERATOR_FUNCTION);
     }
 
     public static boolean isOperator(Object token, String symbol) {
@@ -285,6 +286,50 @@ public class Parser {
 
                 if (isKeyword(currentToken, "new") && !(isType(nextToken, TokenType.IDENTIFIER) || isType(nextToken, TokenType.OPEN_CURLY_BRACKET))) {
                     throw new ParsingException("'new' is a reserved keyword and cannot be used as an identifier", currentToken, tokens);
+                }
+            }
+
+            return false;
+        });
+
+        // check for operators in parentheses and transform them to a potential function call
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+                final Object previousToken = i - 1 >= 0 ? tokens.get(i - 1) : null;
+
+                if (isType(currentToken, TokenType.OPERATOR)) {
+                    final boolean leftOpen = isType(previousToken, TokenType.OPEN_PARENTHESIS);
+                    final boolean rightOpen = isType(nextToken, TokenType.CLOSE_PARENTHESIS);
+                    final boolean leftClosed = isType(previousToken, TokenType.OPEN_SQUARE_BRACKET);
+                    final boolean rightClosed = isType(nextToken, TokenType.CLOSE_SQUARE_BRACKET);
+                    final String symbol = ((Token) currentToken).getValue();
+                    final String errorMessage;
+
+                    if ((leftOpen || rightOpen) && (leftOpen || leftClosed) && (rightOpen || rightClosed)) {
+                        final Operator operator = operators.findOperator(symbol, leftOpen, rightOpen);
+
+                        if (operator == null) {
+                            errorMessage = "Operator with associativity does not exist";
+                        } else {
+                            final ParserNode functionCall = new ParserNode(ParserNode.NodeType.OPERATOR_FUNCTION, operator);
+                            ParserRule.replace(tokens, functionCall, i - 1, i + 1);
+                            return true;
+                        }
+
+                    } else if (leftClosed && rightClosed) {
+                        errorMessage = "Operator must take at least one parameter";
+                    } else {
+                        continue;
+                    }
+
+                    final List<Operator> options = operators.findOperators(symbol);
+                    final StringJoiner optionsString = new StringJoiner(", ");
+                    for (Operator option : options) {
+                        optionsString.add((option.isLeftAssociative() ? "(" : "[") + option.getSymbol() + (option.isRightAssociative() ? ")" : "]"));
+                    }
+                    throw new ParsingException(errorMessage + ", use on of: " + optionsString, currentToken, tokens);
                 }
             }
 

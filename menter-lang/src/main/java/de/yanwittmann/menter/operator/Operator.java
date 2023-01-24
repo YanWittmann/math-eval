@@ -10,9 +10,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
 
 public abstract class Operator {
     private static final Logger LOG = LogManager.getLogger(Operator.class);
@@ -31,7 +31,11 @@ public abstract class Operator {
 
     public abstract Value evaluate(Value... arguments);
 
-    public int getNumberOfArguments() {
+    public Value evaluate(Collection<Value> arguments) {
+        return evaluate(arguments.toArray(new Value[0]));
+    }
+
+    public int getArgumentCount() {
         if (isLeftAssociative() && isRightAssociative()) {
             return 2;
         } else if (isLeftAssociative() || isRightAssociative()) {
@@ -43,6 +47,11 @@ public abstract class Operator {
 
     public static boolean isEmpty(String string) {
         return string == null || string.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return getSymbol() + " (" + getPrecedence() + (isLeftAssociative() ? " l" : "") + (isRightAssociative() ? " r" : "") + ")";
     }
 
     private static class OperatorMatch {
@@ -204,48 +213,5 @@ public abstract class Operator {
     private static boolean isStatementSeparator(Object after) {
         return Parser.isType(after, TokenType.SEMICOLON) || Parser.isType(after, TokenType.NEWLINE) ||
                Parser.isType(after, TokenType.EOF) || Parser.isType(after, ParserNode.NodeType.ASSIGNMENT);
-    }
-
-    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value[], Value> evaluator) {
-        return Operator.make(symbol, precedence, left, right, evaluator, true);
-    }
-
-    static Operator make(String symbol, int precedence, boolean left, boolean right, Function<Value[], Value> evaluator, boolean shouldCreateParserRule) {
-        return new Operator() {
-            @Override
-            public String getSymbol() {
-                return symbol;
-            }
-
-            @Override
-            public int getPrecedence() {
-                return precedence;
-            }
-
-            @Override
-            public boolean isLeftAssociative() {
-                return left;
-            }
-
-            @Override
-            public boolean isRightAssociative() {
-                return right;
-            }
-
-            @Override
-            public boolean shouldCreateParserRule() {
-                return shouldCreateParserRule;
-            }
-
-            @Override
-            public Value evaluate(Value... arguments) {
-                return evaluator.apply(arguments);
-            }
-
-            @Override
-            public String toString() {
-                return symbol + " (" + precedence + (left ? " l" : "") + (right ? " r" : "") + ")";
-            }
-        };
     }
 }

@@ -5,6 +5,7 @@ import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,244 +25,281 @@ public class Operators {
         BIG_DECIMAL_DIVISION_SCALE = bigDecimalDivisionScale;
     }
 
-    private static Optional<Value> getNumericValue(Value value) {
-        try {
-            if (value.getType().equals(PrimitiveValueType.NUMBER.getType())) {
-                return Optional.of(value);
-            } else {
-                return Optional.empty();
-            }
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<String> getStringValue(Value value) {
-        if (value.getType().equals(PrimitiveValueType.STRING.getType())) {
-            return Optional.of((String) value.getValue());
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private static MenterExecutionException createCannotPerformOperationException(String symbol, Value... values) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Cannot perform operation '").append(symbol).append("' with arguments: ");
-        for (int i = 0; i < values.length; i++) {
-            builder.append(values[i]);
-            if (i < values.length - 1) {
-                builder.append(", ");
-            }
-        }
-        return new MenterExecutionException(builder.toString());
-    }
-
     public Operators() {
         // precedence values see https://introcs.cs.princeton.edu/java/11precedence/
 
-        add(Operator.make("++", 150, true, false, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("--", 150, true, false, (arguments) -> {
-            return null;
-        }));
+        add(OperatorUtilities.makeLeft("++", 150, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> {
+                            final Value before = new Value(value);
+                            value.setValue(value.getNumericValue().add(BigDecimal.ONE));
+                            return before;
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeLeft("--", 150, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> {
+                            final Value before = new Value(value);
+                            value.setValue(value.getNumericValue().subtract(BigDecimal.ONE));
+                            return before;
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeRight("++", 140, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> {
+                            value.setValue(value.getNumericValue().add(BigDecimal.ONE));
+                            return value;
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeRight("--", 140, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> {
+                            value.setValue(value.getNumericValue().subtract(BigDecimal.ONE));
+                            return value;
+                        }
+                )
+        )));
 
-        add(Operator.make("++", 140, false, true, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("--", 140, false, true, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("+", 140, false, true, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("-", 140, false, true, (arguments) -> {
-            final Optional<Value> value = getNumericValue(arguments[0]);
-            if (value.isPresent()) {
-                return new Value(value.get().getNumericValue().negate());
-            } else {
-                throw createCannotPerformOperationException("-", arguments);
-            }
-        }));
-        add(Operator.make("!", 140, false, true, (arguments) -> {
-            final Value value = arguments[0];
-            if (value.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
-                return new Value(!(boolean) value.getValue());
-            } else {
-                throw createCannotPerformOperationException("!", value);
-            }
-        }));
-        add(Operator.make("!", 140, true, false, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("~", 140, false, true, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("~", 140, false, true, (arguments) -> {
-            return null;
-        }));
+        add(OperatorUtilities.makeRight("-", 140, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> new Value(value.getNumericValue().negate())
+                )
+        )));
+        add(OperatorUtilities.makeRight("!", 140, (argument) -> OperatorUtilities.operatorTypeHandler("!", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.ANY.getType(),
+                        (value) -> new Value(!value.isTrue())
+                )
+        )));
+        add(OperatorUtilities.makeLeft("!", 140, (argument) -> OperatorUtilities.operatorTypeHandler("!", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> {
+                            BigDecimal result = BigDecimal.ONE;
+                            for (BigDecimal i = BigDecimal.ONE; i.compareTo(value.getNumericValue()) <= 0; i = i.add(BigDecimal.ONE)) {
+                                result = result.multiply(i);
+                            }
+                            return new Value(result);
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeRight("~", 140, (argument) -> OperatorUtilities.operatorTypeHandler("~", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> new Value(value.getNumericValue().negate().subtract(BigDecimal.ONE))
+                )
+        )));
+        add(OperatorUtilities.makeRight("+", 140, (argument) -> OperatorUtilities.operatorTypeHandler("+", argument,
+                new OperatorUtilities.SingleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        (value) -> new Value(value.getNumericValue().abs())
+                )
+        )));
 
-        add(Operator.make("*", 120, true, true, (arguments) -> {
-            final Optional<Value> left = getNumericValue(arguments[0]);
-            final Optional<Value> right = getNumericValue(arguments[1]);
+        add(OperatorUtilities.makeDouble("*", 120, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("*", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().multiply(right.getNumericValue()))
+                ),
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.STRING.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> {
+                            StringBuilder builder = new StringBuilder();
+                            for (int i = 0; i < right.getNumericValue().intValue(); i++) {
+                                builder.append(left.getValue());
+                            }
+                            return new Value(builder.toString());
+                        }
+                ),
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.STRING.getType(),
+                        (left, right) -> {
+                            StringBuilder builder = new StringBuilder();
+                            for (int i = 0; i < left.getNumericValue().intValue(); i++) {
+                                builder.append(right.getValue());
+                            }
+                            return new Value(builder.toString());
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeDouble("/", 120, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("/", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().divide(right.getNumericValue(), BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP))
+                )
+        )));
+        add(OperatorUtilities.makeDouble("%", 120, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("%", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().remainder(right.getNumericValue()))
+                )
+        )));
+        add(OperatorUtilities.makeDouble("%%", 120, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("%%", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> {
+                            BigDecimal leftValue = left.getNumericValue();
+                            BigDecimal rightValue = right.getNumericValue();
+                            BigDecimal remainder = leftValue.remainder(rightValue);
+                            if (remainder.compareTo(BigDecimal.ZERO) < 0) {
+                                remainder = remainder.add(rightValue);
+                            }
+                            return new Value(remainder);
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeDouble("+", 110, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("+", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().add(right.getNumericValue()))
+                ),
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.STRING.getType(),
+                        PrimitiveValueType.STRING.getType(),
+                        (left, right) -> new Value(left.getValue() + "" + right.getValue())
+                ),
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.STRING.getType(),
+                        PrimitiveValueType.ANY.getType(),
+                        (left, right) -> new Value(left.getValue() + right.toDisplayString())
+                ),
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.ANY.getType(),
+                        PrimitiveValueType.STRING.getType(),
+                        (left, right) -> new Value(left.toDisplayString() + right.getValue())
+                )
+        )));
+        add(OperatorUtilities.makeDouble("-", 110, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("-", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().subtract(right.getNumericValue()))
+                )
+        )));
 
-            if (left.isPresent() && right.isPresent()) {
-                return new Value(((BigDecimal) left.get().getValue()).multiply((BigDecimal) right.get().getValue()));
-            }
+        add(OperatorUtilities.makeDouble("<<", 100, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("<<", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> {
+                            final BigInteger leftValue = left.getNumericValue().toBigInteger();
+                            final BigInteger rightValue = right.getNumericValue().toBigInteger();
+                            return new Value(new BigDecimal(leftValue.shiftLeft(rightValue.intValue())));
+                        }
+                )
+        )));
+        add(OperatorUtilities.makeDouble(">>", 100, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler(">>", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> {
+                            final BigInteger leftValue = left.getNumericValue().toBigInteger();
+                            final BigInteger rightValue = right.getNumericValue().toBigInteger();
+                            return new Value(new BigDecimal(leftValue.shiftRight(rightValue.intValue())));
+                        }
+                )
+        )));
 
-            final Optional<String> leftString = getStringValue(arguments[0]);
-            final Optional<String> rightString = getStringValue(arguments[1]);
-
-            if (leftString.isPresent() && rightString.isPresent()) {
-                return new Value(leftString.get() + rightString.get());
-            }
-
-            throw createCannotPerformOperationException("*", arguments);
-        }));
-        add(Operator.make("/", 120, true, true, (arguments) -> {
-            final Optional<Value> left = getNumericValue(arguments[0]);
-            final Optional<Value> right = getNumericValue(arguments[1]);
-
-            if (left.isPresent() && right.isPresent()) {
-                return new Value(((BigDecimal) left.get().getValue()).divide((BigDecimal) right.get().getValue(), BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
-            }
-
-            throw createCannotPerformOperationException("/", arguments);
-        }));
-        add(Operator.make("%", 120, true, true, (arguments) -> {
-            final Optional<Value> left = getNumericValue(arguments[0]);
-            final Optional<Value> right = getNumericValue(arguments[1]);
-
-            if (left.isPresent() && right.isPresent()) {
-                return new Value(((BigDecimal) left.get().getValue()).remainder((BigDecimal) right.get().getValue()));
-            }
-
-            throw createCannotPerformOperationException("%", arguments);
-        }));
-        add(Operator.make("%%", 120, true, true, (arguments) -> {
-            final Optional<Value> left = getNumericValue(arguments[0]);
-            final Optional<Value> right = getNumericValue(arguments[1]);
-
-            if (left.isPresent() && right.isPresent()) {
-                BigDecimal leftValue = (BigDecimal) left.get().getValue();
-                BigDecimal rightValue = (BigDecimal) right.get().getValue();
-                BigDecimal remainder = leftValue.remainder(rightValue);
-                if (remainder.compareTo(BigDecimal.ZERO) < 0) {
-                    remainder = remainder.add(rightValue);
-                }
-                return new Value(remainder);
-            }
-
-            throw createCannotPerformOperationException("%%", arguments);
-        }));
-
-        add(Operator.make("+", 110, true, true, (arguments) -> {
-            final Optional<Value> left = getNumericValue(arguments[0]);
-            final Optional<Value> right = getNumericValue(arguments[1]);
-
-            if (left.isPresent() && right.isPresent()) {
-                return new Value(((BigDecimal) left.get().getValue()).add((BigDecimal) right.get().getValue()));
-            }
-
-            final Optional<String> leftString = getStringValue(arguments[0]);
-            final Optional<String> rightString = getStringValue(arguments[1]);
-
-            if (leftString.isPresent() && rightString.isPresent()) {
-                return new Value(leftString.get() + rightString.get());
-            } else if (leftString.isPresent() || rightString.isPresent()) {
-                return new Value(leftString.orElseGet(() -> arguments[0].toDisplayString()) + rightString.orElseGet(() -> arguments[1].toDisplayString()));
-            }
-
-            throw createCannotPerformOperationException("+", arguments);
-        }));
-        add(Operator.make("-", 110, true, true, (arguments) -> {
-            final Optional<Value> left = getNumericValue(arguments[0]);
-            final Optional<Value> right = getNumericValue(arguments[1]);
-
-            if (left.isPresent() && right.isPresent()) {
-                return new Value(((BigDecimal) left.get().getValue()).subtract((BigDecimal) right.get().getValue()));
-            }
-
-            throw createCannotPerformOperationException("-", arguments);
-        }));
-
-        add(Operator.make("<<", 100, true, true, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make(">>", 100, true, true, (arguments) -> {
-            return null;
-        }));
-
-        add(Operator.make("<", 90, true, true, (arguments) -> {
-            final int cmp = arguments[0].compareTo(arguments[1]);
+        add(OperatorUtilities.makeDouble("<", 90, (leftArgument, rightArgument) -> {
+            final int cmp = leftArgument.compareTo(rightArgument);
             return new Value(cmp < 0);
         }));
-        add(Operator.make("<=", 90, true, true, (arguments) -> {
-            final int cmp = arguments[0].compareTo(arguments[1]);
+        add(OperatorUtilities.makeDouble("<=", 90, (leftArgument, rightArgument) -> {
+            final int cmp = leftArgument.compareTo(rightArgument);
             return new Value(cmp <= 0);
         }));
-        add(Operator.make(">", 90, true, true, (arguments) -> {
-            final int cmp = arguments[0].compareTo(arguments[1]);
+        add(OperatorUtilities.makeDouble(">", 90, (leftArgument, rightArgument) -> {
+            final int cmp = leftArgument.compareTo(rightArgument);
             return new Value(cmp > 0);
         }));
-        add(Operator.make(">=", 90, true, true, (arguments) -> {
-            final int cmp = arguments[0].compareTo(arguments[1]);
+        add(OperatorUtilities.makeDouble(">=", 90, (leftArgument, rightArgument) -> {
+            final int cmp = leftArgument.compareTo(rightArgument);
             return new Value(cmp >= 0);
         }));
 
-        add(Operator.make("==", 80, true, true, (arguments) -> {
-            final Value left = arguments[0];
-            final Value right = arguments[1];
-            if (left.equals(right)) {
-                return new Value(left.getValue().equals(right.getValue()));
+        add(OperatorUtilities.makeDouble("==", 80, (leftArgument, rightArgument) -> {
+            if (leftArgument.equals(rightArgument)) {
+                return new Value(leftArgument.getValue().equals(rightArgument.getValue()));
             } else {
                 return new Value(false);
             }
         }));
-        add(Operator.make("!=", 80, true, true, (arguments) -> {
+        add(OperatorUtilities.makeDouble("!=", 80, (leftArgument, rightArgument) -> {
+            if (leftArgument.equals(rightArgument)) {
+                return new Value(!leftArgument.getValue().equals(rightArgument.getValue()));
+            } else {
+                return new Value(true);
+            }
+        }));
+
+        add(OperatorUtilities.makeDouble("&", 70, (leftArgument, rightArgument) -> {
             return null;
         }));
 
-        add(Operator.make("&", 70, true, true, (arguments) -> {
+        add(OperatorUtilities.makeDouble("^", 60, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().pow(right.getNumericValue().intValue()))
+                )
+        )));
+        add(OperatorUtilities.makeDouble("^^", 60, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^^", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> new Value(left.getNumericValue().pow(right.getNumericValue().intValue()))
+                )
+        )));
+
+        add(OperatorUtilities.makeDouble("|", 50, (leftArgument, rightArgument) -> {
             return null;
         }));
 
-        add(Operator.make("^", 60, true, true, (arguments) -> {
-            return null;
-        }));
-        add(Operator.make("^^", 60, true, true, (arguments) -> {
-            return null;
-        }));
+        add(OperatorUtilities.makeDouble("&&", 40, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("&&", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.ANY.getType(),
+                        PrimitiveValueType.ANY.getType(),
+                        (left, right) -> new Value(left.isTrue() && right.isTrue())
+                )
+        )));
 
-        add(Operator.make("|", 50, true, true, (arguments) -> {
-            return null;
-        }));
+        add(OperatorUtilities.makeDouble("||", 30, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("||", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.ANY.getType(),
+                        PrimitiveValueType.ANY.getType(),
+                        (left, right) -> new Value(left.isTrue() || right.isTrue())
+                )
+        )));
 
-        add(Operator.make("&&", 40, true, true, (arguments) -> {
-            return null;
-        }));
-
-        add(Operator.make("||", 30, true, true, (arguments) -> {
-            return null;
-        }));
-
-        add(Operator.make("?", 20, true, true, (arguments) -> {
-            return null;
-        }));
-
-        add(Operator.make("=", 10, true, true, (arguments) -> {
+        // special rules for assignment/...
+        add(OperatorUtilities.makeDouble("=", 10, (leftArgument, rightArgument) -> {
             return null;
         }, false));
 
-        add(Operator.make("->", 5, true, true, (arguments) -> {
+        add(OperatorUtilities.makeDouble("->", 5, (leftArgument, rightArgument) -> {
             return null;
         }, false));
 
-        add(Operator.make("|>", 0, true, true, (arguments) -> {
+        add(OperatorUtilities.makeDouble("|>", 0, (leftArgument, rightArgument) -> {
             return null;
         }, true));
 
-        add(Operator.make(">|", 0, true, true, (arguments) -> {
+        add(OperatorUtilities.makeDouble(">|", 0, (leftArgument, rightArgument) -> {
             return null;
         }, true));
     }

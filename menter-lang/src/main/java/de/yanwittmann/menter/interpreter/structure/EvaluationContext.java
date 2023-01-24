@@ -161,7 +161,7 @@ public abstract class EvaluationContext {
                 final Object operator = node.getValue();
                 if (operator instanceof Operator) {
                     final Operator op = (Operator) operator;
-                    final int numberOfArguments = op.getNumberOfArguments();
+                    final int numberOfArguments = op.getArgumentCount();
                     int numberOfChildren = node.getChildren().size();
 
                     if (numberOfChildren != numberOfArguments) {
@@ -299,6 +299,11 @@ public abstract class EvaluationContext {
 
                 final List<Value> functionParameters = makeFunctionArguments(node, globalContext, localInformation);
                 result = evaluateFunction(function, functionParameters, globalContext, localInformation, ParserNode.reconstructCode(node.getChildren().get(0)));
+
+            } else if (node.getType() == ParserNode.NodeType.OPERATOR_FUNCTION) {
+                final Operator operator = (Operator) node.getValue();
+                final Function<Value[], Value> function = operator::evaluate;
+                return new Value(function);
 
             } else if (node.getType() == ParserNode.NodeType.CONDITIONAL) {
                 final List<ParserNode> branches = node.getChildren().stream()

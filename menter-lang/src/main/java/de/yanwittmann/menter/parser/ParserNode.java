@@ -92,8 +92,8 @@ public class ParserNode {
         sb.append("\n");
 
         for (int i = 0; i < children.size(); i++) {
-            Object child = children.get(i);
-            boolean isLast = i == children.size() - 1;
+            final Object child = children.get(i);
+            final boolean isLast = i == children.size() - 1;
 
             if (child instanceof ParserNode) {
                 ((ParserNode) child).toString(sb, childrenPrefix + (isLast ? "└─ " : "├─ "), childrenPrefix + (isLast ? "   " : "│  "));
@@ -114,6 +114,7 @@ public class ParserNode {
         IDENTIFIER_ACCESSED,
         PARENTHESIS_PAIR, SQUARE_BRACKET_PAIR, CURLY_BRACKET_PAIR,
         FUNCTION_DECLARATION, FUNCTION_CALL, FUNCTION_INLINE,
+        OPERATOR_FUNCTION,
         ARRAY, LISTED_ELEMENTS,
         MAP, MAP_ELEMENT,
         CONDITIONAL, CONDITIONAL_BRANCH, CONDITIONAL_BRACKET,
@@ -384,6 +385,10 @@ public class ParserNode {
                 case CONSTRUCTOR_CALL:
                     sb.append("new ");
                     reconstructCode(node.getChildren(), sb);
+                    break;
+
+                case OPERATOR_FUNCTION:
+                    sb.append("(").append(node.getValue()).append(")");
                     break;
 
                 default:

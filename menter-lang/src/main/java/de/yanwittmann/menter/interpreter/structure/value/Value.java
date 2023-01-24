@@ -41,8 +41,8 @@ public class Value implements Comparable<Value> {
         return value;
     }
 
-    public LinkedHashMap<String, Value> getMap() {
-        if (value instanceof LinkedHashMap) return (LinkedHashMap<String, Value>) value;
+    public LinkedHashMap<Object, Value> getMap() {
+        if (value instanceof LinkedHashMap) return (LinkedHashMap<Object, Value>) value;
         else throw new MenterExecutionException("Cannot transform type " + getType() + " to map");
     }
 
@@ -695,7 +695,7 @@ public class Value implements Comparable<Value> {
         }
     }
 
-    private static boolean isMapAnArray(Map<?, ?> map) {
+    public static boolean isMapAnArray(Map<?, ?> map) {
         if (map.isEmpty()) {
             return true;
         }
@@ -709,6 +709,10 @@ public class Value implements Comparable<Value> {
         }
 
         return map.keySet().stream().map(k -> (BigDecimal) k).max(BigDecimal::compareTo).get().intValue() == map.size() - 1;
+    }
+
+    public static boolean isMapAnArray(Value value) {
+        return value.getValue() instanceof Map && isMapAnArray((Map<?, ?>) value.getValue());
     }
 
     public boolean isEmpty() {

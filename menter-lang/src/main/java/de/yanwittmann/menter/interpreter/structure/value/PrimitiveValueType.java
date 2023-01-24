@@ -14,7 +14,7 @@ public enum PrimitiveValueType {
     REGEX("regex"),
     ITERATOR("iterator"),
     CUSTOM_TYPE("custom_type"),
-    ANY("unknown");
+    ANY("any");
 
     private final String type;
 
