@@ -19,7 +19,7 @@ public class ParsingException extends RuntimeException {
         this(message + "\n" + createAdditionalMessage(token, tokens));
     }
 
-    private final static int ADDITIONAL_MESSAGE_PADDING = 5;
+    private final static int ADDITIONAL_MESSAGE_PADDING = 7;
 
     private static String createAdditionalMessage(Object token, List<Object> tokens) {
         int index = tokens.indexOf(token);

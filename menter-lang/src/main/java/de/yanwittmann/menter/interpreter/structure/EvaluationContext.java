@@ -187,10 +187,14 @@ public abstract class EvaluationContext {
                     if (Parser.isType(node.getChildren().get(0), ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
                         final ParserNode identifierNode = (ParserNode) node.getChildren().get(0);
                         final ParserNode identifierNodeClone = new ParserNode(identifierNode.getType(), identifierNode.getValue(), identifierNode.getChildren().subList(0, identifierNode.getChildren().size() - 1));
-                        hint = "Assignments are not allowed on function calls. Try removing the parentheses: " + identifierNodeClone.reconstructCode() + " = ...";
+                        final ParserNode functionCallNode = (ParserNode) identifierNode.getChildren().get(identifierNode.getChildren().size() - 1);
+                        final ParserNode parenthesisPairNode = (ParserNode) functionCallNode.getChildren().get(0);
+
+                        hint = "To define a function on an object, use the '->' arrow syntax: " + identifierNodeClone.reconstructCode() + " = " + parenthesisPairNode.reconstructCode() + " -> { ... }";
                     } else {
                         hint = "Assignments are not allowed on function calls. Try removing the parentheses.";
                     }
+
                     throw localInformation.createException("Cannot assign to " + ParserNode.reconstructCode(node.getChildren().get(0)) + "\n" + hint);
                 }
 

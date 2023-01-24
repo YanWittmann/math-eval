@@ -373,13 +373,13 @@ public class Parser {
                 final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
 
                 if (isType(currentToken, TokenType.CLOSE_SQUARE_BRACKET) || isType(currentToken, TokenType.CLOSE_CURLY_BRACKET)) {
-                    if (isType(nextToken, TokenType.IDENTIFIER) || isType(nextToken, TokenType.KEYWORD)) {
+                    if (isType(nextToken, TokenType.IDENTIFIER) || isType(nextToken, TokenType.KEYWORD) || isLiteral(nextToken)) {
                         if (isType(currentToken, TokenType.CLOSE_SQUARE_BRACKET) && isKeyword(nextToken, "as")) {
                             continue;
                         } else if (isType(currentToken, TokenType.CLOSE_CURLY_BRACKET) && (isKeyword(nextToken, "else") || isKeyword(nextToken, "elif"))) {
                             continue;
                         }
-                        throw new ParsingException("Unexpected identifier or keyword after closing parenthesis (are you missing a semicolon or newline?)", nextToken, tokens);
+                        throw new ParsingException("Unexpected identifier/keyword/literal after closing parenthesis (are you missing a semicolon or newline?)", nextToken, tokens);
                     }
                 }
             }
@@ -395,6 +395,20 @@ public class Parser {
 
                 if (isLiteral(currentToken) && isLiteral(nextToken)) {
                     throw new ParsingException("Unexpected literal after literal", nextToken, tokens);
+                }
+            }
+
+            return false;
+        });
+
+        // validate that there are no two identifiers right after each other
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isType(currentToken, TokenType.IDENTIFIER) && isType(nextToken, TokenType.IDENTIFIER)) {
+                    throw new ParsingException("Unexpected identifier after identifier", nextToken, tokens);
                 }
             }
 
@@ -1329,7 +1343,7 @@ public class Parser {
                         final ParserNode identifierAccessed = (ParserNode) t;
                         final ParserNode parenthesisPair = (ParserNode) identifierAccessed.getChildren().get(identifierAccessed.getChildren().size() - 1);
                         identifierAccessed.removeChild(identifierAccessed.getChildren().get(identifierAccessed.getChildren().size() - 1));
-                        throw new ParsingException("Function declaration via object.child() { ... } is not supported.\nUse: " + identifierAccessed.reconstructCode() + " = " + parenthesisPair.reconstructCode() + " -> { ... }");
+                        throw new ParsingException("Function declaration via object.child() { ... } is not supported.\nTo define a function on an object, use the '->' arrow syntax: " + identifierAccessed.reconstructCode() + " = " + parenthesisPair.reconstructCode() + " -> { ... }");
                     }
                     return t;
                 },
