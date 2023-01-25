@@ -105,7 +105,7 @@ public class ParserNode {
 
     public enum NodeType {
         ROOT,
-        ASSIGNMENT,
+        ASSIGNMENT, ASSIGNMENT_COMBINED_OPERATOR,
         EXPRESSION, CODE_BLOCK,
         STATEMENT,
         RETURN_STATEMENT,

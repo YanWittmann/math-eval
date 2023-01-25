@@ -299,7 +299,9 @@ public class Parser {
                 final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
                 final Object previousToken = i - 1 >= 0 ? tokens.get(i - 1) : null;
 
-                if (isType(currentToken, TokenType.OPERATOR)) {
+                final boolean isOperator = isType(currentToken, TokenType.OPERATOR);
+
+                if (isOperator) {
                     final boolean leftOpen = isType(previousToken, TokenType.OPEN_PARENTHESIS);
                     final boolean rightOpen = isType(nextToken, TokenType.CLOSE_PARENTHESIS);
                     final boolean leftClosed = isType(previousToken, TokenType.OPEN_SQUARE_BRACKET);
@@ -327,7 +329,7 @@ public class Parser {
                     final List<Operator> options = operators.findOperators(symbol);
                     final StringJoiner optionsString = new StringJoiner(", ");
                     for (Operator option : options) {
-                        optionsString.add((option.isLeftAssociative() ? "(" : "[") + option.getSymbol() + (option.isRightAssociative() ? ")" : "]"));
+                        optionsString.add((option.isLeftAssociative() ? "l (" : "[") + option.getSymbol() + (option.isRightAssociative() ? ") r" : "]"));
                     }
                     throw new ParsingException(errorMessage + ", use one of: " + optionsString, currentToken, tokens);
                 }
@@ -839,6 +841,35 @@ public class Parser {
             }
         }
 
+        // rule for combining any operator with the = operator
+        rules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object token = tokens.get(i);
+                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                if (isType(token, TokenType.OPERATOR) && isOperator(nextToken, "=")) {
+                    final Operator operator = operators.findOperator(((Token) token).getValue(), true, true);
+
+                    if (operator != null) {
+                        final Object beforeToken = i - 1 >= 0 ? tokens.get(i - 1) : null;
+                        final Object afterAfterToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
+
+                        if ((isType(beforeToken, TokenType.OPEN_PARENTHESIS) || isType(beforeToken, TokenType.OPEN_SQUARE_BRACKET)) && (isType(afterAfterToken, TokenType.CLOSE_PARENTHESIS) || isType(afterAfterToken, TokenType.CLOSE_SQUARE_BRACKET))) {
+                            throw new ParsingException("Cannot transform assigment operator into operator function: " + operator.getSymbol(), token, tokens);
+                        }
+
+                        final ParserNode node = new ParserNode(ParserNode.NodeType.ASSIGNMENT_COMBINED_OPERATOR, operator);
+                        ParserRule.replace(tokens, node, i, i + 1);
+                        return true;
+                    } else {
+                        throw new ParsingException("Assignment operator must take two arguments, but only takes one: " + ((Token) token).getValue(), token, tokens);
+                    }
+                }
+            }
+
+            return false;
+        });
+
         // rule for operator ->
         final Operator inlineOperator = operators.findOperator("->", true, true);
         rules.add(tokens -> {
@@ -1058,39 +1089,44 @@ public class Parser {
             return false;
         });
 
-        final Operator assignment = operators.findOperator("=", true, true);
+        final Operator defaultAssignmentOperator = operators.findOperator("=", true, true);
         // assignment
         rules.add(tokens -> {
             int start = -1;
             int end = -1;
+            boolean isCombinedAssignment = false;
 
             for (int i = 0; i < tokens.size(); i++) {
                 final Object currentToken = tokens.get(i);
                 final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
                 final Object afterNextToken = i + 2 < tokens.size() ? tokens.get(i + 2) : null;
 
+                isCombinedAssignment = isType(currentToken, ParserNode.NodeType.ASSIGNMENT_COMBINED_OPERATOR);
+
                 if (isAssignable(currentToken)) {
                     if (start == -1) start = i;
-                } else if (isOperator(currentToken, "=")) {
-                    if (start != -1) {
-                        if (isEvaluableToValue(nextToken)) {
-                            if (isOperator(afterNextToken, "->") || isType(afterNextToken, TokenType.OPERATOR)) {
-                                start = -1;
+                } else {
+                    if (isOperator(currentToken, "=") || isCombinedAssignment) {
+                        if (start != -1) {
+                            if (isEvaluableToValue(nextToken)) {
+                                if (isOperator(afterNextToken, "->") || isType(afterNextToken, TokenType.OPERATOR)) {
+                                    start = -1;
+                                } else {
+                                    end = i + 1;
+                                    break;
+                                }
                             } else {
-                                end = i + 1;
-                                break;
+                                start = -1;
                             }
-                        } else {
-                            start = -1;
                         }
+                    } else if (start != -1) {
+                        start = -1;
                     }
-                } else if (start != -1) {
-                    start = -1;
                 }
             }
 
             if (start != -1 && end != -1) {
-                final ParserNode node = new ParserNode(ParserNode.NodeType.ASSIGNMENT, assignment);
+                final ParserNode node = new ParserNode(ParserNode.NodeType.ASSIGNMENT, isCombinedAssignment ? ((ParserNode) tokens.get(start + 1)).getValue() : defaultAssignmentOperator);
                 node.addChild(tokens.get(start));
                 node.addChild(tokens.get(end));
                 ParserRule.replace(tokens, node, start, end);

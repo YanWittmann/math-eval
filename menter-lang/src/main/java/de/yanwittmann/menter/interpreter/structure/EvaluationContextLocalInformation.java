@@ -198,6 +198,10 @@ public class EvaluationContextLocalInformation {
         }
     }
 
+    public MenterExecutionException createException(Throwable cause) {
+        return createException(cause.getMessage(), cause);
+    }
+
     public MenterExecutionException createException(String message) {
         return new MenterExecutionException(formatStackTrace(message));
     }

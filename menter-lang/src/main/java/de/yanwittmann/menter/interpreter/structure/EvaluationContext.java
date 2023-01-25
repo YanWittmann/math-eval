@@ -173,7 +173,11 @@ public abstract class EvaluationContext {
                         arguments[i] = evaluate(node.getChildren().get(i), globalContext, symbolCreationMode, localInformation);
                     }
 
-                    result = op.evaluate(arguments);
+                    try {
+                        result = op.evaluate(arguments);
+                    } catch (Exception e) {
+                        throw localInformation.createException(e);
+                    }
                     if (result == null) {
                         throw localInformation.createException("Operator " + op.getSymbol() + " did not return a result; this is most likely due to an incomplete implementation of the operator.");
                     }
@@ -205,7 +209,20 @@ public abstract class EvaluationContext {
                     value.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT, new Value(localInformation));
                 }
 
-                variable.inheritValue(value);
+                if (!(node.getValue() instanceof Operator)) {
+                    throw localInformation.createException("Invalid assignment operator: " + node.getValue());
+                }
+                final Operator operator = (Operator) node.getValue();
+                if (!(operator.getSymbol().equals("=") || variable.isEmpty())) {
+                    if (operator.getArgumentCount() != 2) {
+                        throw localInformation.createException("Invalid assignment operator, must take two arguments: " + operator.getSymbol());
+                    }
+                    final Value operationResult = operator.evaluate(variable, value);
+                    variable.inheritValue(operationResult);
+
+                } else {
+                    variable.inheritValue(value);
+                }
                 result = variable;
 
                 if (MenterDebugger.logInterpreterAssignments) {

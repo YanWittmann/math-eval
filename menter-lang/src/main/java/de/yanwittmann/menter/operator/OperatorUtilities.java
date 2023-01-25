@@ -91,16 +91,39 @@ public class OperatorUtilities {
             }
         }
 
-        if (left.getValue() instanceof Map) {
+        final boolean leftIsMap = left.getValue() instanceof Map;
+        final boolean rightIsMap = right.getValue() instanceof Map;
+
+        if (leftIsMap && rightIsMap) {
+            final Map<Object, Value> leftMap = left.getMap();
+            final Map<Object, Value> rightMap = right.getMap();
+
+            if (leftMap.size() != rightMap.size()) {
+                throw new MenterExecutionException("Both objects must have the same size, but was: " + leftMap.size() + " != " + rightMap.size());
+            }
+
+            if (!leftMap.keySet().stream().allMatch(rightMap::containsKey) || !rightMap.keySet().stream().allMatch(leftMap::containsKey)) {
+                throw new MenterExecutionException("Both objects must contain the same keys, but was: " + leftMap.keySet() + " " + symbol + " " + rightMap.keySet());
+            }
+
+            final Map<Object, Value> newMap = new LinkedHashMap<>();
+            for (Map.Entry<Object, Value> leftEntry : leftMap.entrySet()) {
+                if (rightMap.containsKey(leftEntry.getKey())) {
+                    newMap.put(leftEntry.getKey(), operatorTypeHandler(symbol, leftEntry.getValue(), rightMap.get(leftEntry.getKey()), actions));
+                }
+            }
+
+            return new Value(newMap);
+
+        } else if (leftIsMap) {
             final Map<Object, Value> map = left.getMap();
             final Map<Object, Value> newMap = new LinkedHashMap<>();
             for (Map.Entry<Object, Value> entry : map.entrySet()) {
                 newMap.put(entry.getKey(), operatorTypeHandler(symbol, entry.getValue(), right, actions));
             }
             return new Value(newMap);
-        }
 
-        if (right.getValue() instanceof Map) {
+        } else if (rightIsMap) {
             final Map<Object, Value> map = right.getMap();
             final Map<Object, Value> newMap = new LinkedHashMap<>();
             for (Map.Entry<Object, Value> entry : map.entrySet()) {

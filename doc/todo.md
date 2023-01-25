@@ -8,13 +8,6 @@ Features:
 - [ ] write documentation
 - [ ] input history for more than one element in documentation
 - [ ] 'Object' type return empty if not exists on throw if not exists
-- [ ] isPrimeUtil(n, i) { if (n == 2) true elif (n < 2) false elif (n % i == 0) false elif (i * i > n) true else
-  isPrimeUtil(n, i + 1) }  
-  isPrime(n) { n >| isPrimeUtil(2) }  
-  range(1, 100).filter(isPrime)  
-  range(2, 100).filter(isPrime).size()
-- [ ] foldl = (funct, acc, list) -> { if (list.size() == 0) acc else foldl(funct, funct(list.head(), acc),
-  list.tail()) }
 - [ ] null --> empty value
 - [ ] static symbols in custom types (java)
 - [ ] if ...: ... elif ...: ... else: ...
@@ -23,8 +16,6 @@ Features:
 - [ ] x instanceof y --> x.type() == y
 - [ ] range(10, 1) --> downto
 - [ ] range(1, 10, 2) --> step
-- [ ] different types of assignments (e.g. `+=`, `-=`, `*=`, `/=`, `%=`)  
-  *= += via a combined operator, is detected as + and = and then combined
 - [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
 - [ ] empty pass statement, like in python
 - [ ] import will search for files in the same directory with a fitting name/export, for which the files in the
@@ -32,6 +23,9 @@ Features:
 - [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.
 - [ ] operator operation with both sides as list, where each side must have the same keys in order for the operation to
   be valid
+- [ ] rewrite iterator system to work on 'lists' and not 'key'-'value' maps and default to values if only one argument
+  is required. (Do not use the size of the object?)
+- [ ] string output with quotes "", two separate rendering functions (?)
 
 ```
 Person = (name, alter) -> {
@@ -49,6 +43,18 @@ yan = Person("Yan", 22)
 print(yan.getName())
 yan.execute(person -> person.name = "Thomas")
 print(yan.getName())
+```
+
+```
+isPrimeUtil(n, i) { if (n == 2) true elif (n < 2) false elif (n % i == 0) false elif (i * i > n) true else
+isPrimeUtil(n, i + 1) }
+isPrime(n) { n >| isPrimeUtil(2) }
+range(1, 100).filter(isPrime)
+range(2, 100).filter(isPrime).size()
+```
+
+```
+foldl = (funct, acc, list) -> { if (list.size() == 0) acc else foldl(funct, funct(list.head(), acc), list.tail()) }
 ```
 
 Bugs:
