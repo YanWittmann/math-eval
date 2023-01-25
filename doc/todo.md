@@ -4,10 +4,9 @@ Features:
 - [ ] stack trace line numbers
 - [ ] `return`, `break` and `continue` statements via special subclass of value which is detected and unwrapped in eval
   tree
-- [ ] "safe-mode" in which no global variables can be changed
+- [ ] live preview "safe-mode" in which no global variables can be changed
 - [ ] write documentation
 - [ ] input history for more than one element in documentation
-- [ ] static symbols in custom types (java)
 - [ ] if ...: ... elif ...: ... else: ...
 - [ ] for ...: ...
 - [ ] while ...: ...
@@ -15,11 +14,10 @@ Features:
 - [ ] import will search for files in the same directory with a fitting name/export, for which the files in the
   directory have to be indexed before parsing them, to prevent execution of the file. i.e. rewrite the import system
 - [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.
-- [ ] operator operation with both sides as list, where each side must have the same keys in order for the operation to
-  be valid
 - [ ] rewrite iterator system to work on 'lists' and not 'key'-'value' maps and default to values if only one argument
   is required. (Do not use the size of the object?)
 - [ ] string output with quotes "", two separate rendering functions (?)
+- [ ] fix `??` when printing syntax trees (also in documentation)
 
 ```
 Person = (name, alter) -> {
@@ -57,8 +55,4 @@ Bugs:
 {test:[1], hey: 4}[0]
 accessors on maps
 import system inline --> sleep(1000) --> Cannot resolve symbol 'sleep' on [sleep]
-```
-
-```
-?? NUMBER_LITERAL: 3 on documentation
 ```

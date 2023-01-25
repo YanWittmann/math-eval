@@ -290,6 +290,10 @@ public class Value implements Comparable<Value> {
                 return accessed;
             }
         }
+        if (this.getValue() instanceof Class<?> && CustomType.class.isAssignableFrom(((Class<?>) this.getValue()))) {
+            final Class<CustomType> customTypeClass = (Class<CustomType>) this.getValue();
+            return CustomType.accessStaticValue(customTypeClass, identifier);
+        }
 
         return null;
     }

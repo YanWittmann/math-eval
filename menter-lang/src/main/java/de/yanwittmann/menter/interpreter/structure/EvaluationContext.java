@@ -552,7 +552,12 @@ public abstract class EvaluationContext {
                 final Value calledOnValue = functionValue.getTagParentFunctionValue();
                 final CustomType calledOnCustomType = (CustomType) calledOnValue.getValue();
 
-                return calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
+                if (calledOnCustomType != null) {
+                    return calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
+                } else {
+                    // static method
+                    return (Value) executableFunction.invoke(null, functionParameters);
+                }
 
             } else { // otherwise it must be a value function
                 final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();

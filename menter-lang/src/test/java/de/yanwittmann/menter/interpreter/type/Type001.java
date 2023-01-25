@@ -1,5 +1,6 @@
 package de.yanwittmann.menter.interpreter.type;
 
+import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.structure.value.*;
 
 import java.util.Iterator;
@@ -22,10 +23,11 @@ public class Type001 extends CustomType {
 
     @TypeFunction
     public Value setMyValue(List<Value> parameters) {
-        final int parameterCombination = super.checkParameterCombination(parameters, new String[][]{
+        final String[][] parameterCombinations = {
                 {},
                 {PrimitiveValueType.ANY.getType()}
-        });
+        };
+        final int parameterCombination = super.checkParameterCombination(parameters, parameterCombinations);
 
         switch (parameterCombination) {
             case 0:
@@ -34,6 +36,8 @@ public class Type001 extends CustomType {
             case 1:
                 myValue = parameters.get(0).toDisplayString();
                 break;
+            case -1:
+                throw invalidParameterCombinationException("setMyValue", parameters, parameterCombinations);
         }
 
         return Value.empty();
@@ -41,8 +45,13 @@ public class Type001 extends CustomType {
 
     public Value doStuff(List<Value> parameters) {
         System.out.println("Hello World!");
-
         return Value.empty();
+    }
+
+    @TypeFunction
+    public static Value doStuffStatic(List<Value> parameters) {
+        System.out.println("static Hello World!");
+        return new Value("static Hello World!");
     }
 
     @Override

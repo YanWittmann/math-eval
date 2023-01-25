@@ -36,6 +36,10 @@ public abstract class CustomType implements Comparable<CustomType> {
         return new Value(findReflectiveMethod(identifier.toDisplayString()), Value.TAG_KEY_FUNCTION_PARENT_VALUE, new Value(this));
     }
 
+    public static Value accessStaticValue(Class<CustomType> clazz, Value identifier) {
+        return new Value(findReflectiveMethod(clazz, identifier.toDisplayString()), Value.TAG_KEY_FUNCTION_PARENT_VALUE, new Value(null));
+    }
+
     public boolean createAccessedValue(Value identifier, Value accessedValue, boolean isFinalIdentifier) {
         return false;
     }
@@ -73,7 +77,8 @@ public abstract class CustomType implements Comparable<CustomType> {
         try {
             return (T) constructor.newInstance(parameters);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new MenterExecutionException("Could not instantiate custom type " + type.getName(), e);
+            final String menterExecutionMessage = getMenterExecutionMessage(e);
+            throw new MenterExecutionException("Could not instantiate custom type " + type.getSimpleName() + "()" + (menterExecutionMessage != null ? ":\n" + menterExecutionMessage : ""), e);
         }
     }
 
@@ -90,16 +95,20 @@ public abstract class CustomType implements Comparable<CustomType> {
                 .collect(Collectors.toList());
     }
 
-    public Method findReflectiveMethod(String functionName) {
-        final Method method = Arrays.stream(getClass().getDeclaredMethods())
+    public static Method findReflectiveMethod(Class<CustomType> clazz, String functionName) {
+        final Method method = Arrays.stream(clazz.getDeclaredMethods())
                 .filter(m -> m.isAnnotationPresent(TypeFunction.class))
                 .filter(m -> m.getName().equals(functionName))
                 .findFirst()
                 .orElse(null);
         if (method == null) {
-            throw new MenterExecutionException("Function [" + functionName + "] does not exist on [" + this.getTypeName() + "]");
+            throw new MenterExecutionException("Function [" + functionName + "] does not exist on [" + clazz.getTypeName() + "]");
         }
         return method;
+    }
+
+    public Method findReflectiveMethod(String functionName) {
+        return findReflectiveMethod((Class<CustomType>) getClass(), functionName);
     }
 
     public Value callReflectiveMethod(Method method, List<Value> parameters) {
@@ -109,8 +118,21 @@ public abstract class CustomType implements Comparable<CustomType> {
         try {
             return (Value) method.invoke(this, parameters);
         } catch (Exception e) {
-            throw new MenterExecutionException("The custom type [" + getClass().getSimpleName() + "] could not call function " + method.getName(), e);
+            final String menterExecutionMessage = getMenterExecutionMessage(e);
+            throw new MenterExecutionException("The custom type [" + getClass().getSimpleName() + "] could not call function " + method.getName() + "()" + (menterExecutionMessage != null ? ":\n" + menterExecutionMessage : ""), e);
         }
+    }
+
+    private static String getMenterExecutionMessage(Exception e) {
+        // find the MenterExecutionException in the cause chain and get the message (if present)
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof MenterExecutionException) {
+                return cause.getMessage();
+            }
+            cause = cause.getCause();
+        }
+        return null;
     }
 
     protected int checkParameterCombination(List<Value> parameters, String[][] types) {
@@ -146,6 +168,22 @@ public abstract class CustomType implements Comparable<CustomType> {
         }
 
         return longestChainIndex;
+    }
+
+    protected MenterExecutionException invalidParameterCombinationException(String methodName, List<Value> parameters, String[][] types) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Invalid parameter combination for function [").append(getClass().getSimpleName()).append(".").append(methodName).append("]: ").append(parameters).append("\n");
+
+        sb.append("  Expected:\n");
+        for (int i = 0; i < types.length; i++) {
+            final String[] type = types[i];
+            sb.append("    - ").append(Arrays.toString(type));
+            if (i < types.length - 1) {
+                sb.append("\n");
+            }
+        }
+
+        return new MenterExecutionException(sb.toString());
     }
 
     @Override

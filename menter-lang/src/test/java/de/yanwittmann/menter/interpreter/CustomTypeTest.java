@@ -57,6 +57,10 @@ public class CustomTypeTest {
                                                             "index = 0\n" +
                                                             "for (i in myType) { result[index] = i; index = index + 1 }\n" +
                                                             "result");
+
+        evaluateAndAssertEqual(interpreter, "static Hello World!", "" +
+                                                            "import test inline\n" +
+                                                            "customType001.doStuffStatic()");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
