@@ -1,5 +1,6 @@
 package de.yanwittmann.menter.interpreter.structure;
 
+import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.interpreter.core.CoreModuleCommon;
 import de.yanwittmann.menter.interpreter.core.CoreModuleDebug;
@@ -714,7 +715,16 @@ public abstract class EvaluationContext {
 
                 boolean foundImport = false;
                 for (Import anImport : globalContext.getImports()) {
+                    if (anImport.getModule() == null) {
+                        throw new MenterExecutionException("Module has not finished loading yet: " + anImport + "\nTo finish loading, call the finishLoadingContexts() method on the MenterInterpreter instance.\nNOTE: This is most likely a bug in the MenterInterpreter implementation.");
+                    }
+
                     if (!anImport.isInline() && anImport.getAliasOrName().equals(stringKey)) {
+                        if (originalGlobalContext != globalContext) {
+                            throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: [" + stringKey + "] references a symbol from the [" + anImport.getModule().getName() + "] module.\n"
+                                                                   + "Accessing symbols across modules is not disallowed.");
+                        }
+
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();
@@ -729,6 +739,11 @@ public abstract class EvaluationContext {
                             break;
                         }
                     } else if (anImport.isInline() && anImport.getModule().containsSymbol(stringKey)) {
+                        if (originalGlobalContext != globalContext) {
+                            throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: [" + stringKey + "] references a symbol from the [" + anImport.getModule().getName() + "] module.\n"
+                                                                   + "Accessing symbols across modules is not disallowed.");
+                        }
+
                         final Module module = anImport.getModule();
                         if (module != null) {
                             globalContext = module.getParentContext();

@@ -40,24 +40,6 @@ public class MenterInterpreter extends EvalRuntime {
         } catch (Exception e) {
             throw new MenterExecutionException("Failed to load Menter core files", e);
         }
-
-        try {
-            final File externalMenterHomeDir = firstExistingDirectory(
-                    () -> System.getenv("MENTER_HOME"),
-                    () -> System.getProperty("menter.home")
-            );
-
-            if (externalMenterHomeDir != null) {
-                LOG.debug("Loading Menter core files from external Menter home directory: {}", externalMenterHomeDir);
-                loadFile(externalMenterHomeDir);
-            }
-
-            finishLoadingContexts();
-        } catch (Exception e) {
-            throw new MenterExecutionException("Failed to load additional Menter files. Additional files have been attempted to be loaded from:\n" +
-                                               "  - MENTER_HOME environment variable\n" +
-                                               "  - menter.home system property", e);
-        }
     }
 
     private File firstExistingDirectory(Supplier<String>... suppliers) {
@@ -125,6 +107,7 @@ public class MenterInterpreter extends EvalRuntime {
                     {"-e", "--eval"},
                     {"-repl", "--repl", "repl"},
                     {"-gs", "--guide-server", "guide-server"},
+                    {"-mp", "--module-path"},
             }));
 
         } catch (MenterExecutionException e) {
@@ -159,6 +142,20 @@ public class MenterInterpreter extends EvalRuntime {
             }
         }
         final boolean hasFiles = files.size() > 0;
+
+        final boolean hasModulePath = commandLineArguments.containsKey("-mp");
+        final List<File> modulePath = new ArrayList<>();
+        modulePath.add(new File(".")); // current directory
+        final String menterHome = System.getenv("MENTER_HOME"); // find MENTER_HOME if present
+        if (menterHome != null) {
+            modulePath.add(new File(menterHome));
+        }
+        if (hasModulePath) {
+            for (String path : commandLineArguments.get("-mp")) {
+                modulePath.add(new File(path));
+            }
+        }
+        interpreter.addModulePaths(modulePath);
 
         final boolean isHelp = commandLineArguments.containsKey("-h") || (!isRepl && !hasFiles && !isGuideServer);
 

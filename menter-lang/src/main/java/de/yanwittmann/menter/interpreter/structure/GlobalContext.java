@@ -1,5 +1,6 @@
 package de.yanwittmann.menter.interpreter.structure;
 
+import de.yanwittmann.menter.EvalRuntime;
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.ModuleOptions;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
@@ -8,8 +9,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class GlobalContext extends EvaluationContext {
 
@@ -113,12 +115,26 @@ public class GlobalContext extends EvaluationContext {
 
     private boolean inputsResolved = false;
 
-    public void resolveImports(List<GlobalContext> globalContexts) {
+    public void resolveImports(EvalRuntime runtime, List<GlobalContext> globalContexts) {
         if (inputsResolved) return;
         inputsResolved = true;
 
-        for (int i = imports.size() - 1; i >= 0; i--) {
-            final Import anImport = imports.get(i);
+        final List<Import> unresolvedImportNames = imports.stream()
+                .filter(anImport -> anImport.getModule() == null)
+                .collect(Collectors.toList());
+
+        for (int i = unresolvedImportNames.size() - 1; i >= 0; i--) {
+            final Import anImport = unresolvedImportNames.get(i);
+
+            try {
+                final List<File> dependingFiles = runtime.findDependingFilesFromImports(Collections.singletonList(anImport.getName()));
+                if (dependingFiles.size() > 0) {
+                    runtime.loadFiles(dependingFiles);
+                }
+            } catch (IOException e) {
+                throw new MenterExecutionException("Failed to resolve imports", e);
+            }
+
             try {
                 final Module customTypeModule = Value.findCustomTypeModule(anImport.getName());
                 if (customTypeModule != null) {
@@ -133,6 +149,8 @@ public class GlobalContext extends EvaluationContext {
                 throw e;
             }
         }
+
+        runtime.finishLoadingContexts();
     }
 
     public Value evaluate(ParserNode node) {

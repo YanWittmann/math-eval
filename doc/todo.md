@@ -11,8 +11,6 @@ Features:
 - [ ] for ...: ...
 - [ ] while ...: ...
 - [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
-- [ ] import will search for files in the same directory with a fitting name/export, for which the files in the
-  directory have to be indexed before parsing them, to prevent execution of the file. i.e. rewrite the import system
 - [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.
 - [ ] rewrite iterator system to work on 'lists' and not 'key'-'value' maps and default to values if only one argument
   is required. (Do not use the size of the object?)
