@@ -25,7 +25,7 @@ public class Lexer {
         List<Token> tokens = new ArrayList<>();
 
         new TokenIterator(expression, operators).forEach(tokens::add);
-        tokens.add(new Token("", TokenType.EOF, expression.length()));
+        tokens.add(new Token(TokenType.EOF, "", expression.length()));
 
         if (MenterDebugger.logLexedTokens) {
             LOG.info("Lexed tokens:");
@@ -85,7 +85,7 @@ public class Lexer {
         EOF;
 
         public Token create(String value, int position) {
-            return new Token(value, this, position);
+            return new Token(this, value, position);
         }
     }
 
@@ -121,7 +121,7 @@ public class Lexer {
 
         private final static String[] KEYWORDS = {
                 "if", "else", "elif", "true", "false", "null", "export", "as", "import", "inline", "native", "return",
-                "while", "for", "break", "continue", "in", "new"
+                "while", "for", "break", "continue", "in", "new", "instanceof", "pass", "null"
         };
 
         private boolean isSingleCharacterToken(char c) {

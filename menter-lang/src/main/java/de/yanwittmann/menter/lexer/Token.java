@@ -7,14 +7,14 @@ public class Token {
     public final Lexer.TokenType type;
     public final int position;
 
-    public Token(String value, Lexer.TokenType type, int position) {
+    public Token(Lexer.TokenType type, String value, int position) {
         this.value = value;
         this.type = type;
         this.position = position;
     }
 
-    public Token(String value, Lexer.TokenType type) {
-        this(value, type, -1);
+    public Token(Lexer.TokenType type, String value) {
+        this(type, value, -1);
     }
 
     public String getValue() {

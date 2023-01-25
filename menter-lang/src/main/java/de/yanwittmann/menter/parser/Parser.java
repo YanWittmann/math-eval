@@ -51,7 +51,7 @@ public class Parser {
             if (rules.stream().noneMatch(rule -> rule.match(tokenTree))) {
                 break;
             } else if (!isType(tokenTree.get(tokenTree.size() - 1), TokenType.EOF)) {
-                tokenTree.add(new Token("", TokenType.EOF));
+                tokenTree.add(new Token(TokenType.EOF, ""));
             }
         }
 
@@ -110,7 +110,8 @@ public class Parser {
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
                isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE) ||
                isType(token, ParserNode.NodeType.LOOP_FOR) || isType(token, ParserNode.NodeType.CONSTRUCTOR_CALL) ||
-               isType(token, ParserNode.NodeType.OPERATOR_FUNCTION);
+               isType(token, ParserNode.NodeType.OPERATOR_FUNCTION) || isKeyword(token, "pass") ||
+               isKeyword(token, "null");
     }
 
     public static boolean isListable(Object token) {
@@ -248,6 +249,39 @@ public class Parser {
             return false;
         });
 
+        // transform x instanceof y  into  x.type() == y
+        // "" instanceof "string"
+        // "".type() == "string"
+        this.applyOnceRules.add(tokens -> {
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+
+                if (isKeyword(currentToken, "instanceof")) {
+                    final Object previousToken = i - 1 >= 0 ? tokens.get(i - 1) : null;
+                    final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+
+                    if (previousToken != null && nextToken != null) {
+                        final Token dot = new Token(TokenType.DOT, ".");
+                        final Token type = new Token(TokenType.IDENTIFIER, "type");
+                        final Token openParenthesis = new Token(TokenType.OPEN_PARENTHESIS, "(");
+                        final Token closeParenthesis = new Token(TokenType.CLOSE_PARENTHESIS, ")");
+                        final Token equality = new Token(TokenType.OPERATOR, "==");
+
+                        tokens.set(i, dot);
+                        tokens.add(i + 1, equality);
+                        tokens.add(i + 1, closeParenthesis);
+                        tokens.add(i + 1, openParenthesis);
+                        tokens.add(i + 1, type);
+                        return true;
+                    } else {
+                        throw new ParsingException("instanceof must be preceded and followed by something that can be evaluated to a value", currentToken, tokens);
+                    }
+                }
+            }
+
+            return false;
+        });
+
         // transform else if to elif
         this.applyOnceRules.add(tokens -> {
             for (int i = 0; i < tokens.size(); i++) {
@@ -255,7 +289,7 @@ public class Parser {
                 final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
 
                 if (isKeyword(token, "else") && isKeyword(nextToken, "if")) {
-                    tokens.set(i, new Token("elif", TokenType.KEYWORD));
+                    tokens.set(i, new Token(TokenType.KEYWORD, "elif"));
                     tokens.remove(i + 1);
                     return true;
                 }
@@ -419,8 +453,7 @@ public class Parser {
 
         // flatten successive identifier accesses
         rules.add(tokens -> {
-            for (int i = 0; i < tokens.size(); i++) {
-                final Object currentToken = tokens.get(i);
+            for (final Object currentToken : tokens) {
                 if (isType(currentToken, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
                     final ParserNode currentNode = (ParserNode) currentToken;
 

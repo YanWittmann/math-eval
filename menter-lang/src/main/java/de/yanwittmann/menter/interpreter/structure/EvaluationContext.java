@@ -465,6 +465,8 @@ public abstract class EvaluationContext {
                 result = new Value(node.getValue().substring(1, node.getValue().length() - 1));
             } else if (node.getType() == Lexer.TokenType.REGEX_LITERAL) {
                 result = new Value(Pattern.compile(node.getValue()));
+            } else if (Parser.isKeyword(node, "null") || Parser.isKeyword(node, "pass")) {
+                result = Value.empty();
             } else if (Parser.isListable(node)) {
                 result = new Value(node.getValue());
             }

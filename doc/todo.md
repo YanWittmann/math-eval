@@ -7,17 +7,11 @@ Features:
 - [ ] "safe-mode" in which no global variables can be changed
 - [ ] write documentation
 - [ ] input history for more than one element in documentation
-- [ ] 'Object' type return empty if not exists on throw if not exists
-- [ ] null --> empty value
 - [ ] static symbols in custom types (java)
 - [ ] if ...: ... elif ...: ... else: ...
 - [ ] for ...: ...
 - [ ] while ...: ...
-- [ ] x instanceof y --> x.type() == y
-- [ ] range(10, 1) --> downto
-- [ ] range(1, 10, 2) --> step
 - [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
-- [ ] empty pass statement, like in python
 - [ ] import will search for files in the same directory with a fitting name/export, for which the files in the
   directory have to be indexed before parsing them, to prevent execution of the file. i.e. rewrite the import system
 - [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.

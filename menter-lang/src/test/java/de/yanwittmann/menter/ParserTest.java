@@ -138,6 +138,31 @@ class ParserTest {
     }
 
     @Test
+    public void instanceofTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ EXPRESSION: == (80 l r)\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: a\n" +
+                               "   │  ├─ IDENTIFIER: type\n" +
+                               "   │  └─ FUNCTION_CALL\n" +
+                               "   │     └─ PARENTHESIS_PAIR\n" +
+                               "   └─ IDENTIFIER: b",
+                "a instanceof b");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ EXPRESSION: == (80 l r)\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ EXPRESSION: ! (140 r)\n" +
+                               "   │  │     └─ IDENTIFIER: a\n" +
+                               "   │  ├─ IDENTIFIER: type\n" +
+                               "   │  └─ FUNCTION_CALL\n" +
+                               "   │     └─ PARENTHESIS_PAIR\n" +
+                               "   └─ IDENTIFIER: b",
+                "(!a) instanceof b");
+    }
+
+    @Test
     public void parsingErrorsTest() {
         Assertions.assertThrows(ParsingException.class, () -> assertParsedTreeEquals("", "creator(a) { test.test = a * 3; f.setTest = (a) -> { test.test = a }; f.getTest = () -> { test.test }; f } created = creator(4);"));
     }

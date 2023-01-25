@@ -213,6 +213,14 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void nullTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "true", "test = null; test.isNull()");
+    }
+
+    @Test
     public void fibonacciTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
