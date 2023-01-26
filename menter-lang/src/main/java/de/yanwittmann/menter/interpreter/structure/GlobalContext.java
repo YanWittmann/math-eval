@@ -119,12 +119,12 @@ public class GlobalContext extends EvaluationContext {
         if (inputsResolved) return;
         inputsResolved = true;
 
-        final List<Import> unresolvedImportNames = imports.stream()
+        final List<Import> unresolvedImports = imports.stream()
                 .filter(anImport -> anImport.getModule() == null)
                 .collect(Collectors.toList());
 
-        for (int i = unresolvedImportNames.size() - 1; i >= 0; i--) {
-            final Import anImport = unresolvedImportNames.get(i);
+        for (int i = unresolvedImports.size() - 1; i >= 0; i--) {
+            final Import anImport = unresolvedImports.get(i);
 
             try {
                 final List<File> dependingFiles = runtime.findDependingFilesFromImports(Collections.singletonList(anImport.getName()));
@@ -143,7 +143,7 @@ public class GlobalContext extends EvaluationContext {
                 }
 
                 // otherwise search for a module in the global contexts
-                anImport.findModule(globalContexts);
+                anImport.findModule(globalContexts, runtime.detectAvailableMenterModules().keySet());
             } catch (Exception e) {
                 imports.remove(anImport);
                 throw e;

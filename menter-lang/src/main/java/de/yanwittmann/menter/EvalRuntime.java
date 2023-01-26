@@ -5,6 +5,7 @@ import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.interpreter.ModuleOptions;
 import de.yanwittmann.menter.interpreter.structure.GlobalContext;
 import de.yanwittmann.menter.interpreter.structure.Import;
+import de.yanwittmann.menter.interpreter.structure.Module;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.lexer.Lexer;
 import de.yanwittmann.menter.lexer.Token;
@@ -29,7 +30,10 @@ public class EvalRuntime {
     protected final List<GlobalContext> globalContexts = new ArrayList<>();
     protected final Map<GlobalContext, ParserNode> unfinishedGlobalContextRootObjects = new HashMap<>();
     private final ModuleOptions moduleOptions = new ModuleOptions();
+
     private final List<File> modulePaths = new ArrayList<>();
+    private final Map<String, File> availableMenterModules = new HashMap<>();
+    private final Set<File> loadedFiles = new HashSet<>();
 
     public EvalRuntime(Operators operators) {
         lexer = new Lexer(operators);
@@ -52,6 +56,23 @@ public class EvalRuntime {
         modulePaths.remove(modulePath);
     }
 
+    public boolean doesModuleExist(String moduleName) {
+        for (GlobalContext globalContext : globalContexts) {
+            if (globalContext.getModules().stream().anyMatch(module -> module.getName().equals(moduleName))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Set<String> listAllExportedModules() {
+        final Set<String> exportedModules = new HashSet<>();
+        for (GlobalContext globalContext : globalContexts) {
+            globalContext.getModules().stream().map(Module::getName).forEach(exportedModules::add);
+        }
+        return exportedModules;
+    }
+
     public void loadFile(File file) {
         loadFiles(Collections.singletonList(file));
     }
@@ -68,22 +89,25 @@ public class EvalRuntime {
         }
 
         for (File file : filesToLoad) {
+            if (loadedFiles.contains(file)) continue;
+            loadedFiles.add(file);
+
             try {
-                findDependingFilesFromImports(file).forEach(this::loadFile);
+                final List<File> dependingFilesFromImports = findDependingFilesFromImports(file);
+                dependingFilesFromImports.forEach(this::loadFile);
+
                 loadContext(FileUtils.readLines(file, StandardCharsets.UTF_8), file.getName());
+
+                availableMenterModules.entrySet().removeIf(entry -> entry.getValue().equals(file));
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new MenterExecutionException("Could not load file '" + file.getAbsolutePath() + "'.", e);
             }
         }
     }
 
     public void loadContext(List<String> str, String source) {
-        if (source.endsWith(".mtr") && globalContexts.stream().anyMatch(globalContext -> globalContext.getSource().equals(source))) {
-            return;
-        }
-
         if (moduleOptions.hasAutoImports()) {
-            str.set(0, moduleOptions.getAutoImportsAsString());
+            str.add(0, moduleOptions.getAutoImportsAsString());
         }
         final List<Token> tokens = lexer.parse(str);
         final ParserNode rootNode = parser.parse(tokens);
@@ -93,6 +117,45 @@ public class EvalRuntime {
 
         globalContexts.add(globalContext);
         unfinishedGlobalContextRootObjects.put(globalContext, rootNode);
+    }
+
+    private List<String> detectExportsInFile(File file) {
+        try {
+            final List<String> lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
+            final List<String> exports = new ArrayList<>();
+            for (String line : lines) {
+                if (line.startsWith("export ")) {
+                    // export [symbol] as moduleName
+                    final String[] split = line.split(" ");
+                    exports.add(split[split.length - 1]);
+                }
+            }
+            return exports;
+        } catch (IOException e) {
+            LOG.error("Failed to read file in order to detect import statements " + file.getAbsolutePath());
+        } catch (Exception e) {
+            LOG.error("Failed to detect exports in file " + file.getAbsolutePath());
+        }
+        return Collections.emptyList();
+    }
+
+    public Map<String, File> detectAvailableMenterModules() {
+        if (availableMenterModules.isEmpty()) {
+            for (File modulePath : modulePaths) {
+                if (modulePath.isFile()) {
+                    detectExportsInFile(modulePath).forEach(symbol -> availableMenterModules.put(symbol, modulePath));
+                } else if (modulePath.isDirectory()) {
+                    for (File file : FileUtils.listFiles(modulePath, new String[]{"mtr"}, true)) {
+                        detectExportsInFile(file).forEach(symbol -> availableMenterModules.put(symbol, file));
+                    }
+                }
+            }
+
+            // remove all modules that are already imported
+            listAllExportedModules().forEach(availableMenterModules::remove);
+        }
+
+        return availableMenterModules;
     }
 
     public List<File> findDependingFilesFromImports(File file) throws IOException {
@@ -123,23 +186,20 @@ public class EvalRuntime {
 
     public List<File> findDependingFilesFromImports(Collection<String> imports) throws IOException {
         final List<File> dependingFiles = new ArrayList<>();
+        final Map<String, File> availableModules = detectAvailableMenterModules();
 
         for (String importString : imports) {
             final String[] split = importString.split(" ");
             final String moduleName = split[0];
-            final String fileName = moduleName + ".mtr";
 
-            // search all files in the same directory as the file + all module paths
-            for (File checkFile : modulePaths) {
-                final File[] files = checkFile.listFiles();
-                if (files != null) {
-                    for (File f : files) {
-                        if (f.getName().equals(fileName)) {
-                            dependingFiles.add(f);
-                            dependingFiles.addAll(findDependingFilesFromImports(f));
-                        }
-                    }
-                }
+            if (doesModuleExist(moduleName)) {
+                continue;
+            } else if (availableModules.containsKey(moduleName)) {
+                final File file = availableModules.get(moduleName);
+                dependingFiles.add(file);
+                // remove the module from the available modules to prevent loading it twice
+                availableModules.remove(moduleName);
+                dependingFiles.addAll(findDependingFilesFromImports(file));
             }
         }
 
@@ -173,9 +233,16 @@ public class EvalRuntime {
                 globalContextsToCheck.remove(globalContext);
             } else {
                 boolean allImportsLoaded = true;
-                for (Import anImport : globalContext.getImports()) {
-                    if ((anImport.getModule() == null && orderedGlobalContexts.stream().noneMatch(i -> anImport.getName().equals(i.getSource()) || anImport.getName().equals(i.getSourceName().replace(".mtr", ""))))
-                        || (anImport.getModule() != null && !orderedGlobalContexts.contains(anImport.getModule().getParentContext()))) {
+
+                for (Import checkImport : globalContext.getImports()) {
+                    final boolean moduleHasBeenAssignedButNotLoaded = checkImport.getModule() != null && !orderedGlobalContexts.contains(checkImport.getModule().getParentContext());
+
+                    final boolean moduleHasNotBeenAssignedYet = checkImport.getModule() == null && orderedGlobalContexts.stream().noneMatch(i -> {
+                        final String moduleName = checkImport.getName();
+                        return i.getModules().stream().anyMatch(m -> m.getName().equals(moduleName));
+                    });
+
+                    if (moduleHasBeenAssignedButNotLoaded || moduleHasNotBeenAssignedYet) {
                         allImportsLoaded = false;
                         break;
                     }

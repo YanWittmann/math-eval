@@ -475,6 +475,7 @@ function createCodeBox(initialContent, interactive, originalCodeboxId, initialCo
 }
 
 function resetCodebox(codeboxContainer) {
+    codeboxContainer.setAttribute("id", "codebox-" + Math.floor(Math.random() * 1000000));
     let codeboxId = codeboxContainer.getAttribute("id");
     let codeboxAppender = codeboxContainer.getElementsByClassName("codebox-appender")[0];
     codeboxAppender.innerHTML = "";

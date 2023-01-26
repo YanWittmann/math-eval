@@ -6,6 +6,7 @@ import de.yanwittmann.menter.parser.ParserNode;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -70,7 +71,7 @@ public class Import {
         return alias != null ? alias : getName();
     }
 
-    protected void findModule(List<GlobalContext> globalContexts) {
+    protected void findModule(List<GlobalContext> globalContexts, Set<String> unloadedModules) {
         final List<Module> modules = globalContexts.stream()
                 .map(GlobalContext::getModules)
                 .flatMap(List::stream)
@@ -84,7 +85,7 @@ public class Import {
             }
         }
 
-        throw new MenterExecutionException("Could not find module '" + getName() + "'. Modules available: " + globalContexts.stream().flatMap(context -> context.getModules().stream()).map(Module::getName).collect(Collectors.toList()));
+        throw new MenterExecutionException("Could not find module '" + getName() + "'.\nModules available: " + globalContexts.stream().flatMap(context -> context.getModules().stream()).map(Module::getName).collect(Collectors.toList()) + "\nOther known modules: " + unloadedModules);
     }
 
     public void setReferencingModule(Object nameOrModule) {

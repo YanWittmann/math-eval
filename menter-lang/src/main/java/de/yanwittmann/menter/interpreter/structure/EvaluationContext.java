@@ -721,8 +721,8 @@ public abstract class EvaluationContext {
 
                     if (!anImport.isInline() && anImport.getAliasOrName().equals(stringKey)) {
                         if (originalGlobalContext != globalContext) {
-                            throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: [" + stringKey + "] references a symbol from the [" + anImport.getModule().getName() + "] module.\n"
-                                                                   + "Accessing symbols across modules is not disallowed.");
+                            throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: Cannot access reference to the [" + anImport.getModule().getName() + "] module.\n"
+                                                                   + "Accessing symbols across modules is disallowed.");
                         }
 
                         final Module module = anImport.getModule();
@@ -741,7 +741,7 @@ public abstract class EvaluationContext {
                     } else if (anImport.isInline() && anImport.getModule().containsSymbol(stringKey)) {
                         if (originalGlobalContext != globalContext) {
                             throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: [" + stringKey + "] references a symbol from the [" + anImport.getModule().getName() + "] module.\n"
-                                                                   + "Accessing symbols across modules is not disallowed.");
+                                                                   + "Accessing symbols across modules is disallowed.");
                         }
 
                         final Module module = anImport.getModule();
