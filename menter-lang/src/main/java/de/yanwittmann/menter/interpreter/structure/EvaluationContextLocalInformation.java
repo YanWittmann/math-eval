@@ -129,13 +129,15 @@ public class EvaluationContextLocalInformation {
         sb.append(message.replaceAll("\\n\tin \\[.+] ?at .+", "").replaceAll("\n\t(Local|Global) symbols: .+", ""));
         rippleFunctionNamesDownwards();
 
-        final int maxSourceNameLength = stackTrace.stream().max(Comparator.comparingInt(o -> o.buildContextMethodString().length())).map(o -> o.buildContextMethodString().length()).orElse(0);
-        for (int i = stackTrace.size() - 1; i >= 0; i--) {
-            sb.append("\n\t").append(stackTrace.get(i).toString(maxSourceNameLength));
-        }
+        if (!stackTrace.isEmpty()) {
+            final int maxSourceNameLength = stackTrace.stream().max(Comparator.comparingInt(o -> o.buildContextMethodString().length())).map(o -> o.buildContextMethodString().length()).orElse(0);
+            for (int i = stackTrace.size() - 1; i >= 0; i--) {
+                sb.append("\n\t").append(stackTrace.get(i).toString(maxSourceNameLength));
+            }
 
-        final MenterStackTraceElement stackTraceElementOfInterest = stackTrace.peek();
-        appendStackTraceSymbols(sb, stackTraceElementOfInterest, false);
+            final MenterStackTraceElement stackTraceElementOfInterest = stackTrace.peek();
+            appendStackTraceSymbols(sb, stackTraceElementOfInterest, false);
+        }
 
         return sb.toString();
     }

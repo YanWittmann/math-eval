@@ -145,7 +145,7 @@ public class EvalRuntime {
                 if (modulePath.isFile()) {
                     detectExportsInFile(modulePath).forEach(symbol -> availableMenterModules.put(symbol, modulePath));
                 } else if (modulePath.isDirectory()) {
-                    for (File file : FileUtils.listFiles(modulePath, new String[]{"mtr"}, true)) {
+                    for (File file : FileUtils.listFiles(modulePath, new String[]{"mtr"}, false)) {
                         detectExportsInFile(file).forEach(symbol -> availableMenterModules.put(symbol, file));
                     }
                 }
