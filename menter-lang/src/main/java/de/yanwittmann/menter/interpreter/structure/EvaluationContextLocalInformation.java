@@ -212,7 +212,7 @@ public class EvaluationContextLocalInformation {
         if (cause instanceof MenterExecutionException && ((MenterExecutionException) cause).hasStackTrace()) {
             return (MenterExecutionException) cause;
         } else {
-            return new MenterExecutionException(formatStackTrace(message));
+            return new MenterExecutionException(formatStackTrace(message), cause);
         }
     }
 

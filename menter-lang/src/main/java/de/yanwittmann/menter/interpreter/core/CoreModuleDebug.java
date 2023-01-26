@@ -1,13 +1,22 @@
 package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.interpreter.MenterDebugger;
+import de.yanwittmann.menter.interpreter.structure.EvaluationContext;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 
+import java.util.List;
+
 public abstract class CoreModuleDebug {
-    public static Value debugSwitch(Value[] arguments) {
-        if (arguments.length == 1) {
+
+    static {
+        EvaluationContext.registerNativeFunction("debug.mtr", "switch", CoreModuleDebug::debugSwitch);
+        EvaluationContext.registerNativeFunction("debug.mtr", "stackTraceValues", CoreModuleDebug::stackTraceValues);
+    }
+
+    public static Value debugSwitch(List<Value> arguments) {
+        if (arguments.size() == 1) {
             // switch the debugger flag
-            final String debuggerFlag = arguments[0].getValue().toString();
+            final String debuggerFlag = arguments.get(0).getValue().toString();
             switch (debuggerFlag) {
                 case "lexer":
                     MenterDebugger.logLexedTokens = !MenterDebugger.logLexedTokens;
@@ -29,27 +38,29 @@ public abstract class CoreModuleDebug {
                     throw new IllegalArgumentException("Unknown debugger flag: " + debuggerFlag);
             }
 
-        } else if (arguments.length == 2) {
+        } else if (arguments.size() == 2) {
             // set the debugger flag to the value
-            final String debuggerFlag = arguments[0].getValue().toString();
+            final String debuggerFlag = arguments.get(0).getValue().toString();
+            boolean isArg1True = arguments.get(1).isTrue();
+
             switch (debuggerFlag) {
                 case "interpreter":
-                    MenterDebugger.logInterpreterEvaluationStyle = arguments[1].getNumericValue().intValue();
+                    MenterDebugger.logInterpreterEvaluationStyle = arguments.get(1).getNumericValue().intValue();
                     break;
                 case "lexer":
-                    MenterDebugger.logLexedTokens = arguments[1].isTrue();
+                    MenterDebugger.logLexedTokens = isArg1True;
                     break;
                 case "parser":
-                    MenterDebugger.logParsedTokens = arguments[1].isTrue();
+                    MenterDebugger.logParsedTokens = isArg1True;
                     break;
                 case "parser progress":
-                    MenterDebugger.logParseProgress = arguments[1].isTrue();
+                    MenterDebugger.logParseProgress = isArg1True;
                     break;
                 case "interpreter resolve":
-                    MenterDebugger.logInterpreterResolveSymbols = arguments[1].isTrue();
+                    MenterDebugger.logInterpreterResolveSymbols = isArg1True;
                     break;
                 case "import order":
-                    MenterDebugger.logInterpreterEvaluationOrder = arguments[1].isTrue();
+                    MenterDebugger.logInterpreterEvaluationOrder = isArg1True;
                     break;
 
                 default:
@@ -60,7 +71,7 @@ public abstract class CoreModuleDebug {
         return Value.empty();
     }
 
-    public static Value stackTraceValues(Value[] arguments) {
+    public static Value stackTraceValues(List<Value> arguments) {
         MenterDebugger.stackTracePrintValues.clear();
         for (Value argument : arguments) {
             MenterDebugger.stackTracePrintValues.add(argument.getValue().toString());

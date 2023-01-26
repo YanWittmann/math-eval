@@ -29,6 +29,7 @@ public class MenterInterpreter extends EvalRuntime {
             "io.mtr",
             "system.mtr",
             "debug.mtr",
+            "reflect.mtr",
     };
 
     private void loadMenterCoreFiles() {
@@ -40,19 +41,6 @@ public class MenterInterpreter extends EvalRuntime {
         } catch (Exception e) {
             throw new MenterExecutionException("Failed to load Menter core files", e);
         }
-    }
-
-    private File firstExistingDirectory(Supplier<String>... suppliers) {
-        for (Supplier<String> supplier : suppliers) {
-            final String path = supplier.get();
-            if (path != null) {
-                final File file = new File(path);
-                if (file.exists() && file.isDirectory()) {
-                    return file;
-                }
-            }
-        }
-        return null;
     }
 
     private List<String> readLinesFromResource(String path) {

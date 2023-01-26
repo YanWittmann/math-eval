@@ -1,0 +1,5 @@
+
+native inherit()
+native access()
+
+export [inherit, access] as reflect

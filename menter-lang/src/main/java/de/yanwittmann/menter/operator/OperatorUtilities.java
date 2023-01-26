@@ -4,9 +4,7 @@ import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -211,11 +209,11 @@ public class OperatorUtilities {
             }
 
             @Override
-            public Value evaluate(Value... arguments) {
-                if (arguments.length != 2) {
-                    throw new MenterExecutionException(getSymbol() + " expected 2 arguments, got " + arguments.length);
+            public Value evaluate(List<Value> arguments) {
+                if (arguments.size() != 2) {
+                    throw new MenterExecutionException(getSymbol() + " expected 2 arguments, got " + arguments.size());
                 }
-                return evaluator.apply(arguments[0], arguments[1]);
+                return evaluator.apply(arguments.get(0), arguments.get(1));
             }
         };
     }
@@ -248,11 +246,11 @@ public class OperatorUtilities {
             }
 
             @Override
-            public Value evaluate(Value... arguments) {
-                if (arguments.length != 1) {
-                    throw new MenterExecutionException(getSymbol() + " expected 1 argument, got " + arguments.length);
+            public Value evaluate(List<Value> arguments) {
+                if (arguments.size() != 1) {
+                    throw new MenterExecutionException(getSymbol() + " expected 1 argument, got " + arguments.size());
                 }
-                return evaluator.apply(arguments[0]);
+                return evaluator.apply(arguments.get(0));
             }
         };
     }

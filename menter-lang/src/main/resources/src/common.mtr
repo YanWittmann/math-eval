@@ -1,5 +1,5 @@
 
-native print(x)
-native range(a, b)
+native print()
+native range()
 
 export [print, range] as common

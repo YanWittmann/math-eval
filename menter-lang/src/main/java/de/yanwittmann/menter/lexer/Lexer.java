@@ -79,6 +79,7 @@ public class Lexer {
         OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET,
         OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET,
         COMMA, SEMICOLON, DOT,
+        CONTINUE, BREAK, PASS,
         KEYWORD,
         NEWLINE,
         COMMENT,
@@ -350,10 +351,23 @@ public class Lexer {
                         } else {
                             if (isKeyword(buffer.toString())) {
                                 final String keyword = buffer.toString();
-                                if (keyword.equals("true") || keyword.equals("false")) {
-                                    nextToken = createToken(buffer, TokenType.BOOLEAN_LITERAL);
-                                } else {
-                                    nextToken = createToken(buffer, TokenType.KEYWORD);
+                                switch (keyword) {
+                                    case "true":
+                                    case "false":
+                                        nextToken = createToken(buffer, TokenType.BOOLEAN_LITERAL);
+                                        break;
+                                    case "pass":
+                                        nextToken = createToken(buffer, TokenType.PASS);
+                                        break;
+                                    case "break":
+                                        nextToken = createToken(buffer, TokenType.BREAK);
+                                        break;
+                                    case "continue":
+                                        nextToken = createToken(buffer, TokenType.CONTINUE);
+                                        break;
+                                    default:
+                                        nextToken = createToken(buffer, TokenType.KEYWORD);
+                                        break;
                                 }
                             } else {
                                 nextToken = createToken(buffer, TokenType.IDENTIFIER);

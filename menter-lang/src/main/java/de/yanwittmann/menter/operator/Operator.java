@@ -9,10 +9,8 @@ import de.yanwittmann.menter.parser.ParserRule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class Operator {
     private static final Logger LOG = LogManager.getLogger(Operator.class);
@@ -29,11 +27,11 @@ public abstract class Operator {
         return true;
     }
 
-    public abstract Value evaluate(Value... arguments);
-
-    public Value evaluate(Collection<Value> arguments) {
-        return evaluate(arguments.toArray(new Value[0]));
+    public Value evaluate(Value... arguments) {
+        return evaluate(Arrays.stream(arguments).collect(Collectors.toList()));
     }
+
+    public abstract Value evaluate(List<Value> arguments);
 
     public int getArgumentCount() {
         if (isLeftAssociative() && isRightAssociative()) {

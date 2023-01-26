@@ -64,7 +64,7 @@ public class Parser {
             final Object token = tokenTree.get(i);
             if (!isType(token, ParserNode.NodeType.STATEMENT) && !isType(token, ParserNode.NodeType.EXPORT_STATEMENT) &&
                 !isType(token, ParserNode.NodeType.IMPORT_STATEMENT) && !isType(token, ParserNode.NodeType.IMPORT_INLINE_STATEMENT) &&
-                !isType(token, ParserNode.NodeType.IMPORT_AS_STATEMENT)) {
+                !isType(token, ParserNode.NodeType.IMPORT_AS_STATEMENT) && !isType(token, ParserNode.NodeType.RETURN_STATEMENT)) {
 
                 // convert any statement nodes to their child nodes
                 for (int j = tokenTree.size() - 1; j >= 0; j--) {
@@ -110,7 +110,8 @@ public class Parser {
                isType(token, ParserNode.NodeType.ARRAY) || isType(token, ParserNode.NodeType.MAP) ||
                isType(token, ParserNode.NodeType.CONDITIONAL) || isType(token, ParserNode.NodeType.FUNCTION_INLINE) ||
                isType(token, ParserNode.NodeType.LOOP_FOR) || isType(token, ParserNode.NodeType.CONSTRUCTOR_CALL) ||
-               isType(token, ParserNode.NodeType.OPERATOR_FUNCTION) || isKeyword(token, "pass") ||
+               isType(token, ParserNode.NodeType.OPERATOR_FUNCTION) || isType(token, TokenType.PASS) ||
+               isType(token, TokenType.CONTINUE) || isType(token, TokenType.BREAK) ||
                isKeyword(token, "null");
     }
 
@@ -1242,7 +1243,7 @@ public class Parser {
 
                     if (isEvaluableToValue(bodyToken) || isType(bodyToken, ParserNode.NodeType.CODE_BLOCK) ||
                         isType(bodyToken, ParserNode.NodeType.RETURN_STATEMENT) || isType(bodyToken, ParserNode.NodeType.STATEMENT) ||
-                        isType(bodyToken, ParserNode.NodeType.ASSIGNMENT)) {
+                        isType(bodyToken, ParserNode.NodeType.ASSIGNMENT) || isType(bodyToken, TokenType.CONTINUE)) {
                         if (bodyToken instanceof ParserNode) {
                             branch.addChild(makeProperCodeBlock((ParserNode) bodyToken));
                         } else {
@@ -1276,7 +1277,6 @@ public class Parser {
 
             for (int i = 0; i < tokens.size(); i++) {
                 final Object token = tokens.get(i);
-                final Object nextToken = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
 
                 if (state == 0 && isKeyword(token, "for")) {
                     state = 1;
@@ -1335,7 +1335,8 @@ public class Parser {
                 } else if (state == 1 && isType(token, ParserNode.NodeType.LOOP_FOR_BRACKET)) {
                     state = 2;
                 } else if (state == 2 && (isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) ||
-                                          isType(token, ParserNode.NodeType.STATEMENT) || isType(token, ParserNode.NodeType.ASSIGNMENT))) {
+                                          isType(token, ParserNode.NodeType.STATEMENT) || isType(token, ParserNode.NodeType.RETURN_STATEMENT) ||
+                                          isType(token, ParserNode.NodeType.ASSIGNMENT))) {
 
                     if (isType(nextToken, TokenType.OPERATOR)) {
                         state = 0;
@@ -1359,7 +1360,8 @@ public class Parser {
                     if (isType(token, ParserNode.NodeType.PARENTHESIS_PAIR) || isType(token, ParserNode.NodeType.ARRAY) ||
                         isType(token, ParserNode.NodeType.SQUARE_BRACKET_PAIR) || isIdentifier(token) ||
                         isEvaluableToValue(token) || isType(token, ParserNode.NodeType.CODE_BLOCK) ||
-                        isType(token, ParserNode.NodeType.STATEMENT) || isType(token, ParserNode.NodeType.ASSIGNMENT)) {
+                        isType(token, ParserNode.NodeType.STATEMENT) || isType(token, ParserNode.NodeType.RETURN_STATEMENT) ||
+                        isType(token, ParserNode.NodeType.ASSIGNMENT)) {
 
                         node.addChild(token);
                     } else if (isType(token, ParserNode.NodeType.LOOP_FOR_BRACKET)) {

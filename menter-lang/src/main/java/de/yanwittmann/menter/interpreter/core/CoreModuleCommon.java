@@ -2,21 +2,26 @@ package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
+import de.yanwittmann.menter.interpreter.structure.EvaluationContext;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class CoreModuleCommon {
 
-    public static Value range(Value[] arguments) {
-        if (arguments.length < 2) throw new MenterExecutionException("range() expects 2 or 3 arguments");
-        final Object start = arguments[0].getValue();
-        final Object end = arguments[1].getValue();
-        final Object stepSizeParam = arguments.length == 3 ? arguments[2].getValue() : BigDecimal.ONE;
+    static {
+        EvaluationContext.registerNativeFunction("common.mtr", "print", CoreModuleCommon::print);
+        EvaluationContext.registerNativeFunction("common.mtr", "range", CoreModuleCommon::range);
+    }
+
+    public static Value range(List<Value> arguments) {
+        if (arguments.size() < 2) throw new MenterExecutionException("range() expects 2 or 3 arguments");
+        final Object start = arguments.get(0).getValue();
+        final Object end = arguments.get(1).getValue();
+        final Object stepSizeParam = arguments.size() == 3 ? arguments.get(2).getValue() : BigDecimal.ONE;
 
         if (!(stepSizeParam instanceof BigDecimal)) {
             throw new MenterExecutionException("range() expects a number as step size");
@@ -65,8 +70,8 @@ public abstract class CoreModuleCommon {
         }
     }
 
-    public static Value print(Value[] arguments) {
-        MenterDebugger.printer.println(Arrays.stream(arguments)
+    public static Value print(List<Value> arguments) {
+        MenterDebugger.printer.println(arguments.stream()
                 .map(v -> v.toDisplayString())
                 .collect(Collectors.joining(" ")));
         return Value.empty();

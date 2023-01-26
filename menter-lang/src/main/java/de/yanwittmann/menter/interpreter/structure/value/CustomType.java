@@ -135,7 +135,7 @@ public abstract class CustomType implements Comparable<CustomType> {
         return null;
     }
 
-    protected int checkParameterCombination(List<Value> parameters, String[][] types) {
+    public static int checkParameterCombination(List<Value> parameters, String[][] types) {
         final Boolean[] availableTypes = IntStream.range(0, types.length).mapToObj(e -> Boolean.TRUE).toArray(Boolean[]::new);
 
         for (int i = 0; i < parameters.size(); i++) {
@@ -170,9 +170,9 @@ public abstract class CustomType implements Comparable<CustomType> {
         return longestChainIndex;
     }
 
-    protected MenterExecutionException invalidParameterCombinationException(String methodName, List<Value> parameters, String[][] types) {
+    public static MenterExecutionException invalidParameterCombinationException(String typeName, String methodName, List<Value> parameters, String[][] types) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("Invalid parameter combination for function [").append(getClass().getSimpleName()).append(".").append(methodName).append("]: ").append(parameters).append("\n");
+        sb.append("Invalid parameter combination for function [").append(typeName).append(".").append(methodName).append("]: ").append(parameters).append("\n");
 
         sb.append("  Expected:\n");
         for (int i = 0; i < types.length; i++) {

@@ -2,20 +2,19 @@ Features:
 
 - [ ] while loops
 - [ ] stack trace line numbers
-- [ ] `return`, `break` and `continue` statements via special subclass of value which is detected and unwrapped in eval
-  tree
-- [ ] live preview "safe-mode" in which no global variables can be changed
 - [ ] write documentation
 - [ ] input history for more than one element in documentation
 - [ ] if ...: ... elif ...: ... else: ...
 - [ ] for ...: ...
 - [ ] while ...: ...
-- [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
-- [ ] reflection module that allows for calling methods by name, inherit values from other values, etc.
-- [ ] rewrite iterator system to work on 'lists' and not 'key'-'value' maps and default to values if only one argument
-  is required. (Do not use the size of the object?)
 - [ ] string output with quotes "", two separate rendering functions (?)
 - [ ] fix `??` when printing syntax trees (also in documentation)
+
+To be thought about:
+
+- [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
+- [ ] rethink iterator system
+- [ ] live preview "safe-mode" in which no global variables can be changed
 
 ```
 Person = (name, alter) -> {
@@ -52,5 +51,4 @@ Bugs:
 ```
 {test:[1], hey: 4}[0]
 accessors on maps
-import system inline --> sleep(1000) --> Cannot resolve symbol 'sleep' on [sleep]
 ```

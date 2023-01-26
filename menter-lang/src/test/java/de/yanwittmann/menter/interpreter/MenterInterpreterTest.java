@@ -56,6 +56,27 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void returnBreakContinueTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "[1, 0]", "import common inline; test(a,b) { if (a) return b + 1; return b; }; a = [test(true, 0)]; a[1] = test(false, 0); return a");
+        evaluateAndAssertEqual(interpreter, "[2, 3]", "arr = []; for (i in [1,2,3, 4]) { if (i <= 1) continue else if (i == 4) break; arr[i - 2] = i }; arr");
+    }
+
+
+    @Test
+    public void reflectionTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+        interpreter.getModuleOptions().addAutoImport("reflect inline");
+
+        evaluateAndAssertEqual(interpreter, "42", "test = 4; fun() = test; inherit(fun(), 42); test");
+        evaluateAndAssertEqual(interpreter, "42", "test = [4]; fun = access(test, \"map\"); test = fun(x -> x + 38); test[0]");
+        evaluateAndAssertEqual(interpreter, "42", "access({1: 42}, 1)");
+    }
+
+    @Test
     public void closureTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
@@ -207,7 +228,7 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "[1, 2, 3]", "1 :: [2, 3]");
         evaluateAndAssertEqual(interpreter, "[1, 2]", "1 :: 2");
 
-        evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 0: 3}", "{1: 1, 2: 2} :: 3");
+        evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 3}", "{1: 1, 2: 2} :: 3");
         evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 3}", "{1: 1, 2: 2} :: {3: 3}");
         evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 3}", "{1: 1, 2: 2, 3: 4} :: {3: 3}");
     }

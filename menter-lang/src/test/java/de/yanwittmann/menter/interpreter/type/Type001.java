@@ -1,9 +1,7 @@
 package de.yanwittmann.menter.interpreter.type;
 
-import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.structure.value.*;
 
-import java.util.Iterator;
 import java.util.List;
 
 @TypeMetaData(typeName = "customType001", moduleName = "test")
@@ -27,7 +25,7 @@ public class Type001 extends CustomType {
                 {},
                 {PrimitiveValueType.ANY.getType()}
         };
-        final int parameterCombination = super.checkParameterCombination(parameters, parameterCombinations);
+        final int parameterCombination = CustomType.checkParameterCombination(parameters, parameterCombinations);
 
         switch (parameterCombination) {
             case 0:
@@ -37,7 +35,7 @@ public class Type001 extends CustomType {
                 myValue = parameters.get(0).toDisplayString();
                 break;
             case -1:
-                throw invalidParameterCombinationException("setMyValue", parameters, parameterCombinations);
+                throw invalidParameterCombinationException(getClass().getSimpleName(), "setMyValue", parameters, parameterCombinations);
         }
 
         return Value.empty();

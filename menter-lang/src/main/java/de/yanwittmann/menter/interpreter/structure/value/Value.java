@@ -21,6 +21,9 @@ public class Value implements Comparable<Value> {
     private final static Logger LOG = LogManager.getLogger(Value.class);
     public final static String TAG_KEY_FUNCTION_PARENT_VALUE = "functionParentValue";
     public final static String TAG_KEY_FUNCTION_PARENT_CONTEXT = "functionParentContext";
+    public final static String TAG_KEY_RETURN_VALUE = "returnValue";
+    public final static String TAG_KEY_BREAK_VALUE = "breakValue";
+    public final static String TAG_KEY_CONTINUE_VALUE = "continueValue";
 
     private final static List<Module> CUSTOM_TYPES = new ArrayList<>();
 
@@ -81,6 +84,69 @@ public class Value implements Comparable<Value> {
         return getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_VALUE);
     }
 
+    public boolean isReturn() {
+        return hasTaggedAdditionalInformation(Value.TAG_KEY_RETURN_VALUE);
+    }
+
+    public boolean isBreak() {
+        return hasTaggedAdditionalInformation(Value.TAG_KEY_BREAK_VALUE);
+    }
+
+    public boolean isContinue() {
+        return hasTaggedAdditionalInformation(Value.TAG_KEY_CONTINUE_VALUE);
+    }
+
+    public void setReturn(boolean isReturn) {
+        if (isReturn) setTaggedAdditionalInformation(Value.TAG_KEY_RETURN_VALUE, new Value(true));
+        else removeTaggedAdditionalInformation(Value.TAG_KEY_RETURN_VALUE);
+    }
+
+    public void setBreak(boolean isBreak) {
+        if (isBreak) setTaggedAdditionalInformation(Value.TAG_KEY_BREAK_VALUE, new Value(true));
+        else removeTaggedAdditionalInformation(Value.TAG_KEY_BREAK_VALUE);
+    }
+
+    public void setContinue(boolean isContinue) {
+        if (isContinue) setTaggedAdditionalInformation(Value.TAG_KEY_CONTINUE_VALUE, new Value(true));
+        else removeTaggedAdditionalInformation(Value.TAG_KEY_CONTINUE_VALUE);
+    }
+
+    public boolean unwrapReturn() {
+        if (isReturn()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_RETURN_VALUE);
+            return true;
+        } else if (isBreak()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_BREAK_VALUE);
+        } else if (isContinue()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_CONTINUE_VALUE);
+        }
+        return false;
+    }
+
+    public boolean unwrapBreak() {
+        if (isBreak()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_BREAK_VALUE);
+            return true;
+        } else if (isReturn()) {
+            return true;
+        } else if (isContinue()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_CONTINUE_VALUE);
+        }
+        return false;
+    }
+
+    public boolean unwrapContinue() {
+        if (isContinue()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_CONTINUE_VALUE);
+            return true;
+        } else if (isReturn()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_RETURN_VALUE);
+        } else if (isBreak()) {
+            removeTaggedAdditionalInformation(Value.TAG_KEY_BREAK_VALUE);
+        }
+        return false;
+    }
+
     public EvaluationContextLocalInformation getTagParentFunctionContext() {
         final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_CONTEXT);
         if (element != null) return (EvaluationContextLocalInformation) element.getValue();
@@ -114,7 +180,7 @@ public class Value implements Comparable<Value> {
         } else if (value instanceof Map && !(value instanceof LinkedHashMap)) {
             this.value = new LinkedHashMap<>((Map<?, ?>) value);
         } else if (value instanceof Value) {
-            inheritValue((Value) value);
+            setValue(((Value) value).getValue());
         } else if (value instanceof Map.Entry) {
             final Map.Entry<?, ?> mapEntry = (Map.Entry<?, ?>) value;
             final Map<Object, Value> map = new LinkedHashMap<>();
