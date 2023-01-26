@@ -1,7 +1,11 @@
 
 Introduction >> introduction.md
-    Subchapter >> subdir/subchapter.md
+
+Core Language >> core_lang.md
+    Primitive Types >> basics/primitive_types.md
+    Operators >> basics/operators.md
 
 Hints >> hints.md
     Evaluation Server >> hints/evaluation_server.md
     Testing >> demo.md
+    Subchapter >> subdir/subchapter.md

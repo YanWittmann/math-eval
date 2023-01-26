@@ -113,9 +113,9 @@ class ParserTest {
                                "   └─ LOOP_FOR\n" +
                                "      ├─ IDENTIFIER: i\n" +
                                "      ├─ IDENTIFIER: val\n" +
-                               "      └─ ASSIGNMENT: = (10 l r)\n" +
+                               "      └─ ASSIGNMENT: (=) (10)\n" +
                                "         ├─ IDENTIFIER: sum\n" +
-                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "         └─ EXPRESSION: (+) (110)\n" +
                                "            ├─ IDENTIFIER: sum\n" +
                                "            └─ IDENTIFIER: i",
                 "{for (i in val) sum = sum + i}");
@@ -124,9 +124,9 @@ class ParserTest {
     @Test
     public void functionDeclarationsTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: a\n" +
-                               "   └─ EXPRESSION: * (120 l r)\n" +
+                               "   └─ EXPRESSION: (*) (120)\n" +
                                "      ├─ IDENTIFIER: a\n" +
                                "      └─ NUMBER_LITERAL: 3\n" +
                                "STATEMENT\n" +
@@ -140,7 +140,7 @@ class ParserTest {
     @Test
     public void instanceofTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: == (80 l r)\n" +
+                               "└─ EXPRESSION: (==) (80)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: a\n" +
                                "   │  ├─ IDENTIFIER: type\n" +
@@ -150,10 +150,10 @@ class ParserTest {
                 "a instanceof b");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: == (80 l r)\n" +
+                               "└─ EXPRESSION: (==) (80)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ EXPRESSION: ! (140 r)\n" +
+                               "   │  │  └─ EXPRESSION: [!) (140)\n" +
                                "   │  │     └─ IDENTIFIER: a\n" +
                                "   │  ├─ IDENTIFIER: type\n" +
                                "   │  └─ FUNCTION_CALL\n" +
@@ -184,7 +184,7 @@ class ParserTest {
                 "new test.Type001()");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: val\n" +
                                "   └─ CONSTRUCTOR_CALL\n" +
                                "      ├─ IDENTIFIER_ACCESSED\n" +
@@ -200,12 +200,12 @@ class ParserTest {
     @Test
     public void correctOperatorOrder() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: + (110 l r)\n" +
+                               "└─ EXPRESSION: (+) (110)\n" +
                                "   ├─ NUMBER_LITERAL: 1\n" +
-                               "   └─ EXPRESSION: * (120 l r)\n" +
+                               "   └─ EXPRESSION: (*) (120)\n" +
                                "      ├─ NUMBER_LITERAL: 2\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
-                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "         └─ EXPRESSION: (+) (110)\n" +
                                "            ├─ NUMBER_LITERAL: 3\n" +
                                "            └─ NUMBER_LITERAL: 4",
                 "1 + 2 * (3 + 4)");
@@ -220,7 +220,7 @@ class ParserTest {
                                "   │  ├─ IDENTIFIER: bar\n" +
                                "   │  └─ FUNCTION_CALL\n" +
                                "   │     └─ PARENTHESIS_PAIR\n" +
-                               "   │        └─ EXPRESSION: + (110 l r)\n" +
+                               "   │        └─ EXPRESSION: (+) (110)\n" +
                                "   │           ├─ NUMBER_LITERAL: 1\n" +
                                "   │           └─ NUMBER_LITERAL: 2\n" +
                                "   └─ NUMBER_LITERAL: 3",
@@ -228,11 +228,11 @@ class ParserTest {
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ PARENTHESIS_PAIR\n" +
-                               "   ├─ EXPRESSION: + (110 l r)\n" +
-                               "   │  ├─ EXPRESSION: * (120 l r)\n" +
+                               "   ├─ EXPRESSION: (+) (110)\n" +
+                               "   │  ├─ EXPRESSION: (*) (120)\n" +
                                "   │  │  ├─ NUMBER_LITERAL: 4\n" +
                                "   │  │  └─ PARENTHESIS_PAIR\n" +
-                               "   │  │     └─ EXPRESSION: + (110 l r)\n" +
+                               "   │  │     └─ EXPRESSION: (+) (110)\n" +
                                "   │  │        ├─ NUMBER_LITERAL: 2\n" +
                                "   │  │        └─ NUMBER_LITERAL: 3\n" +
                                "   │  └─ IDENTIFIER_ACCESSED\n" +
@@ -240,22 +240,22 @@ class ParserTest {
                                "   │     ├─ IDENTIFIER: bar\n" +
                                "   │     └─ FUNCTION_CALL\n" +
                                "   │        └─ PARENTHESIS_PAIR\n" +
-                               "   │           └─ EXPRESSION: + (110 l r)\n" +
+                               "   │           └─ EXPRESSION: (+) (110)\n" +
                                "   │              ├─ NUMBER_LITERAL: 1\n" +
                                "   │              └─ NUMBER_LITERAL: 2\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      ├─ IDENTIFIER: hallo\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
-                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "         └─ EXPRESSION: (+) (110)\n" +
                                "            ├─ NUMBER_LITERAL: 3\n" +
                                "            └─ NUMBER_LITERAL: 5\n" +
                                "STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: foo\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      ├─ IDENTIFIER: hallo\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
-                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "         └─ EXPRESSION: (+) (110)\n" +
                                "            ├─ NUMBER_LITERAL: 3\n" +
                                "            └─ NUMBER_LITERAL: 5",
                 "(4 * (2 + 3) + foo.bar(1 + 2), hallo(3 + 5)); foo = hallo(3 + 5)");
@@ -295,26 +295,26 @@ class ParserTest {
     @Test
     public void lengthyStatementTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: test\n" +
                                "   │  ├─ CODE_BLOCK\n" +
-                               "   │  │  └─ EXPRESSION: + (110 l r)\n" +
+                               "   │  │  └─ EXPRESSION: (+) (110)\n" +
                                "   │  │     ├─ STRING_LITERAL: \"varname-\"\n" +
                                "   │  │     └─ IDENTIFIER: test\n" +
                                "   │  └─ CODE_BLOCK\n" +
-                               "   │     └─ EXPRESSION: + (110 l r)\n" +
+                               "   │     └─ EXPRESSION: (+) (110)\n" +
                                "   │        ├─ STRING_LITERAL: \"second\"\n" +
                                "   │        └─ FUNCTION_CALL\n" +
                                "   │           ├─ IDENTIFIER: foo\n" +
                                "   │           └─ PARENTHESIS_PAIR\n" +
-                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "   └─ EXPRESSION: (+) (110)\n" +
                                "      ├─ PARENTHESIS_PAIR\n" +
                                "      │  ├─ NUMBER_LITERAL: 3\n" +
                                "      │  └─ PARENTHESIS_PAIR\n" +
                                "      │     ├─ NUMBER_LITERAL: 5\n" +
-                               "      │     └─ EXPRESSION: + (110 l r)\n" +
-                               "      │        ├─ EXPRESSION: * (120 l r)\n" +
+                               "      │     └─ EXPRESSION: (+) (110)\n" +
+                               "      │        ├─ EXPRESSION: (*) (120)\n" +
                                "      │        │  ├─ IDENTIFIER: PI\n" +
                                "      │        │  └─ NUMBER_LITERAL: 4\n" +
                                "      │        └─ FUNCTION_CALL\n" +
@@ -342,31 +342,31 @@ class ParserTest {
     @Test
     public void minorStatementsTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: + (110 l r)\n" +
-                               "   ├─ EXPRESSION: + (110 l r)\n" +
+                               "└─ EXPRESSION: (+) (110)\n" +
+                               "   ├─ EXPRESSION: (+) (110)\n" +
                                "   │  ├─ NUMBER_LITERAL: 1\n" +
-                               "   │  └─ EXPRESSION: * (120 l r)\n" +
+                               "   │  └─ EXPRESSION: (*) (120)\n" +
                                "   │     ├─ NUMBER_LITERAL: 2\n" +
                                "   │     └─ NUMBER_LITERAL: 4\n" +
                                "   └─ NUMBER_LITERAL: 6",
                 "1 + 2 * 4 + 6");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: regex\n" +
                                "   └─ REGEX_LITERAL: r/regex/ig",
                 "regex = r/regex/ig");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: foo\n" +
-                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "   └─ EXPRESSION: (+) (110)\n" +
                                "      ├─ IDENTIFIER: var\n" +
-                               "      └─ EXPRESSION: * (120 l r)\n" +
+                               "      └─ EXPRESSION: (*) (120)\n" +
                                "         ├─ NUMBER_LITERAL: 2\n" +
                                "         └─ NUMBER_LITERAL: 4\n" +
                                "STATEMENT\n" +
-                               "└─ EXPRESSION: + (110 l r)\n" +
+                               "└─ EXPRESSION: (+) (110)\n" +
                                "   ├─ NUMBER_LITERAL: 3\n" +
                                "   └─ NUMBER_LITERAL: 6",
                 "foo = var + 2 * 4;3 + 6");
@@ -388,16 +388,16 @@ class ParserTest {
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  ├─ IDENTIFIER: foo\n" +
                                "   │  └─ NUMBER_LITERAL: 5\n" +
-                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "   └─ EXPRESSION: (+) (110)\n" +
                                "      ├─ NUMBER_LITERAL: 9\n" +
                                "      └─ NUMBER_LITERAL: 8",
                 "(1, 3, (foo, 5), 9 + 8)");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: * (120 l r)\n" +
+                               "└─ EXPRESSION: (*) (120)\n" +
                                "   ├─ NUMBER_LITERAL: 1\n" +
                                "   └─ PARENTHESIS_PAIR\n" +
-                               "      └─ EXPRESSION: + (110 l r)\n" +
+                               "      └─ EXPRESSION: (+) (110)\n" +
                                "         ├─ NUMBER_LITERAL: 3\n" +
                                "         └─ NUMBER_LITERAL: 4",
                 "1 * (3 + 4)");
@@ -471,18 +471,18 @@ class ParserTest {
                                "      └─ PARENTHESIS_PAIR\n" +
                                "         ├─ NUMBER_LITERAL: 1\n" +
                                "         ├─ NUMBER_LITERAL: 2\n" +
-                               "         └─ EXPRESSION: * (120 l r)\n" +
+                               "         └─ EXPRESSION: (*) (120)\n" +
                                "            ├─ FUNCTION_CALL\n" +
                                "            │  ├─ IDENTIFIER: test\n" +
                                "            │  └─ PARENTHESIS_PAIR\n" +
-                               "            │     └─ EXPRESSION: + (110 l r)\n" +
+                               "            │     └─ EXPRESSION: (+) (110)\n" +
                                "            │        ├─ NUMBER_LITERAL: 3\n" +
                                "            │        └─ NUMBER_LITERAL: 6\n" +
                                "            └─ NUMBER_LITERAL: 4",
                 "foo.bar(1, 2, test(3 + 6) * 4)");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: + (110 l r)\n" +
+                               "└─ EXPRESSION: (+) (110)\n" +
                                "   ├─ NUMBER_LITERAL: 4\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      ├─ IDENTIFIER: sum\n" +
@@ -496,7 +496,7 @@ class ParserTest {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ PARENTHESIS_PAIR\n" +
                                "   ├─ NUMBER_LITERAL: 5\n" +
-                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "   └─ EXPRESSION: (+) (110)\n" +
                                "      ├─ NUMBER_LITERAL: 4\n" +
                                "      └─ FUNCTION_CALL\n" +
                                "         ├─ IDENTIFIER: map\n" +
@@ -508,7 +508,7 @@ class ParserTest {
                 "(5, 4 + map([5, 6, 7]))");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ LISTED_ELEMENTS\n" +
                                "   │  ├─ IDENTIFIER: un\n" +
                                "   │  └─ IDENTIFIER: pack\n" +
@@ -521,7 +521,7 @@ class ParserTest {
                 "un, pack = foo([1, 2])");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: var\n" +
                                "   └─ MAP\n" +
                                "      ├─ MAP_ELEMENT\n" +
@@ -529,7 +529,7 @@ class ParserTest {
                                "      │  └─ NUMBER_LITERAL: 5\n" +
                                "      ├─ MAP_ELEMENT\n" +
                                "      │  ├─ IDENTIFIER: hmm\n" +
-                               "      │  └─ EXPRESSION: * (120 l r)\n" +
+                               "      │  └─ EXPRESSION: (*) (120)\n" +
                                "      │     ├─ STRING_LITERAL: \"wow\"\n" +
                                "      │     └─ NUMBER_LITERAL: 3\n" +
                                "      └─ MAP_ELEMENT\n" +
@@ -577,7 +577,7 @@ class ParserTest {
                 "export [myFunction, myVariable] as TestModule");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: - (110 l r)\n" +
+                               "└─ EXPRESSION: (-) (110)\n" +
                                "   ├─ FUNCTION_CALL\n" +
                                "   │  ├─ IDENTIFIER: test\n" +
                                "   │  └─ PARENTHESIS_PAIR\n" +
@@ -593,8 +593,8 @@ class ParserTest {
                                "   │  ├─ IDENTIFIER: y\n" +
                                "   │  └─ IDENTIFIER: z\n" +
                                "   └─ CODE_BLOCK\n" +
-                               "      └─ EXPRESSION: - (110 l r)\n" +
-                               "         ├─ EXPRESSION: + (110 l r)\n" +
+                               "      └─ EXPRESSION: (-) (110)\n" +
+                               "         ├─ EXPRESSION: (+) (110)\n" +
                                "         │  ├─ IDENTIFIER: x\n" +
                                "         │  └─ FUNCTION_CALL\n" +
                                "         │     ├─ IDENTIFIER: pow\n" +
@@ -618,22 +618,22 @@ class ParserTest {
                 "a() = {b(); c()}");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: fib\n" +
                                "   │  └─ CODE_BLOCK\n" +
                                "   │     └─ IDENTIFIER: n\n" +
-                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "   └─ EXPRESSION: (+) (110)\n" +
                                "      ├─ IDENTIFIER_ACCESSED\n" +
                                "      │  ├─ IDENTIFIER: fib\n" +
                                "      │  └─ CODE_BLOCK\n" +
-                               "      │     └─ EXPRESSION: - (110 l r)\n" +
+                               "      │     └─ EXPRESSION: (-) (110)\n" +
                                "      │        ├─ IDENTIFIER: n\n" +
                                "      │        └─ NUMBER_LITERAL: 1\n" +
                                "      └─ IDENTIFIER_ACCESSED\n" +
                                "         ├─ IDENTIFIER: fib\n" +
                                "         └─ CODE_BLOCK\n" +
-                               "            └─ EXPRESSION: - (110 l r)\n" +
+                               "            └─ EXPRESSION: (-) (110)\n" +
                                "               ├─ IDENTIFIER: n\n" +
                                "               └─ NUMBER_LITERAL: 2",
                 "fib[n] = fib[n - 1] + fib[n - 2];");
@@ -665,9 +665,9 @@ class ParserTest {
                                "   ├─ IDENTIFIER: call\n" +
                                "   └─ PARENTHESIS_PAIR\n" +
                                "STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: g\n" +
-                               "   └─ EXPRESSION: + (110 l r)\n" +
+                               "   └─ EXPRESSION: (+) (110)\n" +
                                "      ├─ NUMBER_LITERAL: 12\n" +
                                "      └─ NUMBER_LITERAL: 5",
                 "call() # this is a comment\ng = 12 + 5");
@@ -696,7 +696,7 @@ class ParserTest {
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: bar\n" +
                                "   └─ CODE_BLOCK\n" +
-                               "      ├─ ASSIGNMENT: = (10 l r)\n" +
+                               "      ├─ ASSIGNMENT: (=) (10)\n" +
                                "      │  ├─ IDENTIFIER: test\n" +
                                "      │  └─ NUMBER_LITERAL: 4\n" +
                                "      └─ RETURN_STATEMENT\n" +
@@ -704,7 +704,7 @@ class ParserTest {
                 "foo(bar) = {test = 4; return test}");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: test\n" +
                                "   └─ STRING_LITERAL: \"\"hey\"\"",
                 "test = \"\\\"hey\\\"\"");
@@ -733,14 +733,14 @@ class ParserTest {
                                "└─ CONDITIONAL\n" +
                                "   ├─ CONDITIONAL_BRANCH\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │  └─ EXPRESSION: (==) (80)\n" +
                                "   │  │     ├─ NUMBER_LITERAL: 1\n" +
                                "   │  │     └─ NUMBER_LITERAL: 2\n" +
                                "   │  └─ CODE_BLOCK\n" +
                                "   │     └─ CONDITIONAL\n" +
                                "   │        ├─ CONDITIONAL_BRANCH\n" +
                                "   │        │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │        │  │  └─ EXPRESSION: < (90 l r)\n" +
+                               "   │        │  │  └─ EXPRESSION: (<) (90)\n" +
                                "   │        │  │     ├─ NUMBER_LITERAL: 3\n" +
                                "   │        │  │     └─ NUMBER_LITERAL: 4\n" +
                                "   │        │  └─ NUMBER_LITERAL: 5\n" +
@@ -762,7 +762,7 @@ class ParserTest {
                                "   │  ├─ PARENTHESIS_PAIR\n" +
                                "   │  │  └─ IDENTIFIER: cond2\n" +
                                "   │  └─ CODE_BLOCK\n" +
-                               "   │     ├─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │     ├─ ASSIGNMENT: (=) (10)\n" +
                                "   │     │  ├─ IDENTIFIER: foo\n" +
                                "   │     │  └─ NUMBER_LITERAL: 5\n" +
                                "   │     └─ RETURN_STATEMENT\n" +
@@ -785,7 +785,7 @@ class ParserTest {
                                "   │  ├─ PARENTHESIS_PAIR\n" +
                                "   │  │  └─ IDENTIFIER: cond2\n" +
                                "   │  └─ CODE_BLOCK\n" +
-                               "   │     ├─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │     ├─ ASSIGNMENT: (=) (10)\n" +
                                "   │     │  ├─ IDENTIFIER: foo\n" +
                                "   │     │  └─ NUMBER_LITERAL: 5\n" +
                                "   │     └─ RETURN_STATEMENT\n" +
@@ -814,16 +814,16 @@ class ParserTest {
                                "└─ CONDITIONAL\n" +
                                "   ├─ CONDITIONAL_BRANCH\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │  │  └─ EXPRESSION: (==) (80)\n" +
                                "   │  │     ├─ NUMBER_LITERAL: 1\n" +
                                "   │  │     └─ NUMBER_LITERAL: 4\n" +
                                "   │  └─ CODE_BLOCK\n" +
-                               "   │     └─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │     └─ ASSIGNMENT: (=) (10)\n" +
                                "   │        ├─ IDENTIFIER: test\n" +
                                "   │        └─ NUMBER_LITERAL: 5\n" +
                                "   └─ CONDITIONAL_BRANCH\n" +
                                "      └─ CODE_BLOCK\n" +
-                               "         └─ ASSIGNMENT: = (10 l r)\n" +
+                               "         └─ ASSIGNMENT: (=) (10)\n" +
                                "            ├─ IDENTIFIER: test\n" +
                                "            └─ NUMBER_LITERAL: 6",
                 "if (1 == 4) test = 5 else test = 6");
@@ -832,8 +832,8 @@ class ParserTest {
                                "└─ CONDITIONAL\n" +
                                "   ├─ CONDITIONAL_BRANCH\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
-                               "   │  │     ├─ EXPRESSION: + (110 l r)\n" +
+                               "   │  │  └─ EXPRESSION: (==) (80)\n" +
+                               "   │  │     ├─ EXPRESSION: (+) (110)\n" +
                                "   │  │     │  ├─ IDENTIFIER: var\n" +
                                "   │  │     │  └─ NUMBER_LITERAL: 5\n" +
                                "   │  │     └─ NUMBER_LITERAL: 4\n" +
@@ -841,7 +841,7 @@ class ParserTest {
                                "   │     └─ CONDITIONAL\n" +
                                "   │        ├─ CONDITIONAL_BRANCH\n" +
                                "   │        │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │        │  │  └─ EXPRESSION: > (90 l r)\n" +
+                               "   │        │  │  └─ EXPRESSION: (>) (90)\n" +
                                "   │        │  │     ├─ FUNCTION_CALL\n" +
                                "   │        │  │     │  ├─ IDENTIFIER: foo\n" +
                                "   │        │  │     │  └─ PARENTHESIS_PAIR\n" +
@@ -856,15 +856,15 @@ class ParserTest {
                                "   │        │        └─ PARENTHESIS_PAIR\n" +
                                "   │        └─ CONDITIONAL_BRANCH\n" +
                                "   │           └─ CODE_BLOCK\n" +
-                               "   │              └─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │              └─ ASSIGNMENT: (=) (10)\n" +
                                "   │                 ├─ IDENTIFIER: test\n" +
-                               "   │                 └─ EXPRESSION: + (110 l r)\n" +
+                               "   │                 └─ EXPRESSION: (+) (110)\n" +
                                "   │                    ├─ NUMBER_LITERAL: 5\n" +
                                "   │                    └─ NUMBER_LITERAL: 3\n" +
                                "   ├─ CONDITIONAL_BRANCH\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │  │  └─ EXPRESSION: == (80 l r)\n" +
-                               "   │  │     ├─ EXPRESSION: % (120 l r)\n" +
+                               "   │  │  └─ EXPRESSION: (==) (80)\n" +
+                               "   │  │     ├─ EXPRESSION: (%) (120)\n" +
                                "   │  │     │  ├─ FUNCTION_CALL\n" +
                                "   │  │     │  │  ├─ IDENTIFIER: var\n" +
                                "   │  │     │  │  └─ PARENTHESIS_PAIR\n" +
@@ -876,12 +876,12 @@ class ParserTest {
                                "   │  │     │  └─ NUMBER_LITERAL: 3\n" +
                                "   │  │     └─ NUMBER_LITERAL: 1\n" +
                                "   │  └─ CODE_BLOCK\n" +
-                               "   │     └─ ASSIGNMENT: = (10 l r)\n" +
+                               "   │     └─ ASSIGNMENT: (=) (10)\n" +
                                "   │        ├─ IDENTIFIER: test\n" +
                                "   │        └─ CONDITIONAL\n" +
                                "   │           ├─ CONDITIONAL_BRANCH\n" +
                                "   │           │  ├─ PARENTHESIS_PAIR\n" +
-                               "   │           │  │  └─ EXPRESSION: == (80 l r)\n" +
+                               "   │           │  │  └─ EXPRESSION: (==) (80)\n" +
                                "   │           │  │     ├─ FUNCTION_CALL\n" +
                                "   │           │  │     │  ├─ IDENTIFIER: foo\n" +
                                "   │           │  │     │  └─ PARENTHESIS_PAIR\n" +
@@ -900,7 +900,7 @@ class ParserTest {
                                "   │                    └─ NUMBER_LITERAL: 6\n" +
                                "   └─ CONDITIONAL_BRANCH\n" +
                                "      └─ CODE_BLOCK\n" +
-                               "         └─ ASSIGNMENT: = (10 l r)\n" +
+                               "         └─ ASSIGNMENT: (=) (10)\n" +
                                "            ├─ IDENTIFIER: test\n" +
                                "            └─ NUMBER_LITERAL: 6",
                 "if (var + 5 == 4) {\n" +
@@ -956,37 +956,37 @@ class ParserTest {
     @Test
     public void inlineFunctionTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "└─ FUNCTION_INLINE: (->) (5)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
-                               "      └─ EXPRESSION: + (110 l r)\n" +
+                               "      └─ EXPRESSION: (+) (110)\n" +
                                "         ├─ IDENTIFIER: x\n" +
                                "         └─ NUMBER_LITERAL: 1\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "└─ FUNCTION_INLINE: (->) (5)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
                                "      └─ RETURN_STATEMENT\n" +
-                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "         └─ EXPRESSION: (+) (110)\n" +
                                "            ├─ IDENTIFIER: x\n" +
                                "            └─ NUMBER_LITERAL: 1\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "└─ FUNCTION_INLINE: (->) (5)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
-                               "      └─ EXPRESSION: + (110 l r)\n" +
+                               "      └─ EXPRESSION: (+) (110)\n" +
                                "         ├─ IDENTIFIER: x\n" +
                                "         └─ NUMBER_LITERAL: 1\n" +
                                "STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "└─ FUNCTION_INLINE: (->) (5)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
                                "      └─ RETURN_STATEMENT\n" +
-                               "         └─ EXPRESSION: + (110 l r)\n" +
+                               "         └─ EXPRESSION: (+) (110)\n" +
                                "            ├─ IDENTIFIER: x\n" +
                                "            └─ NUMBER_LITERAL: 1",
                 "(x) -> x + 1\n" +
@@ -1062,7 +1062,7 @@ class ParserTest {
                 "test.keys().size();");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "└─ FUNCTION_INLINE: (->) (5)\n" +
                                "   ├─ PARENTHESIS_PAIR\n" +
                                "   │  └─ IDENTIFIER: x\n" +
                                "   └─ CODE_BLOCK\n" +
@@ -1098,7 +1098,7 @@ class ParserTest {
                 "test[3]");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: * (120 l r)\n" +
+                               "└─ EXPRESSION: (*) (120)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: test\n" +
                                "   │  └─ CODE_BLOCK\n" +
@@ -1110,8 +1110,8 @@ class ParserTest {
                                "└─ IDENTIFIER_ACCESSED\n" +
                                "   ├─ IDENTIFIER: test\n" +
                                "   ├─ CODE_BLOCK\n" +
-                               "   │  └─ EXPRESSION: + (110 l r)\n" +
-                               "   │     ├─ EXPRESSION: + (110 l r)\n" +
+                               "   │  └─ EXPRESSION: (+) (110)\n" +
+                               "   │     ├─ EXPRESSION: (+) (110)\n" +
                                "   │     │  ├─ NUMBER_LITERAL: 1\n" +
                                "   │     │  └─ NUMBER_LITERAL: 2\n" +
                                "   │     └─ IDENTIFIER_ACCESSED\n" +
@@ -1125,14 +1125,14 @@ class ParserTest {
                 "test[1 + 2 + [3, 4].foo].bar()");
 
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ EXPRESSION: + (110 l r)\n" +
-                               "   ├─ EXPRESSION: * (120 l r)\n" +
+                               "└─ EXPRESSION: (+) (110)\n" +
+                               "   ├─ EXPRESSION: (*) (120)\n" +
                                "   │  ├─ NUMBER_LITERAL: 1\n" +
                                "   │  └─ IDENTIFIER_ACCESSED\n" +
                                "   │     ├─ IDENTIFIER: test\n" +
                                "   │     ├─ CODE_BLOCK\n" +
-                               "   │     │  └─ EXPRESSION: + (110 l r)\n" +
-                               "   │     │     ├─ EXPRESSION: + (110 l r)\n" +
+                               "   │     │  └─ EXPRESSION: (+) (110)\n" +
+                               "   │     │     ├─ EXPRESSION: (+) (110)\n" +
                                "   │     │     │  ├─ NUMBER_LITERAL: 1\n" +
                                "   │     │     │  └─ NUMBER_LITERAL: 2\n" +
                                "   │     │     └─ IDENTIFIER_ACCESSED\n" +
@@ -1184,25 +1184,25 @@ class ParserTest {
     @Test
     public void mapTest() {
         assertParsedTreeEquals("STATEMENT\n" +
-                               "└─ ASSIGNMENT: = (10 l r)\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER: test\n" +
                                "   └─ MAP\n" +
                                "      ├─ MAP_ELEMENT\n" +
                                "      │  ├─ NUMBER_LITERAL: 1\n" +
-                               "      │  └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "      │  └─ FUNCTION_INLINE: (->) (5)\n" +
                                "      │     ├─ PARENTHESIS_PAIR\n" +
                                "      │     │  └─ IDENTIFIER: x\n" +
                                "      │     └─ CODE_BLOCK\n" +
-                               "      │        └─ EXPRESSION: + (110 l r)\n" +
+                               "      │        └─ EXPRESSION: (+) (110)\n" +
                                "      │           ├─ IDENTIFIER: x\n" +
                                "      │           └─ NUMBER_LITERAL: 1\n" +
                                "      └─ MAP_ELEMENT\n" +
                                "         ├─ NUMBER_LITERAL: 3\n" +
-                               "         └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "         └─ FUNCTION_INLINE: (->) (5)\n" +
                                "            ├─ PARENTHESIS_PAIR\n" +
                                "            │  └─ IDENTIFIER: x\n" +
                                "            └─ CODE_BLOCK\n" +
-                               "               └─ EXPRESSION: - (110 l r)\n" +
+                               "               └─ EXPRESSION: (-) (110)\n" +
                                "                  ├─ IDENTIFIER: x\n" +
                                "                  └─ NUMBER_LITERAL: 1",
                 "test = {\n" +
@@ -1218,14 +1218,14 @@ class ParserTest {
                                "   ├─ MAP\n" +
                                "   │  └─ MAP_ELEMENT\n" +
                                "   │     ├─ NUMBER_LITERAL: 1\n" +
-                               "   │     └─ EXPRESSION: * (120 l r)\n" +
+                               "   │     └─ EXPRESSION: (*) (120)\n" +
                                "   │        ├─ NUMBER_LITERAL: 2\n" +
                                "   │        └─ IDENTIFIER_ACCESSED\n" +
                                "   │           ├─ IDENTIFIER: core\n" +
                                "   │           ├─ IDENTIFIER: systemprop\n" +
                                "   │           └─ FUNCTION_CALL\n" +
                                "   │              └─ PARENTHESIS_PAIR\n" +
-                               "   │                 └─ EXPRESSION: * (120 l r)\n" +
+                               "   │                 └─ EXPRESSION: (*) (120)\n" +
                                "   │                    ├─ NUMBER_LITERAL: 4\n" +
                                "   │                    └─ IDENTIFIER_ACCESSED\n" +
                                "   │                       ├─ STRING_LITERAL: \"key\"\n" +
@@ -1235,7 +1235,7 @@ class ParserTest {
                                "   │                       ├─ IDENTIFIER: do\n" +
                                "   │                       ├─ FUNCTION_CALL\n" +
                                "   │                       │  └─ PARENTHESIS_PAIR\n" +
-                               "   │                       │     └─ EXPRESSION: * (120 l r)\n" +
+                               "   │                       │     └─ EXPRESSION: (*) (120)\n" +
                                "   │                       │        ├─ MAP\n" +
                                "   │                       │        │  ├─ MAP_ELEMENT\n" +
                                "   │                       │        │  │  ├─ IDENTIFIER: myMap\n" +
@@ -1255,7 +1255,7 @@ class ParserTest {
                                "   ├─ IDENTIFIER: call\n" +
                                "   ├─ FUNCTION_CALL\n" +
                                "   │  └─ PARENTHESIS_PAIR\n" +
-                               "   │     └─ EXPRESSION: * (120 l r)\n" +
+                               "   │     └─ EXPRESSION: (*) (120)\n" +
                                "   │        ├─ STRING_LITERAL: \"key\"\n" +
                                "   │        └─ IDENTIFIER_ACCESSED\n" +
                                "   │           ├─ ARRAY\n" +
@@ -1273,22 +1273,22 @@ class ParserTest {
     public void pipelineOperatorTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ FUNCTION_CALL\n" +
-                               "   ├─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "   ├─ FUNCTION_INLINE: (->) (5)\n" +
                                "   │  ├─ PARENTHESIS_PAIR\n" +
                                "   │  │  └─ IDENTIFIER: x\n" +
                                "   │  └─ CODE_BLOCK\n" +
-                               "   │     └─ EXPRESSION: + (110 l r)\n" +
+                               "   │     └─ EXPRESSION: (+) (110)\n" +
                                "   │        ├─ IDENTIFIER: x\n" +
                                "   │        └─ NUMBER_LITERAL: 5\n" +
                                "   └─ PARENTHESIS_PAIR\n" +
                                "      └─ FUNCTION_CALL\n" +
                                "         ├─ PARENTHESIS_PAIR\n" +
-                               "         │  └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                               "         │  └─ FUNCTION_INLINE: (->) (5)\n" +
                                "         │     ├─ PARENTHESIS_PAIR\n" +
                                "         │     │  ├─ IDENTIFIER: x\n" +
                                "         │     │  └─ IDENTIFIER: y\n" +
                                "         │     └─ CODE_BLOCK\n" +
-                               "         │        └─ EXPRESSION: + (110 l r)\n" +
+                               "         │        └─ EXPRESSION: (+) (110)\n" +
                                "         │           ├─ IDENTIFIER: x\n" +
                                "         │           └─ IDENTIFIER: y\n" +
                                "         └─ PARENTHESIS_PAIR\n" +
@@ -1330,7 +1330,7 @@ class ParserTest {
                                 "      └─ CONDITIONAL\n" +
                                 "         ├─ CONDITIONAL_BRANCH\n" +
                                 "         │  ├─ PARENTHESIS_PAIR\n" +
-                                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
+                                "         │  │  └─ EXPRESSION: (==) (80)\n" +
                                 "         │  │     ├─ IDENTIFIER: n\n" +
                                 "         │  │     └─ NUMBER_LITERAL: 0\n" +
                                 "         │  └─ CODE_BLOCK\n" +
@@ -1339,7 +1339,7 @@ class ParserTest {
                                 "         │           └─ NUMBER_LITERAL: 0\n" +
                                 "         ├─ CONDITIONAL_BRANCH\n" +
                                 "         │  ├─ PARENTHESIS_PAIR\n" +
-                                "         │  │  └─ EXPRESSION: == (80 l r)\n" +
+                                "         │  │  └─ EXPRESSION: (==) (80)\n" +
                                 "         │  │     ├─ IDENTIFIER: n\n" +
                                 "         │  │     └─ NUMBER_LITERAL: 1\n" +
                                 "         │  └─ CODE_BLOCK\n" +
@@ -1349,30 +1349,30 @@ class ParserTest {
                                 "         │           └─ NUMBER_LITERAL: 1\n" +
                                 "         └─ CONDITIONAL_BRANCH\n" +
                                 "            └─ CODE_BLOCK\n" +
-                                "               ├─ ASSIGNMENT: = (10 l r)\n" +
+                                "               ├─ ASSIGNMENT: (=) (10)\n" +
                                 "               │  ├─ IDENTIFIER: fib\n" +
                                 "               │  └─ FUNCTION_CALL\n" +
                                 "               │     ├─ IDENTIFIER: fibonacci\n" +
                                 "               │     └─ PARENTHESIS_PAIR\n" +
-                                "               │        └─ EXPRESSION: - (110 l r)\n" +
+                                "               │        └─ EXPRESSION: (-) (110)\n" +
                                 "               │           ├─ IDENTIFIER: n\n" +
                                 "               │           └─ NUMBER_LITERAL: 1\n" +
-                                "               ├─ ASSIGNMENT: = (10 l r)\n" +
+                                "               ├─ ASSIGNMENT: (=) (10)\n" +
                                 "               │  ├─ IDENTIFIER_ACCESSED\n" +
                                 "               │  │  ├─ IDENTIFIER: fib\n" +
                                 "               │  │  └─ CODE_BLOCK\n" +
                                 "               │  │     └─ IDENTIFIER: n\n" +
-                                "               │  └─ EXPRESSION: + (110 l r)\n" +
+                                "               │  └─ EXPRESSION: (+) (110)\n" +
                                 "               │     ├─ IDENTIFIER_ACCESSED\n" +
                                 "               │     │  ├─ IDENTIFIER: fib\n" +
                                 "               │     │  └─ CODE_BLOCK\n" +
-                                "               │     │     └─ EXPRESSION: - (110 l r)\n" +
+                                "               │     │     └─ EXPRESSION: (-) (110)\n" +
                                 "               │     │        ├─ IDENTIFIER: n\n" +
                                 "               │     │        └─ NUMBER_LITERAL: 1\n" +
                                 "               │     └─ IDENTIFIER_ACCESSED\n" +
                                 "               │        ├─ IDENTIFIER: fib\n" +
                                 "               │        └─ CODE_BLOCK\n" +
-                                "               │           └─ EXPRESSION: - (110 l r)\n" +
+                                "               │           └─ EXPRESSION: (-) (110)\n" +
                                 "               │              ├─ IDENTIFIER: n\n" +
                                 "               │              └─ NUMBER_LITERAL: 2\n" +
                                 "               └─ RETURN_STATEMENT\n" +
@@ -1381,36 +1381,36 @@ class ParserTest {
 
         Assertions.assertEquals(
                 "STATEMENT\n" +
-                "└─ ASSIGNMENT: = (10 l r)\n" +
+                "└─ ASSIGNMENT: (=) (10)\n" +
                 "   ├─ IDENTIFIER: test\n" +
-                "   └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                "   └─ FUNCTION_INLINE: (->) (5)\n" +
                 "      ├─ PARENTHESIS_PAIR\n" +
                 "      │  └─ IDENTIFIER: x\n" +
                 "      └─ CODE_BLOCK\n" +
                 "         └─ RETURN_STATEMENT\n" +
-                "            └─ EXPRESSION: + (110 l r)\n" +
+                "            └─ EXPRESSION: (+) (110)\n" +
                 "               ├─ IDENTIFIER: x\n" +
                 "               └─ NUMBER_LITERAL: 1\n" +
                 "STATEMENT\n" +
-                "└─ ASSIGNMENT: = (10 l r)\n" +
+                "└─ ASSIGNMENT: (=) (10)\n" +
                 "   ├─ IDENTIFIER: test\n" +
-                "   └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                "   └─ FUNCTION_INLINE: (->) (5)\n" +
                 "      ├─ PARENTHESIS_PAIR\n" +
                 "      │  └─ IDENTIFIER: x\n" +
                 "      └─ CODE_BLOCK\n" +
                 "         └─ RETURN_STATEMENT\n" +
-                "            └─ EXPRESSION: + (110 l r)\n" +
+                "            └─ EXPRESSION: (+) (110)\n" +
                 "               ├─ IDENTIFIER: x\n" +
                 "               └─ NUMBER_LITERAL: 1\n" +
                 "STATEMENT\n" +
-                "└─ ASSIGNMENT: = (10 l r)\n" +
+                "└─ ASSIGNMENT: (=) (10)\n" +
                 "   ├─ IDENTIFIER: test\n" +
-                "   └─ FUNCTION_INLINE: -> (5 l r)\n" +
+                "   └─ FUNCTION_INLINE: (->) (5)\n" +
                 "      ├─ PARENTHESIS_PAIR\n" +
                 "      │  └─ IDENTIFIER: x\n" +
                 "      └─ CODE_BLOCK\n" +
                 "         └─ RETURN_STATEMENT\n" +
-                "            └─ EXPRESSION: + (110 l r)\n" +
+                "            └─ EXPRESSION: (+) (110)\n" +
                 "               ├─ IDENTIFIER: x\n" +
                 "               └─ NUMBER_LITERAL: 1\n" +
                 "STATEMENT\n" +
@@ -1420,7 +1420,7 @@ class ParserTest {
                 "   │  └─ IDENTIFIER: x\n" +
                 "   └─ CODE_BLOCK\n" +
                 "      └─ RETURN_STATEMENT\n" +
-                "         └─ EXPRESSION: + (110 l r)\n" +
+                "         └─ EXPRESSION: (+) (110)\n" +
                 "            ├─ IDENTIFIER: x\n" +
                 "            └─ NUMBER_LITERAL: 1\n" +
                 "STATEMENT\n" +
@@ -1430,7 +1430,7 @@ class ParserTest {
                 "   │  └─ IDENTIFIER: x\n" +
                 "   └─ CODE_BLOCK\n" +
                 "      └─ RETURN_STATEMENT\n" +
-                "         └─ EXPRESSION: + (110 l r)\n" +
+                "         └─ EXPRESSION: (+) (110)\n" +
                 "            ├─ IDENTIFIER: x\n" +
                 "            └─ NUMBER_LITERAL: 1",
                 parser.toString(reader.parse(new File("src/test/resources/lang/other/inlineFunctions.mtr")).getChildren()));

@@ -10,11 +10,11 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.json.JSONArray;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class DocumentationGenerator {
@@ -28,7 +28,66 @@ public class DocumentationGenerator {
         final File structureFile = new File(markdownBaseDir, "structure.txt");
         final File templateFile = new File(guideBaseDir, "template.html");
 
+        developmentAccess(guideBaseDir, targetBaseDir, structureFile, templateFile);
+        // deploy(guideBaseDir, targetBaseDir, structureFile, templateFile);
+    }
+
+    public static void fileChangeListener(File directory, String[] fileTypes, Consumer<File> consumer) {
+        new Thread(() -> {
+            final Map<File, Long> lastModified = FileUtils.listFiles(directory, fileTypes, true).stream().collect(Collectors.toMap(file -> file, File::lastModified));
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                lastModified.entrySet().removeIf(entry -> !entry.getKey().exists());
+
+                for (File file : lastModified.keySet()) {
+                    if (file.lastModified() != lastModified.get(file)) {
+                        lastModified.put(file, file.lastModified());
+                        consumer.accept(file);
+                    }
+                }
+
+                // check for new files
+                for (File file : FileUtils.listFiles(directory, fileTypes, true)) {
+                    if (!lastModified.containsKey(file)) {
+                        lastModified.put(file, file.lastModified());
+                        consumer.accept(file);
+                    }
+                }
+            }
+        }).start();
+    }
+
+    private static void deploy(File guideBaseDir, File targetBaseDir, File structureFile, File templateFile) throws IOException {
         generate(guideBaseDir, targetBaseDir, templateFile, structureFile);
+
+        final Properties properties = new Properties();
+        properties.load(new FileInputStream("doc/credentials.properties"));
+        final String remoteBaseDir = properties.getProperty("remoteBaseDir");
+        final String remoteHost = properties.getProperty("remoteHost");
+        final String remoteUser = properties.getProperty("remoteUser");
+        final String remotePassword = properties.getProperty("remotePassword");
+
+        upload(targetBaseDir, remoteBaseDir, remoteHost, remoteUser, remotePassword);
+    }
+
+    private static void developmentAccess(File guideBaseDir, File targetBaseDir, File structureFile, File templateFile) throws IOException {
+        try {
+            generate(guideBaseDir, targetBaseDir, templateFile, structureFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        fileChangeListener(guideBaseDir, new String[]{"md", "html", "js", "css", "png", "txt"}, file -> {
+            try {
+                generate(guideBaseDir, targetBaseDir, templateFile, structureFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public static void generate(File guideBaseDir, File targetBaseDir, File templateFile, File structureFile) throws IOException {
@@ -74,7 +133,7 @@ public class DocumentationGenerator {
             for (int i = 0; i < outLines.size(); i++) {
                 final String line = outLines.get(i);
                 if (line.contains("{{ content.main }}")) {
-                    outLines.set(i, line.replace("{{ content.main }}", documentationPage.renderPageContent(renderer).render()));
+                    outLines.set(i, line.replace("{{ content.main }}", formatSpecialCharacters(documentationPage.renderPageContent(renderer).render())));
                 } else if (line.contains("{{ content.sidebar }}")) {
                     outLines.set(i, line.replace("{{ content.sidebar }}", sidebarContent));
                 } else if (line.contains("{{ script.js }}")) {
@@ -90,6 +149,13 @@ public class DocumentationGenerator {
             indexArray.put(documentationPage.toIndexObject());
         }
         FileUtils.write(new File(targetBaseDir, "index.json"), indexArray.toString(), StandardCharsets.UTF_8);
+    }
+
+    private static String formatSpecialCharacters(String str) {
+        return str.replace("--&gt;", "→")
+                .replace("(c)", "©")
+                .replace("(r)", "®")
+                .replace("(tm)", "™");
     }
 
     private static String renderSidebarContent(List<DocumentationPage> documentationPages) {

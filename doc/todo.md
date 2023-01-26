@@ -9,6 +9,7 @@ Features:
 - [ ] while ...: ...
 - [ ] string output with quotes "", two separate rendering functions (?)
 - [ ] fix `??` when printing syntax trees (also in documentation)
+- [ ] documentation: info/warning/error boxes
 
 To be thought about:
 

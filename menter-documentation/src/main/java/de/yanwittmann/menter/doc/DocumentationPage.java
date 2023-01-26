@@ -108,6 +108,8 @@ public class DocumentationPage {
                 tag = li();
             } else if (node instanceof Link) {
                 tag = a().withHref(((Link) node).getUrl().toString());
+            } else if (node instanceof LinkRef) {
+                throw new UnsupportedOperationException("LinkRef not supported, do not include spaces in links!");
             } else if (node instanceof Code) {
                 tag = code();
             } else if (node instanceof Emphasis) {
@@ -181,7 +183,7 @@ public class DocumentationPage {
     }
 
     public String getOutFileName() {
-        return (parent != null ? parent.title + "_" : "") + originFile.getName().replace(".md", ".html");
+        return (parent != null ? parent.title.replace(" ", "_") + "_" : "") + originFile.getName().replace(".md", ".html");
     }
 
     public String getTitle() {

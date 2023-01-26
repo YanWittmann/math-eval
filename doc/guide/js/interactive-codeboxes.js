@@ -137,7 +137,11 @@ function createStyleHighlightsForText(text, lang = "menter") {
     let xmlTags = [];
 
     if (isMenter) {
-        keywords = ["for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue", "import", "export", "in", "as"];
+        keywords = [
+            "for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue",
+            "import", "export", "in", "as", "value_function", "native_function", "reflective_function", "string",
+            "number", "boolean", "array", "object", "any", "instanceof", "new"
+        ];
         identifiers = text.match(/[a-zA-Z]+/g);
         numbers = text.match(/-?\d+(\.\d+)?/g);
         strings = text.match(/["'].*?["']/g);
@@ -277,9 +281,10 @@ function evaluateCodeBlock(codebox, initialInput, originalCodeboxId = null, init
             evaluateCode(statementSplit[i], codeboxId).then((result) => {
                 if (initialInput) {
                     let statementLines = statementSplit[i].split("\n");
+                    let multiline = statementLines.length > 1;
                     for (let j = 0; j < statementLines.length; j++) {
                         let statementLine = statementLines[j];
-                        appendToCodebox(codebox, statementLine, j === statementLines.length - 1 ? 1 : 2, false);
+                        appendToCodebox(codebox, statementLine, multiline ? 2 : 1, false);
                     }
                 }
 
@@ -572,8 +577,9 @@ function appendCodeboxOutput(codebox, statements, results) {
 
     for (let j = 0; j < statements.length; j++) {
         let lines = statements[j].split(":NEWLINE:");
+        let isMultiLine = lines.length > 1;
         for (let k = 0; k < lines.length; k++) {
-            let inputType = isNotMenter ? 0 : (k === lines.length - 1 ? 1 : 2);
+            let inputType = isNotMenter ? 0 : (isMultiLine ? 2 : 1);
             let belowPadding = k === lines.length - 1 && results[j] === undefined && !isNotMenter;
             appendToCodebox(codebox, lines[k], inputType, belowPadding);
         }

@@ -5,14 +5,15 @@ public enum PrimitiveValueType {
     NUMBER("number"),
     STRING("string"),
     BOOLEAN("boolean"),
-    ARRAY("array"),
+    OBJECT("object"),
+    REGEX("regex"),
     FUNCTION("function"),
     VALUE_FUNCTION("value_function"),
     NATIVE_FUNCTION("native_function"),
     REFLECTIVE_FUNCTION("reflective_function"),
-    OBJECT("object"),
-    REGEX("regex"),
     ITERATOR("iterator"),
+    @Deprecated
+    ARRAY("array"),
     CUSTOM_TYPE("custom_type"),
     ANY("any");
 

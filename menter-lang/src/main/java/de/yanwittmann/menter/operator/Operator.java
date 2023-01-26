@@ -49,7 +49,7 @@ public abstract class Operator {
 
     @Override
     public String toString() {
-        return getSymbol() + " (" + getPrecedence() + (isLeftAssociative() ? " l" : "") + (isRightAssociative() ? " r" : "") + ")";
+        return (isLeftAssociative() ? "(" : "[") + getSymbol() + (isRightAssociative() ? ")" : "]") + " (" + getPrecedence() + ")";
     }
 
     private static class OperatorMatch {

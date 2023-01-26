@@ -28,7 +28,7 @@ public class CoreModuleReflection {
                 throw CustomType.invalidParameterCombinationException("reflect", "inherit", parameters, parameterCombinations);
         }
 
-        return Value.empty();
+        return parameters.get(0);
     }
 
     public static Value access(List<Value> parameters) {
