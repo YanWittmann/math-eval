@@ -3,6 +3,7 @@ package de.yanwittmann.menter.interpreter.structure;
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.interpreter.structure.value.CustomType;
+import de.yanwittmann.menter.interpreter.structure.value.NativeFunction;
 import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.lexer.Lexer.TokenType;
@@ -28,7 +29,7 @@ public abstract class EvaluationContext {
 
     private final EvaluationContext parentContext;
     private final Map<String, Value> variables;
-    protected final static Map<String[], Function<List<Value>, Value>> nativeFunctions = new HashMap<>();
+    protected final static Map<String[], NativeFunction> nativeFunctions = new HashMap<>();
 
     static {
         try {
@@ -37,13 +38,18 @@ public abstract class EvaluationContext {
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleDebug");
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleCommon");
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleReflection");
+            Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleCmdPlot");
         } catch (ClassNotFoundException e) {
             LOG.error("Failed to load core module", e);
         }
     }
 
-    public static void registerNativeFunction(String context, String module, Function<List<Value>, Value> function) {
+    public static void registerNativeFunction(String context, String module, NativeFunction function) {
         nativeFunctions.put(new String[]{context, module}, function);
+    }
+
+    public static void registerNativeFunction(String context, String module, Function<List<Value>, Value> function) {
+        nativeFunctions.put(new String[]{context, module}, (evaluationContext, localInformation, values) -> function.apply(values));
     }
 
     public EvaluationContext(EvaluationContext parentContext) {
@@ -258,9 +264,9 @@ public abstract class EvaluationContext {
 
                     boolean foundNativeFunction = false;
                     for (String moduleNameCandidate : moduleNameCandidates) {
-                        for (Map.Entry<String[], Function<List<Value>, Value>> nativeFunction : nativeFunctions.entrySet()) {
+                        for (Map.Entry<String[], NativeFunction> nativeFunction : nativeFunctions.entrySet()) {
                             final String[] functionQualifier = nativeFunction.getKey();
-                            final Function<List<Value>, Value> nativeFunctionValue = nativeFunction.getValue();
+                            final NativeFunction nativeFunctionValue = nativeFunction.getValue();
 
                             if (functionQualifier.length != 2) {
                                 throw localInformation.createException("Invalid native function qualifier: " + Arrays.toString(functionQualifier) + ". Expected format: [module name, function name]");
@@ -323,7 +329,7 @@ public abstract class EvaluationContext {
 
             } else if (node.getType() == ParserNode.NodeType.OPERATOR_FUNCTION) {
                 final Operator operator = (Operator) node.getValue();
-                final Function<List<Value>, Value> function = operator::evaluate;
+                final NativeFunction function = (context, li, parameters) -> operator.evaluate(parameters);
                 return new Value(function);
 
             } else if (node.getType() == ParserNode.NodeType.CONDITIONAL) {
@@ -519,6 +525,14 @@ public abstract class EvaluationContext {
         }
     }
 
+    public Value evaluateFunction(String originalFunctionName, Value functionValue, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, List<Value> functionParameters) {
+        return evaluateFunction(functionValue, functionParameters, globalContext, localInformation, originalFunctionName);
+    }
+
+    public Value evaluateFunction(String originalFunctionName, Value functionValue, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, Value... functionParameters) {
+        return evaluateFunction(functionValue, Arrays.asList(functionParameters), globalContext, localInformation, originalFunctionName);
+    }
+
     public Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
         try {
             localInformation.provideFunctionNameForNextStackTraceElement(originalFunctionName);
@@ -558,13 +572,13 @@ public abstract class EvaluationContext {
                 result = evaluate(executableFunction.getBody(), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
 
             } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
-                final Function<List<Value>, Value> nativeFunction;
+                final NativeFunction nativeFunction;
                 try {
-                    nativeFunction = (Function<List<Value>, Value>) functionValue.getValue();
+                    nativeFunction = (NativeFunction) functionValue.getValue();
                 } catch (Exception e) {
                     throw localInformation.createException("Native function [" + originalFunctionName + "] does not have the correct signature; must be List<Value> -> Value");
                 }
-                result = nativeFunction.apply(functionParameters);
+                result = nativeFunction.execute(globalContext, localInformation, functionParameters);
 
             } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
                 final Method executableFunction = (Method) functionValue.getValue();

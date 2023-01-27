@@ -30,6 +30,7 @@ public class MenterInterpreter extends EvalRuntime {
             "system.mtr",
             "debug.mtr",
             "reflect.mtr",
+            "cmdplot.mtr",
     };
 
     private void loadMenterCoreFiles() {

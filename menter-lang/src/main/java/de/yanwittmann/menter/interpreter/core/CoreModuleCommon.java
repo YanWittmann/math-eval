@@ -27,6 +27,9 @@ public abstract class CoreModuleCommon {
             throw new MenterExecutionException("range() expects a number as step size");
         }
         final BigDecimal stepSize = (BigDecimal) stepSizeParam;
+        if (stepSize.compareTo(BigDecimal.ZERO) == 0) {
+            throw new MenterExecutionException("range() expects a non-zero step size");
+        }
 
         if (start instanceof BigDecimal && end instanceof BigDecimal) {
             final BigDecimal startDecimal = (BigDecimal) start;

@@ -138,6 +138,15 @@ public abstract class CustomType implements Comparable<CustomType> {
     public static int checkParameterCombination(List<Value> parameters, String[][] types) {
         final Boolean[] availableTypes = IntStream.range(0, types.length).mapToObj(e -> Boolean.TRUE).toArray(Boolean[]::new);
 
+        if (parameters.size() == 0) {
+            for (int i = 0; i < availableTypes.length; i++) {
+                if (types[i].length == 0) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         for (int i = 0; i < parameters.size(); i++) {
             final Value parameter = parameters.get(i);
             final String parameterType = parameter.getType();
@@ -161,6 +170,9 @@ public abstract class CustomType implements Comparable<CustomType> {
         for (int i = 0; i < availableTypes.length; i++) {
             if (!availableTypes[i]) continue;
             final String[] type = types[i];
+            if (type.length != parameters.size()) {
+                continue; // skip if the parameter count does not match (e.g. if the function has a default parameter
+            }
             if (type.length > longestChain) {
                 longestChain = type.length;
                 longestChainIndex = i;

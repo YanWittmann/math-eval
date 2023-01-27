@@ -53,3 +53,17 @@ Bugs:
 {test:[1], hey: 4}[0]
 accessors on maps
 ```
+
+```
+y = {}
+max = (x, y) -> if (x > y) x else y
+(x, y) -> { if (x > y) x else y; }
+>> plot(space(-10, 10, 237), x -> max(-10, (x^2) - 30), 237, 65)
+Error: Cannot read field "scale" because "val" is null
+        in [repl.max              ] at x > y
+        in [repl.max              ] at (x > y)
+        in [repl.max              ] at if (x > y) x else y
+        in [repl.cmdplot.plot.eval] at max(-10, (x ^ 2) - 30)
+        Local symbols:  x (number), y (object)
+        Global symbols: max (function)
+```

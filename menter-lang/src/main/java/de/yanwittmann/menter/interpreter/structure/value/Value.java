@@ -215,7 +215,7 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.FUNCTION.getType();
         } else if (value instanceof MenterValueFunction) {
             return PrimitiveValueType.VALUE_FUNCTION.getType();
-        } else if (value instanceof Function) {
+        } else if (value instanceof NativeFunction) {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
         } else if (value instanceof Method) {
             return PrimitiveValueType.REFLECTIVE_FUNCTION.getType();
