@@ -1,6 +1,6 @@
 
 import math as ma
-import common inline
+import system inline
 
 
 print("Hello World", 4)

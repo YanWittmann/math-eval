@@ -25,9 +25,9 @@ public class MenterInterpreter extends EvalRuntime {
     }
 
     private final static String[] MENTER_SOURCE_FILES = {
-            "common.mtr",
             "io.mtr",
             "system.mtr",
+            "math.mtr",
             "debug.mtr",
             "reflect.mtr",
             "cmdplot.mtr",
@@ -167,7 +167,7 @@ public class MenterInterpreter extends EvalRuntime {
             interpreter.finishLoadingContexts();
         }
 
-        interpreter.getModuleOptions().addAutoImport("common inline");
+        interpreter.getModuleOptions().addAutoImport("system inline");
 
         if (isGuideServer) {
             try {

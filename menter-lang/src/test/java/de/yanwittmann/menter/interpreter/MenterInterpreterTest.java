@@ -17,7 +17,7 @@ class MenterInterpreterTest {
         interpreter.loadFile(new File("src/test/resources/lang/other/moduleParsing"));
         interpreter.finishLoadingContexts();
 
-        evaluateAndAssertEqual(interpreter, "6.282", "import other; import common inline; print(other.myAttribute); other.myAttribute;");
+        evaluateAndAssertEqual(interpreter, "6.282", "import other; import system inline; print(other.myAttribute); other.myAttribute;");
         evaluateAndAssertEqual(interpreter, "3", "import math as ma; ma.add(1, 2);");
     }
 
@@ -39,7 +39,7 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "false", "!true\n"); // newlines at the end caused the lexer to read oob
         evaluateAndAssertEqual(interpreter, "true", "[1,2].containsValue(1)"); // contains functions would not compare the values, but the value instances
 
-        evaluateAndAssertEqual(interpreter, "[6, 8]", "import common inline;" +
+        evaluateAndAssertEqual(interpreter, "[6, 8]", "import system inline; import math inline;" +
                                                       "range(1, 4)\n" +
                                                       "  .map(x -> x * 2)\n" +
                                                       "  .filter(x -> x > 4)"); // this would not have worked because of the indentation being the same on the lower two lines
@@ -60,7 +60,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        evaluateAndAssertEqual(interpreter, "[1, 0]", "import common inline; test(a,b) { if (a) return b + 1; return b; }; a = [test(true, 0)]; a[1] = test(false, 0); return a");
+        evaluateAndAssertEqual(interpreter, "[1, 0]", "import system inline; test(a,b) { if (a) return b + 1; return b; }; a = [test(true, 0)]; a[1] = test(false, 0); return a");
         evaluateAndAssertEqual(interpreter, "[2, 3]", "arr = []; for (i in [1,2,3, 4]) { if (i <= 1) continue else if (i == 4) break; arr[i - 2] = i }; arr");
     }
 
@@ -328,8 +328,8 @@ class MenterInterpreterTest {
 
         interpreter.evaluateInContextOf("test.foo = 4; doStuff(x) { x + calculate(x, 5) }; calculate(a, b) { a + b + test.hmm }; export [test, doStuff] as test", "testContext");
 
-        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import common inline; import test; test.doStuff(5)"));
-        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import common inline; import test; print(test.test[1])"));
+        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import system inline; import test; test.doStuff(5)"));
+        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import system inline; import test; print(test.test[1])"));
 
         try {
             evaluateAndAssertEqual(interpreter, "", "import debug; debug.stackTraceValues(\"a\"); a = 5; test");

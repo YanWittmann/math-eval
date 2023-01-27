@@ -1,20 +1,20 @@
 package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
-import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.interpreter.structure.EvaluationContext;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public abstract class CoreModuleCommon {
+public abstract class CoreModuleMath {
 
     static {
-        EvaluationContext.registerNativeFunction("common.mtr", "print", CoreModuleCommon::print);
-        EvaluationContext.registerNativeFunction("common.mtr", "range", CoreModuleCommon::range);
+        EvaluationContext.registerNativeFunction("math.mtr", "range", CoreModuleMath::range);
+        EvaluationContext.registerNativeFunction("math.mtr", "sin", CoreModuleMath::sin);
+        EvaluationContext.registerNativeFunction("math.mtr", "cos", CoreModuleMath::cos);
+        EvaluationContext.registerNativeFunction("math.mtr", "tan", CoreModuleMath::tan);
     }
 
     public static Value range(List<Value> arguments) {
@@ -73,10 +73,30 @@ public abstract class CoreModuleCommon {
         }
     }
 
-    public static Value print(List<Value> arguments) {
-        MenterDebugger.printer.println(arguments.stream()
-                .map(v -> v.toDisplayString())
-                .collect(Collectors.joining(" ")));
-        return Value.empty();
+    public static Value sin(List<Value> arguments) {
+        if (arguments.size() != 1) throw new MenterExecutionException("sin() expects 1 argument");
+        final Object value = arguments.get(0).getValue();
+        if (!(value instanceof BigDecimal)) {
+            throw new MenterExecutionException("sin() expects a number as argument");
+        }
+        return new Value(BigDecimal.valueOf(Math.sin(((BigDecimal) value).doubleValue())));
+    }
+
+    public static Value cos(List<Value> arguments) {
+        if (arguments.size() != 1) throw new MenterExecutionException("cos() expects 1 argument");
+        final Object value = arguments.get(0).getValue();
+        if (!(value instanceof BigDecimal)) {
+            throw new MenterExecutionException("cos() expects a number as argument");
+        }
+        return new Value(BigDecimal.valueOf(Math.cos(((BigDecimal) value).doubleValue())));
+    }
+
+    public static Value tan(List<Value> arguments) {
+        if (arguments.size() != 1) throw new MenterExecutionException("tan() expects 1 argument");
+        final Object value = arguments.get(0).getValue();
+        if (!(value instanceof BigDecimal)) {
+            throw new MenterExecutionException("tan() expects a number as argument");
+        }
+        return new Value(BigDecimal.valueOf(Math.tan(((BigDecimal) value).doubleValue())));
     }
 }

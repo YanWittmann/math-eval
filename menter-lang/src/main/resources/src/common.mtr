@@ -1,5 +1,0 @@
-
-native print()
-native range()
-
-export [print, range] as common

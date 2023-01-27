@@ -1,6 +1,7 @@
 
+native print()
 native getProperty()
 native getEnv()
 native sleep()
 
-export [getProperty, getEnv, sleep] as system
+export [print, getProperty, getEnv, sleep] as system

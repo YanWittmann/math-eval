@@ -36,7 +36,7 @@ public abstract class EvaluationContext {
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleIo");
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleSystem");
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleDebug");
-            Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleCommon");
+            Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleMath");
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleReflection");
             Class.forName("de.yanwittmann.menter.interpreter.core.CoreModuleCmdPlot");
         } catch (ClassNotFoundException e) {

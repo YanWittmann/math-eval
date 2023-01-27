@@ -1,0 +1,7 @@
+
+native range()
+native sin()
+native cos()
+native tan()
+
+export [range, sin, cos, tan] as math

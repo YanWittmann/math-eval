@@ -163,12 +163,12 @@ public class CoreModuleCmdPlot {
         final int targetValueCount = parameters.size() == 3 ? ((BigDecimal) parameters.get(2).getValue()).intValue() : 120;
 
         if (range.compareTo(BigDecimal.ZERO) == 0) {
-            return CoreModuleCommon.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(BigDecimal.ONE)));
+            return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(BigDecimal.ONE)));
         }
 
         final BigDecimal stepSize = range.divide(BigDecimal.valueOf(targetValueCount), 2, RoundingMode.HALF_UP);
 
-        return CoreModuleCommon.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(stepSize)));
+        return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(stepSize)));
     }
 
     private static int getAxisPosition(BigDecimal min, double scale, int max) {
