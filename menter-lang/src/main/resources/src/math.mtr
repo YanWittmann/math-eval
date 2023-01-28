@@ -1,7 +1,10 @@
 
 native range()
+native space()
 native sin()
 native cos()
 native tan()
 
-export [range, sin, cos, tan] as math
+pi = 3.1415926535897932384
+
+export [range, space, sin, cos, tan, pi] as math

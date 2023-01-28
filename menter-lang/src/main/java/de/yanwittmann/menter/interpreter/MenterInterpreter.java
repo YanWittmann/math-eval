@@ -168,6 +168,7 @@ public class MenterInterpreter extends EvalRuntime {
         }
 
         interpreter.getModuleOptions().addAutoImport("system inline");
+        interpreter.getModuleOptions().addAutoImport("math inline");
 
         if (isGuideServer) {
             try {

@@ -24,6 +24,10 @@ public class Operators {
         BIG_DECIMAL_DIVISION_SCALE = bigDecimalDivisionScale;
     }
 
+    public static int getBigDecimalDivisionScale() {
+        return BIG_DECIMAL_DIVISION_SCALE;
+    }
+
     public Operators() {
         // precedence values see https://introcs.cs.princeton.edu/java/11precedence/
 

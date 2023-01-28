@@ -18,7 +18,6 @@ public class CoreModuleCmdPlot {
 
     static {
         EvaluationContext.registerNativeFunction("cmdplot.mtr", "plot", CoreModuleCmdPlot::plot);
-        EvaluationContext.registerNativeFunction("cmdplot.mtr", "space", CoreModuleCmdPlot::space);
     }
 
     public static Value plot(GlobalContext context, EvaluationContextLocalInformation localInformation, List<Value> arguments) {
@@ -151,24 +150,6 @@ public class CoreModuleCmdPlot {
         }
         y = new Value(mappedValues);
         return y;
-    }
-
-    public static Value space(List<Value> parameters) {
-        // find a fitting step size for the range and then use CoreModuleCommon.range to generate the values
-        final BigDecimal min = (BigDecimal) parameters.get(0).getValue();
-        final BigDecimal max = (BigDecimal) parameters.get(1).getValue();
-        final BigDecimal range = max.subtract(min);
-
-        // defaults to 120 values
-        final int targetValueCount = parameters.size() == 3 ? ((BigDecimal) parameters.get(2).getValue()).intValue() : 120;
-
-        if (range.compareTo(BigDecimal.ZERO) == 0) {
-            return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(BigDecimal.ONE)));
-        }
-
-        final BigDecimal stepSize = range.divide(BigDecimal.valueOf(targetValueCount), 2, RoundingMode.HALF_UP);
-
-        return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(stepSize)));
     }
 
     private static int getAxisPosition(BigDecimal min, double scale, int max) {

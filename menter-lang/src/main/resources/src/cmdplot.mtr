@@ -1,5 +1,4 @@
 
 native plot()
-native space()
 
-export [plot, space] as cmdplot
+export [plot] as cmdplot

@@ -140,7 +140,7 @@ function createStyleHighlightsForText(text, lang = "menter") {
         keywords = [
             "for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue",
             "import", "export", "in", "as", "value_function", "native_function", "reflective_function", "string",
-            "number", "boolean", "array", "object", "any", "instanceof", "new"
+            "number", "boolean", "array", "object", "any", "instanceof", "new", "inline"
         ];
         identifiers = text.match(/[a-zA-Z]+/g);
         numbers = text.match(/-?\d+(\.\d+)?/g);

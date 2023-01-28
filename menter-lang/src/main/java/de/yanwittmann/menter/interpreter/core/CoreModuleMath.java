@@ -3,15 +3,19 @@ package de.yanwittmann.menter.interpreter.core;
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.structure.EvaluationContext;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
+import de.yanwittmann.menter.operator.Operators;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public abstract class CoreModuleMath {
 
     static {
         EvaluationContext.registerNativeFunction("math.mtr", "range", CoreModuleMath::range);
+        EvaluationContext.registerNativeFunction("math.mtr", "space", CoreModuleMath::space);
         EvaluationContext.registerNativeFunction("math.mtr", "sin", CoreModuleMath::sin);
         EvaluationContext.registerNativeFunction("math.mtr", "cos", CoreModuleMath::cos);
         EvaluationContext.registerNativeFunction("math.mtr", "tan", CoreModuleMath::tan);
@@ -71,6 +75,24 @@ public abstract class CoreModuleMath {
         } else {
             throw new MenterExecutionException("range() expects 2 numbers or 2 one-character strings");
         }
+    }
+
+    public static Value space(List<Value> parameters) {
+        // find a fitting step size for the range and then use CoreModuleCommon.range to generate the values
+        final BigDecimal min = (BigDecimal) parameters.get(0).getValue();
+        final BigDecimal max = (BigDecimal) parameters.get(1).getValue();
+        final BigDecimal range = max.subtract(min);
+
+        // defaults to 120 values
+        final int targetValueCount = parameters.size() == 3 ? ((BigDecimal) parameters.get(2).getValue()).intValue() : 120;
+
+        if (range.compareTo(BigDecimal.ZERO) == 0) {
+            return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(BigDecimal.ONE)));
+        }
+
+        final BigDecimal stepSize = range.divide(BigDecimal.valueOf(targetValueCount), Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_UP);
+
+        return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(stepSize)));
     }
 
     public static Value sin(List<Value> arguments) {
