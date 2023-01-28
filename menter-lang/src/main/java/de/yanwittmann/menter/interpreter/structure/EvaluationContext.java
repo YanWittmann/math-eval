@@ -211,8 +211,9 @@ public abstract class EvaluationContext {
                 final Value value = evaluate(node.getChildren().get(1), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                 final Value variable = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_NEW_ANYWAYS, localInformation);
 
-                if (value.isFunction() && !value.hasTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE)) {
-                    value.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE, new Value(localInformation));
+                if (value.isFunction() && !value.hasTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_CLOSURE_CONTEXT)) {
+                    value.setTagParentFunctionClosureContext(globalContext);
+                    value.setTagParentFunctionClosureLocalInformation(localInformation);
                 }
 
                 if (!(node.getValue() instanceof Operator)) {
@@ -301,7 +302,8 @@ public abstract class EvaluationContext {
 
                     final MenterNodeFunction function = new MenterNodeFunction(globalContext, functionArguments, functionCode);
                     functionValue.setValue(function);
-                    functionValue.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE, new Value(localInformation));
+                    functionValue.setTagParentFunctionClosureLocalInformation(localInformation);
+                    functionValue.setTagParentFunctionClosureContext(globalContext);
 
                     result = functionValue;
                 }
@@ -316,7 +318,8 @@ public abstract class EvaluationContext {
                 final ParserNode functionCode = (ParserNode) node.getChildren().get(1);
                 final MenterNodeFunction function = new MenterNodeFunction(globalContext, functionArguments, functionCode);
                 result = new Value(function);
-                result.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE, new Value(localInformation));
+                result.setTagParentFunctionClosureLocalInformation(localInformation);
+                result.setTagParentFunctionClosureContext(globalContext);
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
                 final Value function = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
@@ -545,6 +548,9 @@ public abstract class EvaluationContext {
                 LOG.info("Calling function [{}] with parameters {}", originalFunctionName, functionParameters);
             }
 
+            final GlobalContext parentClosureContext = functionValue.getTagParentFunctionClosureContext();
+            final GlobalContext effectiveParentClosureContext = parentClosureContext != null ? parentClosureContext : globalContext;
+
             final Value result;
             if (functionValue.getValue() instanceof MenterNodeFunction) {
                 final MenterNodeFunction executableFunction = (MenterNodeFunction) functionValue.getValue();
@@ -558,9 +564,9 @@ public abstract class EvaluationContext {
 
                 functionLocalInformation.putLocalSymbol(executableFunction.getParentContext().getVariables());
 
-                final EvaluationContextLocalInformation parentFunctionContext = functionValue.getTagParentFunctionContext();
-                if (parentFunctionContext != null) {
-                    functionLocalInformation.putLocalSymbol(parentFunctionContext);
+                final EvaluationContextLocalInformation parentClosureLocalSymbols = functionValue.getTagParentFunctionClosureLocalInformation();
+                if (parentClosureLocalSymbols != null) {
+                    functionLocalInformation.putLocalSymbol(parentClosureLocalSymbols);
                 }
 
                 for (int i = 0; i < functionArgumentNames.size(); i++) {
@@ -569,7 +575,7 @@ public abstract class EvaluationContext {
                     functionLocalInformation.putLocalSymbol(argumentName, argumentValue);
                 }
 
-                result = evaluate(executableFunction.getBody(), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
+                result = evaluate(executableFunction.getBody(), effectiveParentClosureContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
 
             } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
                 final NativeFunction nativeFunction;
@@ -578,7 +584,7 @@ public abstract class EvaluationContext {
                 } catch (Exception e) {
                     throw localInformation.createException("Native function [" + originalFunctionName + "] does not have the correct signature; must be List<Value> -> Value");
                 }
-                result = nativeFunction.execute(globalContext, localInformation, functionParameters);
+                result = nativeFunction.execute(effectiveParentClosureContext, localInformation, functionParameters);
 
             } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
                 final Method executableFunction = (Method) functionValue.getValue();
@@ -595,7 +601,7 @@ public abstract class EvaluationContext {
             } else { // otherwise it must be a value function
                 final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
                 final Value executeOnValue = functionValue.getTagParentFunctionValue();
-                result = executableFunction.apply(globalContext, executeOnValue, functionParameters, localInformation);
+                result = executableFunction.apply(effectiveParentClosureContext, executeOnValue, functionParameters, localInformation);
             }
 
             result.unwrapReturn();

@@ -9,3 +9,4 @@ Hints >> hints.md
     Evaluation Server >> hints/evaluation_server.md
     Testing >> demo.md
     Subchapter >> subdir/subchapter.md
+    Plot Test >> subdir/plot.md

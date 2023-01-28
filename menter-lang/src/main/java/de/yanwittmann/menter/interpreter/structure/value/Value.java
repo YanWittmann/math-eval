@@ -20,7 +20,8 @@ public class Value implements Comparable<Value> {
 
     private final static Logger LOG = LogManager.getLogger(Value.class);
     public final static String TAG_KEY_FUNCTION_PARENT_VALUE = "functionParentValue";
-    public final static String TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE = "functionParentContextClosure";
+    public final static String TAG_KEY_FUNCTION_CLOSURE_CONTEXT = "functionParentClosureContext";
+    public final static String TAG_KEY_FUNCTION_CLOSURE_LOCAL_INFORMATION = "functionParentClosureLocalInformation";
     public final static String TAG_KEY_RETURN_VALUE = "returnValue";
     public final static String TAG_KEY_BREAK_VALUE = "breakValue";
     public final static String TAG_KEY_CONTINUE_VALUE = "continueValue";
@@ -147,10 +148,24 @@ public class Value implements Comparable<Value> {
         return false;
     }
 
-    public EvaluationContextLocalInformation getTagParentFunctionContext() {
-        final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE);
+    public EvaluationContextLocalInformation getTagParentFunctionClosureLocalInformation() {
+        final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_CLOSURE_LOCAL_INFORMATION);
         if (element != null) return (EvaluationContextLocalInformation) element.getValue();
         else return null;
+    }
+
+    public void setTagParentFunctionClosureLocalInformation(EvaluationContextLocalInformation localInformation) {
+        setTaggedAdditionalInformation(TAG_KEY_FUNCTION_CLOSURE_LOCAL_INFORMATION, new Value(localInformation));
+    }
+
+    public GlobalContext getTagParentFunctionClosureContext() {
+        final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_CLOSURE_CONTEXT);
+        if (element != null) return (GlobalContext) element.getValue();
+        else return null;
+    }
+
+    public void setTagParentFunctionClosureContext(GlobalContext context) {
+        setTaggedAdditionalInformation(TAG_KEY_FUNCTION_CLOSURE_CONTEXT, new Value(context));
     }
 
     public void inheritValue(Value value) {

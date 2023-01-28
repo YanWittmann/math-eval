@@ -215,6 +215,14 @@ public class EvalRuntime {
         final List<GlobalContext> orderedGlobalContexts = new ArrayList<>();
         final List<GlobalContext> globalContextsToCheck = new ArrayList<>(globalContexts);
 
+        for (int i = globalContextsToCheck.size() - 1; i >= 0; i--) {
+            final GlobalContext checkContext = globalContextsToCheck.get(i);
+            if (!unfinishedGlobalContextRootObjects.containsKey(checkContext)) {
+                orderedGlobalContexts.add(checkContext);
+                globalContextsToCheck.remove(checkContext);
+            }
+        }
+
         int iteration = 0;
         final int maxIterations = globalContexts.size() * 2;
         while (globalContextsToCheck.size() > 0) {

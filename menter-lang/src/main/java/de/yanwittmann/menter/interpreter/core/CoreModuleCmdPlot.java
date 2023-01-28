@@ -214,7 +214,6 @@ public class CoreModuleCmdPlot {
                         result = context.evaluateFunction("cmdplot.plot.eval", currentArgument, context, localInformation, x);
                     } catch (Exception e) {
                         y.add(Value.empty());
-                        System.out.println("Error while evaluating function: " + e.getMessage());
                         continue;
                     }
 

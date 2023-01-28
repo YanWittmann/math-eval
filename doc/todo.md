@@ -47,13 +47,6 @@ range(2, 100).filter(isPrime).size()
 plot(space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) + 62, x -> 10 * cos(x * 2) - 37)
 ```
 
-```
-import cmdplot
-generate_points = r -> { p.x = []; p.y = []; for (i in space(0, 2 * pi, 360)) { p.x = p.x :: (r * cos(i)); p.y = p.y :: (r * sin(i)) }; p }
-points = generate_points(10)
-cmdplot.plot(40, 20, points.x, points.y)
-```
-
 Bugs:
 
 ```

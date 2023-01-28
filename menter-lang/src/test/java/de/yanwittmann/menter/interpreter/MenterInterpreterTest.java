@@ -356,11 +356,11 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluate("import cmdplot inline; import math; plot([-1, 0, 1], x -> math.sin(x))");
         interpreter.evaluate("import cmdplot inline; import math inline; plot([1,2,3,4], [5,4,2,1], [4,4,6,8])");
         interpreter.evaluate("import cmdplot inline; import math inline; plot(70, 15, space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) + 62, x -> 10 * cos(x * 2) - 37)");
         interpreter.evaluate("import cmdplot inline; import math inline; plot(space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) + 62, x -> 10 * cos(x * 2) - 37)");
         interpreter.evaluate("import cmdplot inline; import math inline; plot([-1, 0, 1], x -> 1 / x)");
+        interpreter.evaluate("import cmdplot inline; import math; plot(math.space(-10, 10), x -> math.sin(x))");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
