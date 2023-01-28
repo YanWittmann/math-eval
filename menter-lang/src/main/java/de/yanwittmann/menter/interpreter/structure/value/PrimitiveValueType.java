@@ -26,4 +26,22 @@ public enum PrimitiveValueType {
     public String getType() {
         return type;
     }
+
+    public static boolean isType(Value actual, String expected) {
+        return isType(actual.getType(), expected);
+    }
+
+    public static boolean isType(Value actual, PrimitiveValueType expected) {
+        return isType(actual.getType(), expected.getType());
+    }
+
+    public static boolean isType(String actual, String expected) {
+        if (expected.equals(actual) || expected.equals(ANY.getType()) || actual.equals(ANY.getType())) {
+            return true;
+        }
+        if (expected.equals(FUNCTION.getType()) && actual.endsWith("function")) {
+            return true;
+        }
+        return false;
+    }
 }

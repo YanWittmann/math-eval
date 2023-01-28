@@ -44,7 +44,7 @@ range(2, 100).filter(isPrime).size()
 ```
 
 ```
-foldl = (funct, acc, list) -> { if (list.size() == 0) acc else foldl(funct, funct(list.head(), acc), list.tail()) }
+plot(space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) + 62, x -> 10 * cos(x * 2) - 37)
 ```
 
 Bugs:
