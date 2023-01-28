@@ -199,23 +199,37 @@ public class CoreModuleCmdPlot {
     private static List<Value> generateYValues(GlobalContext context, EvaluationContextLocalInformation localInformation, Value xValues, List<Value> arguments) {
         final List<Value> yValues = new ArrayList<>();
 
-        for (int i = 1; i < arguments.size(); i++) {
-            if (PrimitiveValueType.isType(arguments.get(i), PrimitiveValueType.FUNCTION)) {
+        boolean isFirst = true;
+        for (int i = 0; i < arguments.size(); i++) {
+            final Value currentArgument = arguments.get(i);
+
+            if (PrimitiveValueType.isType(currentArgument, PrimitiveValueType.FUNCTION)) {
+                if (isFirst) {
+                    isFirst = false;
+                }
                 final List<Value> y = new ArrayList<>();
                 for (Value x : xValues.getMap().values()) {
+                    final Value result;
                     try {
-                        final Value result = context.evaluateFunction("cmdplot.plot.eval", arguments.get(i), context, localInformation, x);
-                        if (!PrimitiveValueType.isType(result, PrimitiveValueType.NUMBER)) {
-                            throw new MenterExecutionException("The plot function can only plot functions that return numbers.");
-                        }
-                        y.add(result);
+                        result = context.evaluateFunction("cmdplot.plot.eval", currentArgument, context, localInformation, x);
                     } catch (Exception e) {
                         y.add(Value.empty());
+                        System.out.println("Error while evaluating function: " + e.getMessage());
+                        continue;
                     }
+
+                    if (!PrimitiveValueType.isType(result, PrimitiveValueType.NUMBER)) {
+                        throw new MenterExecutionException("The plot function can only plot functions that return numbers.");
+                    }
+                    y.add(result);
                 }
                 yValues.add(new Value(y));
-            } else if (PrimitiveValueType.isType(arguments.get(i), PrimitiveValueType.OBJECT)) {
-                yValues.add(arguments.get(i));
+            } else if (PrimitiveValueType.isType(currentArgument, PrimitiveValueType.OBJECT)) {
+                if (isFirst) {
+                    isFirst = false;
+                    continue;
+                }
+                yValues.add(currentArgument);
             }
         }
 

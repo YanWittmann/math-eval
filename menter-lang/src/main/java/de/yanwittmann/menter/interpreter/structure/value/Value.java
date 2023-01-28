@@ -20,7 +20,7 @@ public class Value implements Comparable<Value> {
 
     private final static Logger LOG = LogManager.getLogger(Value.class);
     public final static String TAG_KEY_FUNCTION_PARENT_VALUE = "functionParentValue";
-    public final static String TAG_KEY_FUNCTION_PARENT_CONTEXT = "functionParentContext";
+    public final static String TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE = "functionParentContextClosure";
     public final static String TAG_KEY_RETURN_VALUE = "returnValue";
     public final static String TAG_KEY_BREAK_VALUE = "breakValue";
     public final static String TAG_KEY_CONTINUE_VALUE = "continueValue";
@@ -148,7 +148,7 @@ public class Value implements Comparable<Value> {
     }
 
     public EvaluationContextLocalInformation getTagParentFunctionContext() {
-        final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_CONTEXT);
+        final Value element = getTaggedAdditionalInformation(TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE);
         if (element != null) return (EvaluationContextLocalInformation) element.getValue();
         else return null;
     }

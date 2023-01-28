@@ -1,10 +1,25 @@
 
 native range()
 native space()
+
 native sin()
 native cos()
 native tan()
+native asin()
+native acos()
+native atan()
+
+native random()
+native round()
+native floor()
+native ceil()
+native abs()
+native sqrt()
 
 pi = 3.1415926535897932384
 
-export [range, space, sin, cos, tan, pi] as math
+export [
+        range, space,
+        sin, cos, tan, asin, acos, atan, pi,
+        random, round, floor, ceil, abs, sqrt
+        ] as math

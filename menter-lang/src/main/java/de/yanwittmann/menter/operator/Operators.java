@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class Operators {
@@ -261,20 +262,22 @@ public class Operators {
             return null;
         }));
 
-        add(OperatorUtilities.makeDouble("^", 60, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^", leftArgument, rightArgument,
+        final BiFunction<Value, Value, Value> power = (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^", leftArgument, rightArgument,
                 new OperatorUtilities.DoubleOperatorTypeAction(
                         PrimitiveValueType.NUMBER.getType(),
                         PrimitiveValueType.NUMBER.getType(),
-                        (left, right) -> new Value(left.getNumericValue().pow(right.getNumericValue().intValue()))
+                        (left, right) -> {
+                            if (right.getNumericValue().signum() != -1) {
+                                return new Value(Math.pow(left.getNumericValue().doubleValue(), right.getNumericValue().doubleValue()));
+                            } else {
+                                // Math.pow doesn't support negative exponents
+                                return new Value(BigDecimal.ONE.divide(BigDecimal.valueOf(Math.pow(left.getNumericValue().doubleValue(), right.getNumericValue().negate().doubleValue())), BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
+                            }
+                        }
                 )
-        )));
-        add(OperatorUtilities.makeDouble("^^", 60, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^^", leftArgument, rightArgument,
-                new OperatorUtilities.DoubleOperatorTypeAction(
-                        PrimitiveValueType.NUMBER.getType(),
-                        PrimitiveValueType.NUMBER.getType(),
-                        (left, right) -> new Value(left.getNumericValue().pow(right.getNumericValue().intValue()))
-                )
-        )));
+        );
+        add(OperatorUtilities.makeDouble("^", 60, power));
+        add(OperatorUtilities.makeDouble("^^", 60, power));
 
         add(OperatorUtilities.makeDouble("|", 50, (leftArgument, rightArgument) -> {
             return null;

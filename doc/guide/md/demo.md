@@ -38,4 +38,8 @@ test = {
 };;;test.a
 ```
 
+```
+import cmdplot;;;generate_points = r -> { p.x = []; p.y = []; for (i in space(0, 2 * pi, 360)) { p.x = p.x :: (r * cos(i)); p.y = p.y :: (r * sin(i)) }; p };;;points = generate_points(10);;;cmdplot.plot(40, 20, points.x, points.y)
+```
+
 ![testimg](guide/navbar_icon.png)

@@ -150,6 +150,16 @@ function createStyleHighlightsForText(text, lang = "menter") {
         xmlTags = text.match(/<\/?[a-zA-Z]+.*?>/g);
     }
 
+    let ansiiEscapeCodes = [
+        "\u001b[30m", "\u001b[31m", "\u001b[32m", "\u001b[33m", "\u001b[34m", "\u001b[35m", "\u001b[36m", "\u001b[37m", "\u001b[0m"
+    ];
+    let ansiiEscapeCodeReplacements = [
+        ":STYLE:COLOR:BLACK:", ":STYLE:COLOR:RED:", ":STYLE:COLOR:GREEN:", ":STYLE:COLOR:YELLOW:", ":STYLE:COLOR:BLUE:", ":STYLE:COLOR:PURPLE:", ":STYLE:COLOR:CYAN:", ":STYLE:COLOR:WHITE:", ":STYLE:END:"
+    ];
+    for (let i = 0; i < ansiiEscapeCodes.length; i++) {
+        text = text.split(ansiiEscapeCodes[i]).join(ansiiEscapeCodeReplacements[i]);
+    }
+
     let replacements = {};
 
     if (identifiers !== null) {

@@ -211,8 +211,8 @@ public abstract class EvaluationContext {
                 final Value value = evaluate(node.getChildren().get(1), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                 final Value variable = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_NEW_ANYWAYS, localInformation);
 
-                if (value.isFunction() && !value.hasTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT)) {
-                    value.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT, new Value(localInformation));
+                if (value.isFunction() && !value.hasTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE)) {
+                    value.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE, new Value(localInformation));
                 }
 
                 if (!(node.getValue() instanceof Operator)) {
@@ -301,7 +301,7 @@ public abstract class EvaluationContext {
 
                     final MenterNodeFunction function = new MenterNodeFunction(globalContext, functionArguments, functionCode);
                     functionValue.setValue(function);
-                    functionValue.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT, new Value(localInformation));
+                    functionValue.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE, new Value(localInformation));
 
                     result = functionValue;
                 }
@@ -316,7 +316,7 @@ public abstract class EvaluationContext {
                 final ParserNode functionCode = (ParserNode) node.getChildren().get(1);
                 final MenterNodeFunction function = new MenterNodeFunction(globalContext, functionArguments, functionCode);
                 result = new Value(function);
-                result.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT, new Value(localInformation));
+                result.setTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_PARENT_CONTEXT_CLOSURE, new Value(localInformation));
 
             } else if (node.getType() == ParserNode.NodeType.FUNCTION_CALL) {
                 final Value function = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
