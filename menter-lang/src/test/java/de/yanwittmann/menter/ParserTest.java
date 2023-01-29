@@ -711,6 +711,31 @@ class ParserTest {
     }
 
     @Test
+    public void returnBreakContinueTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONDITIONAL\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ BOOLEAN_LITERAL: true\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ RETURN_STATEMENT\n" +
+                               "   │        └─ EXPRESSION: (>) (90)\n" +
+                               "   │           ├─ IDENTIFIER: x\n" +
+                               "   │           └─ NUMBER_LITERAL: 1\n" +
+                               "   ├─ CONDITIONAL_BRANCH\n" +
+                               "   │  ├─ PARENTHESIS_PAIR\n" +
+                               "   │  │  └─ BOOLEAN_LITERAL: false\n" +
+                               "   │  └─ CODE_BLOCK\n" +
+                               "   │     └─ RETURN_STATEMENT\n" +
+                               "   │        └─ BOOLEAN_LITERAL: false\n" +
+                               "   └─ CONDITIONAL_BRANCH\n" +
+                               "      └─ CODE_BLOCK\n" +
+                               "         └─ RETURN_STATEMENT\n" +
+                               "            └─ NUMBER_LITERAL: 4",
+                "if(true) return x > 1 elif (false) return false else return 4");
+    }
+
+    @Test
     public void conditionTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ CONDITIONAL\n" +

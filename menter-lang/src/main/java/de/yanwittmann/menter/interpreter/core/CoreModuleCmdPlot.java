@@ -7,6 +7,7 @@ import de.yanwittmann.menter.interpreter.structure.EvaluationContextLocalInforma
 import de.yanwittmann.menter.interpreter.structure.GlobalContext;
 import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
+import de.yanwittmann.menter.operator.Operators;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -265,7 +266,7 @@ public class CoreModuleCmdPlot {
         if (subtract.compareTo(BigDecimal.ZERO) == 0) {
             return 1;
         }
-        final BigDecimal scaledValue = subtract.divide(BigDecimal.valueOf(scale), RoundingMode.HALF_EVEN);
+        final BigDecimal scaledValue = subtract.divide(BigDecimal.valueOf(scale), Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_EVEN);
         return scaledValue.intValue();
     }
 

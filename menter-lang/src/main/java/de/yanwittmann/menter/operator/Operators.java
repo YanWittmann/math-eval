@@ -195,13 +195,6 @@ public class Operators {
                         (left, right) -> new Value(left.getNumericValue().subtract(right.getNumericValue()))
                 )
         )));
-        add(OperatorUtilities.makeDouble("::", 105, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("::", leftArgument, rightArgument,
-                new OperatorUtilities.DoubleOperatorTypeAction(
-                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()},
-                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType()},
-                        Operators::combineMapValues
-                )
-        )));
 
         add(OperatorUtilities.makeDouble("<<", 100, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("<<", leftArgument, rightArgument,
                 new OperatorUtilities.DoubleOperatorTypeAction(
@@ -278,6 +271,7 @@ public class Operators {
         );
         add(OperatorUtilities.makeDouble("^", 60, power));
         add(OperatorUtilities.makeDouble("^^", 60, power));
+        add(OperatorUtilities.makeDouble("**", 60, power));
 
         add(OperatorUtilities.makeDouble("|", 50, (leftArgument, rightArgument) -> {
             return null;
@@ -296,6 +290,14 @@ public class Operators {
                         PrimitiveValueType.ANY.getType(),
                         PrimitiveValueType.ANY.getType(),
                         (left, right) -> new Value(left.isTrue() || right.isTrue())
+                )
+        )));
+
+        add(OperatorUtilities.makeDouble("::", 20, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("::", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()},
+                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType()},
+                        Operators::combineMapValues
                 )
         )));
 

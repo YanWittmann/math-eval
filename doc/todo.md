@@ -36,11 +36,34 @@ print(yan.getName())
 ```
 
 ```
-isPrimeUtil(n, i) { if (n == 2) true elif (n < 2) false elif (n % i == 0) false elif (i * i > n) true else
-isPrimeUtil(n, i + 1) }
-isPrime(n) { n >| isPrimeUtil(2) }
+isPrimeUtil(n, i) {
+    if (n == 2) true
+    elif (n < 2) false
+    elif (n % i == 0) false
+    elif (i * i > n) true
+    else isPrimeUtil(n, i + 1)
+}
+isPrime(n) = n >| isPrimeUtil(2)
 range(1, 100).filter(isPrime)
 range(2, 100).filter(isPrime).size()
+
+# alternative without recursion
+isPrime(x) {
+    if(x <= 3) return x > 1
+    elif (x % 2 == 0 || x % 3 == 0) return false
+    else {
+        limit = round(x ^^ 0.5)
+		if (limit >= 5)
+            for (i in range(5, limit, 6)) {
+                if (x % i == 0 || x % (i+2) == 0) return false
+            }
+        return true
+    }
+}
+nextPrime(x) {
+    for (i in range(1,100))
+        if (isPrime(x + i)) return x + i
+}
 ```
 
 ```
@@ -55,15 +78,5 @@ accessors on maps
 ```
 
 ```
-y = {}
-max = (x, y) -> if (x > y) x else y
-(x, y) -> { if (x > y) x else y; }
->> plot(space(-10, 10, 237), x -> max(-10, (x^2) - 30), 237, 65)
-Error: Cannot read field "scale" because "val" is null
-        in [repl.max              ] at x > y
-        in [repl.max              ] at (x > y)
-        in [repl.max              ] at if (x > y) x else y
-        in [repl.cmdplot.plot.eval] at max(-10, (x ^ 2) - 30)
-        Local symbols:  x (number), y (object)
-        Global symbols: max (function)
+x^^2 + x^^3
 ```

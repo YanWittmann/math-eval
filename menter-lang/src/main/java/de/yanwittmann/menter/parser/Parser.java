@@ -1441,11 +1441,40 @@ public class Parser {
         ));
 
         // important: this rule must be the last one to make sure, that statements are created last
-        rules.add(ParserRule.inOrderRule(ParserNode.NodeType.RETURN_STATEMENT, (t) -> null, 0, (t, i) -> !isStatementFinisher(t) && !isKeyword(t, "return"), (t, i) -> !isType(t, TokenType.CLOSE_CURLY_BRACKET), (t, i) -> t,
-                t -> isKeyword(t, "return"),
-                Parser::isEvaluableToValue,
-                Parser::isStatementFinisher
-        ));
+        rules.add(tokens -> {
+            int state = 0;
+            int start = -1;
+            for (int i = 0; i < tokens.size(); i++) {
+                final Object currentToken = tokens.get(i);
+
+                if (state == 0 && isKeyword(currentToken, "return")) {
+                    state = 1;
+                    start = i;
+                } else if (state == 1 && isEvaluableToValue(currentToken)) {
+                    state = 2;
+                } else if ((state == 1 || state == 2) && (isStatementFinisher(currentToken) || isType(currentToken, TokenType.KEYWORD))) {
+                    state = 3;
+                } else {
+                    state = 0;
+                    start = -1;
+                }
+
+                if (state == 3) {
+                    final ParserNode node = new ParserNode(ParserNode.NodeType.RETURN_STATEMENT);
+                    final int end = (isType(currentToken, TokenType.KEYWORD) || isType(currentToken, TokenType.CLOSE_CURLY_BRACKET)) ? i - 1 : i;
+
+                    // only add the return value if it is not a statement finisher (which is the second value of the pair)
+                    if (isEvaluableToValue(tokens.get(start + 1))) {
+                        node.addChild(tokens.get(start + 1));
+                    }
+
+                    ParserRule.replace(tokens, node, start, end);
+                    return true;
+                }
+            }
+
+            return false;
+        });
         rules.add(tokens -> {
             int state = 0;
             int start = -1;
