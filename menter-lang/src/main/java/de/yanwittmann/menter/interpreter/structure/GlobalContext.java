@@ -4,6 +4,7 @@ import de.yanwittmann.menter.EvalRuntime;
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.ModuleOptions;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
+import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -156,6 +157,10 @@ public class GlobalContext extends EvaluationContext {
     }
 
     public Value evaluate(ParserNode node) {
+        return super.evaluate(node, this, SymbolCreationMode.THROW_IF_NOT_EXISTS, new EvaluationContextLocalInformation(super.getVariables()));
+    }
+
+    public Value evaluate(Token node) {
         return super.evaluate(node, this, SymbolCreationMode.THROW_IF_NOT_EXISTS, new EvaluationContextLocalInformation(super.getVariables()));
     }
 

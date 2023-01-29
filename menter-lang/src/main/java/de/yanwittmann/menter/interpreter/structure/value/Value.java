@@ -591,8 +591,8 @@ public class Value implements Comparable<Value> {
                     put("foldl", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, true));
                     put("foldr", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, false));
 
-                    put("sum", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0))));
-                    put("avg", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce((a, b) -> a.add(b)).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
+                    put("sum", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0))));
+                    put("avg", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
                     put("max", (context, self, values, localInformation) -> {
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
                         return new Value(((Map<Object, Value>) self.getValue()).values().stream().max(comparator).orElse(Value.empty()));
@@ -752,8 +752,19 @@ public class Value implements Comparable<Value> {
             return "<circular-reference-" +
                    (object instanceof Value ? ((Value) object).getType() : object.getClass().getSimpleName()) + "@" + Objects.hashCode(object)
                    + ">";
-        } else if (!(object instanceof String || object instanceof BigDecimal || object instanceof Pattern || object instanceof Boolean || object instanceof Iterator)) {
-            visited.add(object);
+        } else {
+            boolean add = true;
+            if (object instanceof String || object instanceof BigDecimal || object instanceof Pattern || object instanceof Boolean || object instanceof Iterator) {
+                add = false;
+            } else if (object instanceof Value) {
+                if ((PrimitiveValueType.isType(((Value) object), PrimitiveValueType.NUMBER.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.STRING.getType()) ||
+                     PrimitiveValueType.isType(((Value) object), PrimitiveValueType.BOOLEAN.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.REGEX.getType()))) {
+                    add = false;
+                }
+            }
+            if (add) {
+                visited.add(object);
+            }
         }
 
         if (object instanceof Value) {

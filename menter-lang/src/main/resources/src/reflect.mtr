@@ -2,4 +2,21 @@
 native inherit()
 native access()
 
-export [inherit, access] as reflect
+native setVariable()
+native getVariable()
+native removeVariable()
+
+native getContextName()
+native getImports()
+native getModules()
+native getVariables()
+
+native callFunctionByName()
+native getStackTrace()
+native printStackTrace()
+
+export [inherit, access,
+        setVariable, getVariable, removeVariable,
+        getContextName, getImports, getModules, getVariables,
+        callFunctionByName, getStackTrace, printStackTrace
+        ] as reflect

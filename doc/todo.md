@@ -70,6 +70,16 @@ nextPrime(x) {
 plot(space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) + 62, x -> 10 * cos(x * 2) - 37)
 ```
 
+```
+namen = ["Yan", "Nils", "Holger", "Ute", "Thomas", "Jonas", "Eren"]
+createEntry(min, max) = {name: namen[floor(random(0, namen.size()))], age: round(random(min, max))}
+db ::= range(1, 100).map(x -> createEntry(12, 26))
+db ::= range(1, 100).map(x -> createEntry(27, 32))
+
+db.filter(x -> x.age > 20).size()
+db.filter(x -> x.age > 20).map(x -> x.age).avg()
+```
+
 Bugs:
 
 ```

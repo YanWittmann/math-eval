@@ -74,6 +74,16 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "42", "test = 4; fun() = test; inherit(fun(), 42); test");
         evaluateAndAssertEqual(interpreter, "42", "test = [4]; fun = access(test, \"map\"); test = fun(x -> x + 38); test[0]");
         evaluateAndAssertEqual(interpreter, "42", "access({1: 42}, 1)");
+
+        evaluateAndAssertEqual(interpreter, "42", "setVariable(\"test\", 42); test");
+        evaluateAndAssertEqual(interpreter, "42", "test = 42; getVariable(\"test\")");
+        evaluateAndAssertEqual(interpreter, "null", "test = 42; removeVariable(\"test\")");
+        Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "42", "test = 3; removeVariable(\"test\"); test"));
+
+        evaluateAndAssertEqual(interpreter, "42", "test(x) = x + 10; callFunctionByName(\"test\", [32])");
+
+        evaluateAndAssertEqual(interpreter, "true", "import math inline; i = getImports(); i.math.keys().containsValue(\"ceil\")");
+        evaluateAndAssertEqual(interpreter, "42", "import math inline; i = getImports(); i.math.ceil(41.56)");
     }
 
     @Test
