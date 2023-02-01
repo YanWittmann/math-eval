@@ -16,7 +16,6 @@ Features:
 To be thought about:
 
 - [ ] custom types in menter lang directly via map; must think more about a useful syntax for this.
-- [ ] rethink iterator system
 - [ ] live preview "safe-mode" in which no global variables can be changed
 
 ```
@@ -95,10 +94,4 @@ accessors on maps
 
 ```
 x^^2 + x^^3
-```
-
-```
-shops_arr = ["Card Stop", "Shop Es!", "Card Gate"]
-shops = []
-for ((k, v) in shops_arr) shops[k] = {id: k, name: v}
 ```

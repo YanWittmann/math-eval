@@ -478,27 +478,6 @@ public class Value implements Comparable<Value> {
                     put("contains", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).values().stream().anyMatch(value -> value.equals(values.get(0)))));
                     put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().anyMatch(key -> key.equals(values.get(0).getValue()))));
 
-                    put("forEach", (context, self, values, localInformation) -> {
-                        final Map<Object, Value> mapValue = self.getMap();
-                        final boolean mapAnArray = isMapAnArray(mapValue);
-                        for (Entry<Object, Value> entry : mapValue.entrySet()) {
-                            if (mapAnArray) {
-                                try {
-                                    applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "forEach");
-                                } catch (Exception e) {
-                                    try {
-                                        applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localInformation, "forEach");
-                                    } catch (Exception ignored) {
-                                        throw e;
-                                    }
-                                }
-                            } else {
-                                applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localInformation, "forEach");
-                            }
-                        }
-                        return Value.empty();
-                    });
-
                     put("map", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
                         for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
@@ -634,18 +613,9 @@ public class Value implements Comparable<Value> {
             });
             put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MenterValueFunction>() {
                 {
+                    put("iterator", (context, self, values, localInformation) -> self);
                     put("hasNext", (context, self, values, localInformation) -> new Value(((Iterator<?>) self.getValue()).hasNext()));
                     put("next", (context, self, values, localInformation) -> new Value(((Iterator<?>) self.getValue()).next()));
-
-                    put("forEach", (context, self, values, localInformation) -> {
-                        final Iterator<?> iterator = (Iterator<?>) self.getValue();
-                        while (iterator.hasNext()) {
-                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localInformation, "forEach");
-                        }
-                        return self;
-                    });
-
-                    put("iterator", (context, self, values, localInformation) -> self);
                 }
             });
             put(PrimitiveValueType.ANY.getType(), new HashMap<String, MenterValueFunction>() {
@@ -653,13 +623,7 @@ public class Value implements Comparable<Value> {
                     put("type", (context, self, values, localInformation) -> new Value(self.getType()));
 
                     put("iterator", (context, self, values, localInformation) -> self.iterator());
-                    put("forEach", (context, self, values, localInformation) -> {
-                        final Iterator<?> iterator = (Iterator<?>) applyFunction(toList(self), self.access(new Value("iterator")), context, localInformation, "iterator").getValue();
-                        while (iterator.hasNext()) {
-                            applyFunction(toList(new Value(iterator.next())), values.get(0), context, localInformation, "forEach");
-                        }
-                        return self;
-                    });
+                    put("forEach", (context, self, values, localInformation) -> context.forLoop(self, values.get(0), context, localInformation));
 
                     put("functions", (context, self, values, localInformation) -> {
                         final List<Value> result = new ArrayList<>();

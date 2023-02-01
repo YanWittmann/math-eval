@@ -293,6 +293,15 @@ class MenterInterpreterTest {
                                                   "  keys = keys + k\n" +
                                                   "}\n" +
                                                   "sum + keys");
+
+        evaluateAndAssertEqual(interpreter, "2", "" +
+                                                  "\"42\".iterator().forEach(k -> k)");
+
+        evaluateAndAssertEqual(interpreter, "2!", "" +
+                                                  "\"42\".forEach(k -> k + \"!\")");
+
+        evaluateAndAssertEqual(interpreter, "3", "" +
+                                                  "[1, 2, 3].forEach((k, v) -> v)");
     }
 
     @Test

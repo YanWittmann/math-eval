@@ -436,10 +436,11 @@ public abstract class EvaluationContext {
 
         final Value iteratorGetter = iteratorValue.access(new Value("iterator"));
         final Value iterator = evaluateFunction(iteratorGetter, Collections.singletonList(iteratorValue), globalContext, localInformation, "iterator");
+
         if (!iterator.getType().equals(PrimitiveValueType.ITERATOR.getType())) {
             throw localInformation.createException("Iterator element did not provide iterable: " + iteratorValue);
         }
-        final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
+        @SuppressWarnings("unchecked") final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
 
 
         // might be a list of values or a single value
@@ -509,6 +510,46 @@ public abstract class EvaluationContext {
             }
 
             result = evaluate(loopCode, globalContext, symbolCreationMode, loopLocalInformation);
+
+            if (result.unwrapBreak()) {
+                break;
+            }
+            result.unwrapContinue();
+        }
+
+        return result;
+    }
+
+    public Value forLoop(Value self, Value evaluatorFunction, GlobalContext globalContext, EvaluationContextLocalInformation localInformation) {
+        final Value iteratorValue = self.access(new Value("iterator"));
+        final Value iterator = evaluateFunction(iteratorValue, Collections.singletonList(self), globalContext, localInformation, "iterator");
+
+        if (!iterator.getType().equals(PrimitiveValueType.ITERATOR.getType())) {
+            throw localInformation.createException("Iterator element did not provide iterable: " + self);
+        }
+        @SuppressWarnings("unchecked") final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
+
+        Value result = Value.empty();
+
+        while (iteratorIterator.hasNext()) {
+            final EvaluationContextLocalInformation loopLocalInformation = localInformation.deriveNewContext();
+
+            final Value iteratorElement = iteratorIterator.next();
+            if (iteratorElement.isMapAnArray() && iteratorElement.getMap().size() == 2) {
+                final LinkedHashMap<Object, Value> inputParameterValues = iteratorElement.getMap();
+                final Iterator<Value> parameterElementIterator = inputParameterValues.values().iterator();
+                final Value key = parameterElementIterator.next();
+                final Value value = parameterElementIterator.next();
+
+                try {
+                    result = evaluateFunction(evaluatorFunction, Collections.singletonList(value), globalContext, loopLocalInformation, "forEach");
+                } catch (Exception e) {
+                    result = evaluateFunction(evaluatorFunction, Arrays.asList(key, value), globalContext, loopLocalInformation, "forEach");
+                }
+
+            } else {
+                result = evaluateFunction(evaluatorFunction, Collections.singletonList(iteratorElement), globalContext, loopLocalInformation, "forEach");
+            }
 
             if (result.unwrapBreak()) {
                 break;

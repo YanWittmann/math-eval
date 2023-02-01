@@ -62,6 +62,11 @@ public class Lexer {
             return string.charAt(position);
         }
 
+        public char peek(int offset) {
+            if (position + offset >= string.length()) return '\0';
+            return string.charAt(position + offset);
+        }
+
         public boolean hasNext() {
             return position < string.length();
         }
@@ -228,7 +233,8 @@ public class Lexer {
                         } else if (Character.isLetter(c)) {
                             buffer.append(c);
                             state = 8;
-                        } else if (isSingleCharacterToken(c) && !isOperator("" + c + this.stringIterator.peek())) {
+                        } else if (isSingleCharacterToken(c) &&
+                                   (!isOperator("" + c + this.stringIterator.peek()) && !isOperator("" + c + this.stringIterator.peek() + this.stringIterator.peek(1)))) {
                             buffer.append(c);
                             if (c == '(') {
                                 nextToken = createToken(buffer, TokenType.OPEN_PARENTHESIS);
@@ -251,6 +257,12 @@ public class Lexer {
                             } else {
                                 nextToken = createToken(buffer, TokenType.OPERATOR);
                             }
+                            return;
+                        } else if (isOperator("" + c + this.stringIterator.peek() + this.stringIterator.peek(1))) {
+                            buffer.append(c);
+                            buffer.append(this.stringIterator.next());
+                            buffer.append(this.stringIterator.next());
+                            nextToken = createToken(buffer, TokenType.OPERATOR);
                             return;
                         } else if (isOperator("" + c + this.stringIterator.peek())) {
                             buffer.append(c);

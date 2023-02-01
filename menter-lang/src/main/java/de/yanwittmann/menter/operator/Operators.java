@@ -293,30 +293,30 @@ public class Operators {
                 )
         )));
 
+        add(OperatorUtilities.makeDouble(":::", 21, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler(":::", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()},
+                        new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType()},
+                        Operators::objectConcatenationOperatorTriple
+                )
+        )));
+
         add(OperatorUtilities.makeDouble("::", 20, (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("::", leftArgument, rightArgument,
                 new OperatorUtilities.DoubleOperatorTypeAction(
                         new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()},
                         new String[]{PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType(), PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.ANY.getType()},
-                        Operators::combineMapValues
+                        Operators::objectConcatenationOperatorTriple
                 )
         )));
 
         // special rules for assignment/...
-        add(OperatorUtilities.makeDouble("=", 10, (leftArgument, rightArgument) -> {
-            return null;
-        }, false));
+        add(OperatorUtilities.makeDouble("=", 10, (leftArgument, rightArgument) -> null, false));
 
-        add(OperatorUtilities.makeDouble("->", 5, (leftArgument, rightArgument) -> {
-            return null;
-        }, false));
+        add(OperatorUtilities.makeDouble("->", 5, (leftArgument, rightArgument) -> null, false));
 
-        add(OperatorUtilities.makeDouble("|>", 0, (leftArgument, rightArgument) -> {
-            return null;
-        }, true));
+        add(OperatorUtilities.makeDouble("|>", 0, (leftArgument, rightArgument) -> null, true));
 
-        add(OperatorUtilities.makeDouble(">|", 0, (leftArgument, rightArgument) -> {
-            return null;
-        }, true));
+        add(OperatorUtilities.makeDouble(">|", 0, (leftArgument, rightArgument) -> null, true));
     }
 
     public void add(Operator operator) {
@@ -397,10 +397,11 @@ public class Operators {
         return Objects.hash(operators);
     }
 
-    private static Value combineMapValues(Value... elements) {
-        final boolean canTreatAsList = Arrays.stream(elements).allMatch(value -> !(value.getValue() instanceof Map) || Value.isMapAnArray(value));
+    private static Value objectConcatenationOperatorTriple(Value... elements) {
+        // Merge two maps into a single one by concatenating the values of the same key and adding the new keys.
+        final boolean areAllValuesLists = Arrays.stream(elements).allMatch(value -> !(value.getValue() instanceof Map) || Value.isMapAnArray(value));
 
-        if (canTreatAsList) {
+        if (areAllValuesLists) {
             final List<Value> list = new ArrayList<>();
 
             for (Value element : elements) {
