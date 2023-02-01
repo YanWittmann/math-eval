@@ -767,52 +767,56 @@ public class Value implements Comparable<Value> {
             }
         }
 
-        if (object instanceof Value) {
-            return toDisplayStringInternal(((Value) object).getValue(), visited);
+        try {
+            if (object instanceof Value) {
+                return toDisplayStringInternal(((Value) object).getValue(), visited);
 
-        } else if (object instanceof List) {
-            return ((List<?>) object).stream()
-                    .map(v -> toDisplayStringInternal(v, visited))
-                    .collect(Collectors.joining(", ", "[", "]"));
+            } else if (object instanceof List) {
+                return ((List<?>) object).stream()
+                        .map(v -> toDisplayStringInternal(v, visited))
+                        .collect(Collectors.joining(", ", "[", "]"));
 
-        } else if (object instanceof Map) {
-            final Map<?, ?> map = (Map<?, ?>) object;
-            if (isMapAnArray(map)) {
-                return toDisplayStringInternal(new ArrayList<>(map.values()), visited);
-            } else {
-                final StringJoiner joiner = new StringJoiner(", ", "{", "}");
-                for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    joiner.add(toDisplayStringInternal(entry.getKey(), visited) + ": " + toDisplayStringInternal(entry.getValue(), visited));
+            } else if (object instanceof Map) {
+                final Map<?, ?> map = (Map<?, ?>) object;
+                if (isMapAnArray(map)) {
+                    return toDisplayStringInternal(new ArrayList<>(map.values()), visited);
+                } else {
+                    final StringJoiner joiner = new StringJoiner(", ", "{", "}");
+                    for (Map.Entry<?, ?> entry : map.entrySet()) {
+                        joiner.add(toDisplayStringInternal(entry.getKey(), visited) + ": " + toDisplayStringInternal(entry.getValue(), visited));
+                    }
+                    return joiner.toString();
                 }
-                return joiner.toString();
+
+            } else if (object instanceof Token) {
+                return ((Token) object).getValue();
+            } else if (object instanceof Pattern) {
+                return ((Pattern) object).pattern();
+            } else if (object instanceof BigDecimal) {
+                return ((BigDecimal) object).stripTrailingZeros().toPlainString();
+
+            } else if (object instanceof Function) {
+                return "<<native function>>";
+            } else if (object instanceof BiFunction) {
+                return "<<instance function>>";
+            } else if (object instanceof MenterNodeFunction) {
+                return String.valueOf(object);
+
+            } else if (object instanceof Iterator) {
+                // cannot print the iterator, because it will consume the values
+                return "<<iterator>>";
+
+            } else if (object instanceof Method) {
+                final Method method = (Method) object;
+                return method.getDeclaringClass().getSimpleName() + "." + method.getName();
+
+            } else {
+                // custom type overrides the toString method, which is why not separate call is needed
+
+                return String.valueOf(object);
             }
-
-        } else if (object instanceof Token) {
-            return ((Token) object).getValue();
-        } else if (object instanceof Pattern) {
-            return ((Pattern) object).pattern();
-        } else if (object instanceof BigDecimal) {
-            return ((BigDecimal) object).stripTrailingZeros().toPlainString();
-
-        } else if (object instanceof Function) {
-            return "<<native function>>";
-        } else if (object instanceof BiFunction) {
-            return "<<instance function>>";
-        } else if (object instanceof MenterNodeFunction) {
-            return String.valueOf(object);
-
-        } else if (object instanceof Iterator) {
-            // cannot print the iterator, because it will consume the values
-            return "<<iterator>>";
-
-        } else if (object instanceof Method) {
-            final Method method = (Method) object;
-            return method.getDeclaringClass().getSimpleName() + "." + method.getName();
-
-        } else {
-            // custom type overrides the toString method, which is why not separate call is needed
-
-            return String.valueOf(object);
+        } finally {
+            visited.remove(object);
         }
     }
 

@@ -14,12 +14,19 @@ native round()
 native floor()
 native ceil()
 native abs()
-native sqrt()
 
-pi = 3.1415926535897932384
+native sqrt()
+native root()
+native log()
+native ln()
+
+PI = 3.1415926535897932384
+E  = 2.71828182845904523536028747135266249775724709369995
 
 export [
         range, space,
-        sin, cos, tan, asin, acos, atan, pi,
-        random, round, floor, ceil, abs, sqrt
+        sin, cos, tan, asin, acos, atan,
+        random, round, floor, ceil, abs,
+        sqrt, root, log, ln,
+        PI, E
         ] as math

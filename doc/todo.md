@@ -10,6 +10,8 @@ Features:
 - [ ] string output with quotes "", two separate rendering functions (?)
 - [ ] fix `??` when printing syntax trees (also in documentation)
 - [ ] documentation: info/warning/error boxes
+- [ ] cross operator (X ?)
+- [ ] rethink `::` operator
 
 To be thought about:
 
@@ -80,6 +82,10 @@ db.filter(x -> x.age > 20).size()
 db.filter(x -> x.age > 20).map(x -> x.age).avg()
 ```
 
+```
+for((k,v) in getVariables()) { print("removing", k); removeVariable(k) }
+```
+
 Bugs:
 
 ```
@@ -89,4 +95,10 @@ accessors on maps
 
 ```
 x^^2 + x^^3
+```
+
+```
+shops_arr = ["Card Stop", "Shop Es!", "Card Gate"]
+shops = []
+for ((k, v) in shops_arr) shops[k] = {id: k, name: v}
 ```

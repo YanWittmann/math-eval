@@ -10,6 +10,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class CoreModuleMath {
@@ -30,7 +31,11 @@ public abstract class CoreModuleMath {
         EvaluationContext.registerNativeFunction("math.mtr", "floor", CoreModuleMath::floor);
         EvaluationContext.registerNativeFunction("math.mtr", "ceil", CoreModuleMath::ceil);
         EvaluationContext.registerNativeFunction("math.mtr", "abs", CoreModuleMath::abs);
+
         EvaluationContext.registerNativeFunction("math.mtr", "sqrt", CoreModuleMath::sqrt);
+        EvaluationContext.registerNativeFunction("math.mtr", "root", CoreModuleMath::root);
+        EvaluationContext.registerNativeFunction("math.mtr", "log", CoreModuleMath::log);
+        EvaluationContext.registerNativeFunction("math.mtr", "ln", CoreModuleMath::ln);
     }
 
     public static Value range(List<Value> arguments) {
@@ -116,6 +121,18 @@ public abstract class CoreModuleMath {
         return new Value(function.apply((BigDecimal) value));
     }
 
+    private static Value applyDoubleValueFunction(String name, List<Value> arguments, BiFunction<BigDecimal, BigDecimal, BigDecimal> function) {
+        if (arguments.size() != 2) throw new MenterExecutionException(name + "() expects 2 arguments");
+        final Object a = arguments.get(0).getValue();
+        final Object b = arguments.get(1).getValue();
+        if (!(a instanceof BigDecimal)) {
+            throw new MenterExecutionException(name + "() expects a number as first argument");
+        } else if (!(b instanceof BigDecimal)) {
+            throw new MenterExecutionException(name + "() expects a number as second argument");
+        }
+        return new Value(function.apply((BigDecimal) a, (BigDecimal) b));
+    }
+
     public static Value sin(List<Value> arguments) {
         return applySingleValueFunction("sin", arguments, v -> BigDecimal.valueOf(Math.sin(v.doubleValue())));
     }
@@ -141,7 +158,8 @@ public abstract class CoreModuleMath {
     }
 
     public static Value random(List<Value> arguments) {
-        if (arguments.size() > 2) throw new MenterExecutionException("random() expects 0, 1 or 2 number arguments: random(), random(max), random(min, max)");
+        if (arguments.size() > 2)
+            throw new MenterExecutionException("random() expects 0, 1 or 2 number arguments: random(), random(max), random(min, max)");
 
         if (arguments.size() == 0) {
             return new Value(BigDecimal.valueOf(Math.random()));
@@ -199,6 +217,77 @@ public abstract class CoreModuleMath {
     }
 
     private static Value sqrt(List<Value> values) {
-        return applySingleValueFunction("sqrt", values, v -> BigDecimal.valueOf(Math.sqrt(v.doubleValue())));
+        return applySingleValueFunction("sqrt", values, v -> calculateSqrtForAnyDegree(v, BigDecimal.valueOf(2)));
     }
+
+    private static Value root(List<Value> values) {
+        return applyDoubleValueFunction("root", values, CoreModuleMath::calculateSqrtForAnyDegree);
+    }
+
+    private static BigDecimal calculateSqrtForAnyDegree(BigDecimal value, BigDecimal root) {
+        if (value.compareTo(BigDecimal.ZERO) < 0) {
+            throw new MenterExecutionException("sqrt() expects a positive number");
+        }
+        if (root.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new MenterExecutionException("root() expects a positive number as second argument");
+        }
+        // https://stackoverflow.com/a/34074999/15925251
+        BigDecimal xPrev = value;
+        BigDecimal x = value.divide(root, Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_DOWN);
+        while (x.subtract(xPrev).abs().compareTo(BigDecimal.valueOf(.1).movePointLeft(Operators.getBigDecimalDivisionScale())) > 0) {
+            xPrev = x;
+            x = root.subtract(BigDecimal.ONE)
+                    .multiply(x)
+                    .add(value.divide(x.pow(root.intValue() - 1), Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_DOWN))
+                    .divide(root, Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_DOWN);
+        }
+        return x;
+    }
+
+    private static Value log(List<Value> values) {
+        if (values.size() == 1) {
+            return applySingleValueFunction("log", values, v -> {
+                if (v.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new MenterExecutionException("log() expects a positive number");
+                }
+                return log(v, Operators.getBigDecimalDivisionScale());
+            });
+        } else if (values.size() == 2) {
+            throw new MenterExecutionException("log(a, b) is not implemented yet");
+        } else {
+            throw new MenterExecutionException("log() expects 1 or 2 arguments: log(number), log(number, base)");
+        }
+    }
+
+    private static Value ln(List<Value> values) {
+        return applySingleValueFunction("ln", values, v -> {
+            if (v.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new MenterExecutionException("ln() expects a positive number");
+            }
+            throw new MenterExecutionException("ln() is not implemented yet");
+        });
+    }
+
+    private static final BigDecimal TWO = new BigDecimal(2);
+    private static final BigDecimal ONE = BigDecimal.ONE;
+    private static final BigDecimal HALF = ONE.divide(TWO, RoundingMode.HALF_UP);
+
+    public static BigDecimal log(BigDecimal x, int scale) {
+        BigDecimal result = BigDecimal.ZERO;
+        BigDecimal term = x.subtract(ONE).divide(x.add(ONE), scale, RoundingMode.HALF_UP);
+        BigDecimal nextTerm = term;
+        for (int i = 1; i < 100; i++) {
+            result = result.add(nextTerm.divide(new BigDecimal(2 * i - 1), scale, RoundingMode.HALF_UP));
+            nextTerm = nextTerm.multiply(term).multiply(HALF);
+            nextTerm = nextTerm.setScale(scale * 4, RoundingMode.HALF_UP);
+            if (nextTerm.compareTo(BigDecimal.ZERO) == 0) {
+                break;
+            }
+            term = nextTerm;
+        }
+        return result.multiply(TWO);
+    }
+
+
+
 }

@@ -601,6 +601,9 @@ public abstract class EvaluationContext {
             } else { // otherwise it must be a value function
                 final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
                 final Value executeOnValue = functionValue.getTagParentFunctionValue();
+                if (executeOnValue == null) {
+                    throw localInformation.createException("Function [" + originalFunctionName + "] cannot be called without a base value to execute on");
+                }
                 result = executableFunction.apply(effectiveParentClosureContext, executeOnValue, functionParameters, localInformation);
             }
 
