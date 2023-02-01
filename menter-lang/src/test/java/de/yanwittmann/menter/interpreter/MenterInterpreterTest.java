@@ -309,6 +309,20 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void newForLoopValueInheritanceTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        MenterDebugger.logInterpreterAssignments = true;
+
+        evaluateAndAssertEqual(interpreter, "[{id: 0, name: Card Stop}, {id: 1, name: Shop Es!}, {id: 2, name: Card Gate}]", "" +
+                                                  "shops_arr = [\"Card Stop\", \"Shop Es!\", \"Card Gate\"]\n" +
+                                                  "shops = []\n" +
+                                                  "for ((k, v) in shops_arr) shops[k] = {id: k, name: v}\n" +
+                                                  "shops");
+    }
+
+    @Test
     public void moduleAttributesTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();

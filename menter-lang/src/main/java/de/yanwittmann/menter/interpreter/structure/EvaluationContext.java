@@ -365,80 +365,7 @@ public abstract class EvaluationContext {
                 }
 
             } else if (node.getType() == ParserNode.NodeType.LOOP_FOR) {
-                final Object iteratorVariable = node.getChildren().get(0);
-                final Value iteratorValue = evaluate(node.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
-                final Object loopCode = node.getChildren().get(2);
-
-                final Value iteratorGetter = iteratorValue.access(new Value("iterator"));
-                final Value iterator = evaluateFunction(iteratorGetter, Collections.singletonList(iteratorValue), globalContext, localInformation, "iterator");
-                if (!iterator.getType().equals(PrimitiveValueType.ITERATOR.getType())) {
-                    throw localInformation.createException("Iterator element did not provide iterable: " + iteratorValue);
-                }
-                final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
-
-                // might be a list of values or a single value
-                final List<Value> variableValues = new ArrayList<>();
-
-                if (iteratorVariable instanceof Token) {
-                    variableValues.add(new Value(iteratorVariable));
-
-                } else if (iteratorVariable instanceof ParserNode) {
-                    final ParserNode varNode = (ParserNode) iteratorVariable;
-                    if (Parser.isType(varNode, ParserNode.NodeType.PARENTHESIS_PAIR) || Parser.isType(varNode, ParserNode.NodeType.SQUARE_BRACKET_PAIR) ||
-                        Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
-                        for (Object child : varNode.getChildren()) {
-                            variableValues.add(new Value(child));
-                        }
-                    } else {
-                        throw localInformation.createException("Invalid iterator variable node: " + iteratorVariable);
-                    }
-
-                } else {
-                    throw localInformation.createException("Iterator variable is not a token or a node");
-                }
-
-                final EvaluationContextLocalInformation loopLocalInformation = localInformation.deriveNewContext();
-                variableValues.forEach(v -> loopLocalInformation.putLocalSymbol(v.getValue().toString(), v));
-
-
-                while (iteratorIterator.hasNext()) {
-                    final Value iteratorElement = iteratorIterator.next();
-                    final Object iteratorElementValue = iteratorElement.getValue();
-
-                    final int acceptedVariableCount = variableValues.size();
-                    final int providedVariableCount = iteratorElement.size();
-
-                    if (iteratorElementValue instanceof Map && providedVariableCount == 2) {
-                        final Map<?, ?> element = (Map<?, ?>) iteratorElementValue;
-
-                        if (acceptedVariableCount == 1) {
-                            variableValues.get(0).setValue(element.get("value"));
-
-                        } else if (acceptedVariableCount == 2) {
-                            variableValues.get(0).setValue(element.get("key"));
-                            variableValues.get(1).setValue(element.get("value"));
-
-                        } else {
-                            throw localInformation.createException("Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement);
-                        }
-                    } else if (providedVariableCount == 1) {
-                        if (acceptedVariableCount == 1) {
-                            variableValues.get(0).setValue(iteratorElementValue);
-
-                        } else {
-                            throw localInformation.createException("Invalid variable count [" + acceptedVariableCount + "] for iterator element: " + iteratorElement);
-                        }
-                    } else {
-                        throw localInformation.createException("Invalid iterator element: " + iteratorElement);
-                    }
-
-                    result = evaluate(loopCode, globalContext, symbolCreationMode, loopLocalInformation);
-
-                    if (result.unwrapBreak()) {
-                        break;
-                    }
-                    result.unwrapContinue();
-                }
+                result = forLoop(node, globalContext, symbolCreationMode, localInformation);
 
             } else if (node.getType() == ParserNode.NodeType.CONSTRUCTOR_CALL) {
                 final Value constructorIdentifier = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
@@ -497,6 +424,96 @@ public abstract class EvaluationContext {
 
         if (!isMultiExpressionNode) {
             localInformation.popStackFrame();
+        }
+
+        return result;
+    }
+
+    public Value forLoop(ParserNode originNode, GlobalContext globalContext, SymbolCreationMode symbolCreationMode, EvaluationContextLocalInformation localInformation) {
+        final Object iteratorVariable = originNode.getChildren().get(0);
+        final Value iteratorValue = evaluate(originNode.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
+        final Object loopCode = originNode.getChildren().get(2);
+
+        final Value iteratorGetter = iteratorValue.access(new Value("iterator"));
+        final Value iterator = evaluateFunction(iteratorGetter, Collections.singletonList(iteratorValue), globalContext, localInformation, "iterator");
+        if (!iterator.getType().equals(PrimitiveValueType.ITERATOR.getType())) {
+            throw localInformation.createException("Iterator element did not provide iterable: " + iteratorValue);
+        }
+        final Iterator<Value> iteratorIterator = (Iterator<Value>) iterator.getValue();
+
+
+        // might be a list of values or a single value
+        final List<String> variableNames = new ArrayList<>();
+
+        if (iteratorVariable instanceof Token) {
+            variableNames.add(((Token) iteratorVariable).getValue());
+
+        } else if (iteratorVariable instanceof ParserNode) {
+            final ParserNode varNode = (ParserNode) iteratorVariable;
+            if (Parser.isType(varNode, ParserNode.NodeType.PARENTHESIS_PAIR) || Parser.isType(varNode, ParserNode.NodeType.SQUARE_BRACKET_PAIR) ||
+                Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
+                for (Object child : varNode.getChildren()) {
+                    variableNames.add(((Token) child).getValue());
+                }
+            } else {
+                throw localInformation.createException("Invalid iterator variable node: " + iteratorVariable);
+            }
+
+        } else {
+            throw localInformation.createException("Iterator variable is not a token or a node");
+        }
+
+
+        final int requestedParameterCount = variableNames.size();
+        Value result = Value.empty();
+
+        while (iteratorIterator.hasNext()) {
+            final EvaluationContextLocalInformation loopLocalInformation = localInformation.deriveNewContext();
+
+            final Value iteratorElement = iteratorIterator.next();
+
+            if (iteratorElement.isMapAnArray()) {
+                final LinkedHashMap<Object, Value> inputParameterValues = iteratorElement.getMap();
+                final int actualParameterCount = inputParameterValues.size();
+
+                if (actualParameterCount == requestedParameterCount) {
+                    int i = 0;
+                    for (Map.Entry<Object, Value> entry : inputParameterValues.entrySet()) {
+                        final String variableName = variableNames.get(i);
+                        final Value variableValue = entry.getValue();
+
+                        loopLocalInformation.putLocalSymbol(variableName, variableValue);
+                        i++;
+                    }
+
+                } else if (actualParameterCount == 2 && requestedParameterCount == 1) {
+                    final String variableName = variableNames.get(0);
+                    // (key, value) --> (value), ignore key
+                    final Iterator<Value> parameterElementIterator = inputParameterValues.values().iterator();
+                    parameterElementIterator.next();
+                    final Value variableValue = parameterElementIterator.next();
+
+                    localInformation.putLocalSymbol(variableName, variableValue);
+
+                } else {
+                    throw localInformation.createException("Expected " + requestedParameterCount + " variables, but got " + actualParameterCount + " for iterator element: " + iteratorElement);
+                }
+            } else {
+                if (requestedParameterCount == 1) {
+                    final String variableName = variableNames.get(0);
+                    loopLocalInformation.putLocalSymbol(variableName, iteratorElement);
+
+                } else {
+                    throw localInformation.createException("Iterator element is " + iteratorElement.getType() + " but expected object: " + iteratorElement);
+                }
+            }
+
+            result = evaluate(loopCode, globalContext, symbolCreationMode, loopLocalInformation);
+
+            if (result.unwrapBreak()) {
+                break;
+            }
+            result.unwrapContinue();
         }
 
         return result;

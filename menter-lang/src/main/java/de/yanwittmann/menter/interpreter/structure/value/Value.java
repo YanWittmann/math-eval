@@ -343,7 +343,15 @@ public class Value implements Comparable<Value> {
 
             @Override
             public Value next() {
-                return new Value(iterator.next());
+                final Object next = iterator.next();
+                if (next instanceof Map.Entry) {
+                    return new Value(Arrays.asList(
+                            new Value(((Map.Entry<?, ?>) next).getKey()),
+                            new Value(((Map.Entry<?, ?>) next).getValue())
+                    ));
+                } else {
+                    return new Value(next);
+                }
             }
         });
     }
@@ -471,7 +479,7 @@ public class Value implements Comparable<Value> {
                     put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().anyMatch(key -> key.equals(values.get(0).getValue()))));
 
                     put("forEach", (context, self, values, localInformation) -> {
-                        final Map<Object, Value> mapValue = (Map<Object, Value>) self.getValue();
+                        final Map<Object, Value> mapValue = self.getMap();
                         final boolean mapAnArray = isMapAnArray(mapValue);
                         for (Entry<Object, Value> entry : mapValue.entrySet()) {
                             if (mapAnArray) {
@@ -493,23 +501,23 @@ public class Value implements Comparable<Value> {
 
                     put("map", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
-                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                        for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                             map.put(entry.getKey(), applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "map"));
                         }
                         return new Value(map);
                     });
                     put("mapKeys", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
-                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                        for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                             map.put(applyFunction(toList(entry.getKey()), values.get(0), context, localInformation, "mapKeys").getValue(), entry.getValue());
                         }
                         return new Value(map);
                     });
 
                     put("filter", (context, self, values, localInformation) -> {
-                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                        if (isMapAnArray((self.getMap()))) {
                             final List<Value> mapped = new ArrayList<>();
-                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                                 if (applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "filter").isTrue()) {
                                     mapped.add(entry.getValue());
                                 }
@@ -518,7 +526,7 @@ public class Value implements Comparable<Value> {
 
                         } else {
                             final Map<Object, Value> map = new LinkedHashMap<>();
-                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                                 if (applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "filter").isTrue()) {
                                     map.put(entry.getKey(), entry.getValue());
                                 }
@@ -528,7 +536,7 @@ public class Value implements Comparable<Value> {
                     });
                     put("filterKeys", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
-                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                        for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                             if (applyFunction(toList(entry.getKey()), values.get(0), context, localInformation, "filterKeys").isTrue()) {
                                 map.put(entry.getKey(), entry.getValue());
                             }
@@ -537,9 +545,9 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("distinct", (context, self, values, localInformation) -> {
-                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
+                        if (isMapAnArray((self.getMap()))) {
                             final List<Value> mapped = new ArrayList<>();
-                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                                 if (!mapped.contains(entry.getValue())) {
                                     mapped.add(entry.getValue());
                                 }
@@ -548,7 +556,7 @@ public class Value implements Comparable<Value> {
 
                         } else {
                             final Map<Object, Value> map = new LinkedHashMap<>();
-                            for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                            for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                                 if (!map.containsValue(entry.getValue())) {
                                     map.put(entry.getKey(), entry.getValue());
                                 }
@@ -560,12 +568,12 @@ public class Value implements Comparable<Value> {
                     put("sort", (context, self, values, localInformation) -> {
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
 
-                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
-                            return new Value(((Map<Object, Value>) self.getValue()).values().stream()
+                        if (isMapAnArray((self.getMap()))) {
+                            return new Value((self.getMap()).values().stream()
                                     .sorted(comparator)
                                     .collect(Collectors.toList()));
                         } else {
-                            return new Value(((Map<Object, Value>) self.getValue()).entrySet().stream()
+                            return new Value((self.getMap()).entrySet().stream()
                                     .sorted((a, b) -> comparator.compare(a.getValue(), b.getValue()))
                                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
                         }
@@ -577,7 +585,7 @@ public class Value implements Comparable<Value> {
                         final String suffix = values.size() > 2 ? values.get(2).toDisplayString() : "";
                         final StringBuilder sb = new StringBuilder();
                         sb.append(prefix);
-                        for (Entry<Object, Value> entry : ((Map<Object, Value>) self.getValue()).entrySet()) {
+                        for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                             if (sb.length() > prefix.length()) {
                                 sb.append(separator);
                             }
@@ -591,29 +599,29 @@ public class Value implements Comparable<Value> {
                     put("foldl", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, true));
                     put("foldr", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, false));
 
-                    put("sum", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0))));
-                    put("avg", (context, self, values, localInformation) -> new Value(((Map<Object, Value>) self.getValue()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0)).divide(new BigDecimal(((Map<Object, Value>) self.getValue()).size()), RoundingMode.HALF_UP)));
+                    put("sum", (context, self, values, localInformation) -> new Value((self.getMap()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0))));
+                    put("avg", (context, self, values, localInformation) -> new Value((self.getMap()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0)).divide(new BigDecimal((self.getMap()).size()), RoundingMode.HALF_UP)));
                     put("max", (context, self, values, localInformation) -> {
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
-                        return new Value(((Map<Object, Value>) self.getValue()).values().stream().max(comparator).orElse(Value.empty()));
+                        return new Value((self.getMap()).values().stream().max(comparator).orElse(Value.empty()));
                     });
                     put("min", (context, self, values, localInformation) -> {
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
-                        return new Value(((Map<Object, Value>) self.getValue()).values().stream().min(comparator).orElse(Value.empty()));
+                        return new Value((self.getMap()).values().stream().min(comparator).orElse(Value.empty()));
                     });
 
                     put("head", (context, self, values, localInformation) -> {
-                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
-                            return ((Map<Object, Value>) self.getValue()).values().stream().findFirst().orElse(Value.empty());
+                        if (isMapAnArray((self.getMap()))) {
+                            return (self.getMap()).values().stream().findFirst().orElse(Value.empty());
                         } else {
-                            return ((Map<Object, Value>) self.getValue()).entrySet().stream().findFirst().map(Entry::getValue).orElse(Value.empty());
+                            return (self.getMap()).entrySet().stream().findFirst().map(Entry::getValue).orElse(Value.empty());
                         }
                     });
                     put("tail", (context, self, values, localInformation) -> {
-                        if (isMapAnArray(((Map<Object, Value>) self.getValue()))) {
-                            return new Value(((Map<Object, Value>) self.getValue()).values().stream().skip(1).collect(Collectors.toList()));
+                        if (isMapAnArray(self.getMap())) {
+                            return new Value((self.getMap()).values().stream().skip(1).collect(Collectors.toList()));
                         } else {
-                            return new Value(((Map<Object, Value>) self.getValue()).entrySet().stream().skip(1).collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
+                            return new Value((self.getMap()).entrySet().stream().skip(1).collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
                         }
                     });
                 }
@@ -666,7 +674,7 @@ public class Value implements Comparable<Value> {
     };
 
     private static Value fold(GlobalContext context, Value self, List<Value> values, EvaluationContextLocalInformation localInformation, boolean left) {
-        final List<Value> list = new ArrayList<>(((Map<Object, Value>) self.getValue()).values());
+        final List<Value> list = new ArrayList<>((self.getMap()).values());
         if (list.isEmpty()) {
             return Value.empty();
         }
@@ -838,6 +846,10 @@ public class Value implements Comparable<Value> {
 
     public static boolean isMapAnArray(Value value) {
         return value.getValue() instanceof Map && isMapAnArray((Map<?, ?>) value.getValue());
+    }
+
+    public boolean isMapAnArray() {
+        return isMapAnArray(this);
     }
 
     public boolean isEmpty() {
