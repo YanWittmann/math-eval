@@ -394,6 +394,8 @@ class MenterInterpreterTest {
         interpreter.evaluate("import cmdplot inline; import math inline; plot(space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) + 62, x -> 10 * cos(x * 2) - 37)");
         interpreter.evaluate("import cmdplot inline; import math inline; plot([-1, 0, 1], x -> 1 / x)");
         interpreter.evaluate("import cmdplot inline; import math; plot(math.space(-10, 10), x -> math.sin(x))");
+        interpreter.evaluate("import cmdplot inline; import math inline; table(range(1,10).map(x -> {x: x, y: round(0.9^^x, 4)}))");
+        interpreter.evaluate("import cmdplot inline; import math inline; table(true, range(1,10).map(x -> {x: x, y: round(0.9^^x, 4)}))");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {

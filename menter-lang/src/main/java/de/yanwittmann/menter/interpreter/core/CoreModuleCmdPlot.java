@@ -11,14 +11,14 @@ import de.yanwittmann.menter.operator.Operators;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CoreModuleCmdPlot {
 
     static {
         EvaluationContext.registerNativeFunction("cmdplot.mtr", "plot", CoreModuleCmdPlot::plot);
+        EvaluationContext.registerNativeFunction("cmdplot.mtr", "table", CoreModuleCmdPlot::table);
     }
 
     public static Value plot(GlobalContext context, EvaluationContextLocalInformation localInformation, List<Value> arguments) {
@@ -334,5 +334,81 @@ public class CoreModuleCmdPlot {
 
     private static String getChartColorByIndex(int index) {
         return CHART_COLORS[index % CHART_COLORS.length];
+    }
+
+    private static Value table(List<Value> arguments) {
+        if (arguments.size() == 0 || arguments.size() > 2) {
+            throw new MenterExecutionException("The table function expects exactly one or two arguments: [index: boolean]? [list of maps]");
+        } else if (!arguments.get(arguments.size() - 1).isMapAnArray()) {
+            throw new MenterExecutionException("The table function expects a list of maps as argument.");
+        }
+
+        final boolean showIndex = arguments.size() == 2 && arguments.get(0).isTrue();
+
+        final Value inputMapValue = arguments.get(arguments.size() - 1);
+        final List<String> keys = inputMapValue.getMap().values().stream()
+                .filter(v -> !v.isEmpty())
+                .map(Value::getMap)
+                .flatMap(m -> m.keySet().stream())
+                .distinct()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+
+        final List<String> header = new ArrayList<>();
+        if (showIndex) header.add("");
+        header.addAll(keys);
+
+        final List<List<String>> rows = new ArrayList<>();
+        rows.add(header);
+
+        for (int i = 0; i < inputMapValue.getMap().size(); i++) {
+            final List<String> row = new ArrayList<>();
+            if (showIndex) row.add(String.valueOf(i));
+            for (String key : keys) {
+                final Value value = inputMapValue.getMap().get(new BigDecimal(i)).getMap().get(key);
+                if (value == null) {
+                    row.add("");
+                } else {
+                    row.add(value.toDisplayString());
+                }
+            }
+            rows.add(row);
+        }
+
+        final List<Integer> columnWidths = new ArrayList<>();
+        for (int i = 0; i < header.size(); i++) {
+            int finalI = i;
+            final int max = rows.stream()
+                    .map(l -> l.get(finalI))
+                    .map(String::length)
+                    .max(Integer::compareTo)
+                    .orElse(0);
+            columnWidths.add(max);
+        }
+
+        final StringBuilder sb = new StringBuilder();
+        for (int j = 0; j < rows.size(); j++) {
+            final List<String> row = rows.get(j);
+            final StringJoiner line = new StringJoiner(" | ");
+
+            for (int i = 0; i < row.size(); i++) {
+                final String value = row.get(i);
+                final int width = columnWidths.get(i);
+                line.add(String.format("%-" + width + "s", value));
+            }
+
+            sb.append(line);
+            sb.append("\n");
+
+            if (j == 0) {
+                sb.append(columnWidths.stream()
+                        .map(columnWidth -> String.join("", Collections.nCopies(columnWidth, "-")))
+                        .collect(Collectors.joining("-+-")));
+                sb.append("\n");
+            }
+        }
+
+        MenterDebugger.printer.println(sb);
+        return Value.empty();
     }
 }
