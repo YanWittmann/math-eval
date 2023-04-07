@@ -42,29 +42,6 @@ public class MenterGuideServer {
             throw new IOException("Could not start MenterGuideServer on port " + serverPort, e);
         }
 
-        /*try {
-            // keytool -genkey -keyalg RSA -alias localhost -keystore localhost.jks -storepass menter-cert-pass -validity 365 -keysize 2048 -ext SAN=DNS:localhost -deststoretype pkcs12
-            // keytool -genkey -keyalg RSA -alias localhost -keystore localhost.jks -storepass menter-cert-pass -validity 365 -keysize 2048 -deststoretype pkcs12
-
-            // Load the SSL certificate and private key from the keystore file
-            KeyStore keyStore = KeyStore.getInstance("JKS");
-
-            keyStore.load(getResourceAsStream("/res/cert/localhost.jks"), "menter-cert-pass".toCharArray());
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-            keyManagerFactory.init(keyStore, "menter-cert-pass".toCharArray());
-
-            // Initialize the SSL context with the key manager and trust manager
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
-
-            // Configure the HTTPS connector with the SSL context
-            HttpsConfigurator configurator = new HttpsConfigurator(sslContext);
-            server.setHttpsConfigurator(configurator);
-
-        } catch (Exception e) {
-            throw new IOException("Could not start MenterGuideServer on port " + serverPort, e);
-        }*/
-
         final String[] printBuffer = {""};
         MenterDebugger.printer = new PrintStream(new OutputStream() {
             @Override

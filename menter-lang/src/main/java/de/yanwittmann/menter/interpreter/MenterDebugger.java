@@ -30,6 +30,7 @@ public abstract class MenterDebugger {
     public static boolean logInterpreterEvaluationOrder = false;
     public static boolean logInterpreterAssignments = false;
     public static boolean logInterpreterFunctionCalls = false;
+    public static boolean ansiColors = true;
 
     public static int stackTraceUnknownSymbolSuggestions = 3;
     public static List<String> stackTracePrintValues = new ArrayList<>();

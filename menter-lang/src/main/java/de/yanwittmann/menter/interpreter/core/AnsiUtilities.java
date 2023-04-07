@@ -1,5 +1,7 @@
 package de.yanwittmann.menter.interpreter.core;
 
+import de.yanwittmann.menter.interpreter.MenterDebugger;
+
 public class AnsiUtilities {
     public static final String ANSI_RESET = "\u001B[0m";
 
@@ -22,10 +24,18 @@ public class AnsiUtilities {
     public static final String ANSI_WHITE_BACKGROUND = "\u001B[47m";
 
     public static String colorize(String text, String color) {
-        return color + text + ANSI_RESET;
+        if (MenterDebugger.ansiColors) {
+            return color + text + ANSI_RESET;
+        } else {
+            return text;
+        }
     }
 
     public static String colorize(char text, String color) {
-        return color + text + ANSI_RESET;
+        if (MenterDebugger.ansiColors) {
+            return color + text + ANSI_RESET;
+        } else {
+            return String.valueOf(text);
+        }
     }
 }
