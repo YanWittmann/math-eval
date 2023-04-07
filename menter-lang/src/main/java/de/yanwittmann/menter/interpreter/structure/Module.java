@@ -47,7 +47,7 @@ public class Module {
         if (o instanceof Token) {
             return ((Token) o).getValue();
         } else if (o instanceof Value) {
-            return ((Value) o).getValue().toString();
+            return ((Value) o).toDisplayString();
         } else if (o instanceof String) {
             return (String) o;
         }

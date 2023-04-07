@@ -37,7 +37,7 @@ public class Value implements Comparable<Value> {
     }
 
     public Value(Object value, String taggedInformationKey, Value taggedInformationValue) {
-        setValue(value);
+        this(value);
         setTaggedAdditionalInformation(taggedInformationKey, taggedInformationValue);
     }
 
@@ -180,10 +180,10 @@ public class Value implements Comparable<Value> {
     }
 
     public void setValue(Object value) {
-        if (value instanceof Integer) this.value = new BigDecimal((Integer) value);
-        else if (value instanceof Long) this.value = new BigDecimal((Long) value);
-        else if (value instanceof Float) this.value = BigDecimal.valueOf((Float) value);
-        else if (value instanceof Double) this.value = BigDecimal.valueOf((Double) value);
+        if (value instanceof Integer) this.value = new BigDecimal("" + value);
+        else if (value instanceof Long) this.value = new BigDecimal("" + value);
+        else if (value instanceof Float) this.value = new BigDecimal("" + value);
+        else if (value instanceof Double) this.value = new BigDecimal("" + value);
         else if (value instanceof Character) this.value = String.valueOf(value);
         else if (value instanceof List) {
             final Map<Object, Value> map = new LinkedHashMap<>();
@@ -369,7 +369,27 @@ public class Value implements Comparable<Value> {
         }
 
         if (this.getType().equals(PrimitiveValueType.OBJECT.getType()) || this.getType().equals(PrimitiveValueType.ARRAY.getType())) {
-            return ((Map<Object, Value>) value).get(identifier.getValue());
+            final Object accessValue = identifier.getValue();
+            final Map<Object, Value> map = (Map<Object, Value>) value;
+
+            if (accessValue instanceof BigDecimal) {
+                if (map.containsKey(accessValue)) {
+                    return map.get(accessValue);
+                } else {
+                    // check every key using the compareTo method. This is sadly not preventable, as BigDecimal
+                    // sometimes uses the scientific notation to compare values, and not only the plain version.
+                    // or, at least I have not found a different way to do this.
+                    for (Object key : map.keySet()) {
+                        if (key instanceof BigDecimal) {
+                            if (((BigDecimal) key).compareTo((BigDecimal) accessValue) == 0) {
+                                return map.get(key);
+                            }
+                        }
+                    }
+                }
+            } else {
+                return map.get(accessValue);
+            }
         }
 
         if (this.getValue() instanceof CustomType) {
@@ -480,9 +500,17 @@ public class Value implements Comparable<Value> {
 
                     put("map", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
-                        for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
-                            map.put(entry.getKey(), applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "map"));
+
+                        if (values.get(0).getValue() instanceof MenterNodeFunction && ((MenterNodeFunction) values.get(0).getValue()).getArgumentNames().size() == 2) {
+                            for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
+                                map.put(entry.getKey(), applyFunction(toList(entry.getKey(), entry.getValue()), values.get(0), context, localInformation, "map"));
+                            }
+                        } else {
+                            for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
+                                map.put(entry.getKey(), applyFunction(toList(entry.getValue()), values.get(0), context, localInformation, "map"));
+                            }
                         }
+
                         return new Value(map);
                     });
                     put("mapKeys", (context, self, values, localInformation) -> {
@@ -603,6 +631,90 @@ public class Value implements Comparable<Value> {
                             return new Value((self.getMap()).entrySet().stream().skip(1).collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
                         }
                     });
+
+                    put("cross", (context, self, values, localInformation) -> {
+                        // generate all combinations of the two maps (self, parameter)
+                        // might apply the filter function in the second parameter
+                        final List<Value> result = new ArrayList<>();
+                        final Value filter = values.size() > 1 ? values.get(1) : null;
+
+                        for (Entry<Object, Value> next1 : (self.getMap()).entrySet()) {
+                            for (Entry<Object, Value> next2 : (values.get(0).getMap()).entrySet()) {
+                                if (filter == null || context.evaluateFunction("filter", filter, context, localInformation, next1.getValue(), next2.getValue()).isTrue()) {
+                                    final Map<Object, Value> map = new LinkedHashMap<>();
+                                    map.putAll(next1.getValue().getMap());
+                                    map.putAll(next2.getValue().getMap());
+                                    result.add(new Value(map));
+                                }
+                            }
+                        }
+                        return new Value(result);
+                    });
+
+                    put("rename", (context, self, values, localInformation) -> {
+                        // modifies the source map by renaming the key (first parameter) to the second parameter
+                        final Map<Object, Value> map = self.getMap();
+                        final Object key = values.get(0).getValue();
+                        final Object newKey = values.get(1).getValue();
+
+                        if (map.containsKey(key)) {
+                            final Value value = map.get(key);
+                            map.remove(key);
+                            map.put(newKey, value);
+                        }
+                        return self;
+                    });
+
+                    put("removeKey", (context, self, values, localInformation) -> {
+                        // first parameter might be a value, might also be a function
+                        // apply modifications directly to the source map
+                        final Value value = values.get(0);
+                        if (value.isFunction()) {
+                            final Map<Object, Value> map = self.getMap();
+                            final List<Object> keysToRemove = new ArrayList<>();
+                            for (Entry<Object, Value> entry : map.entrySet()) {
+                                if (context.evaluateFunction("filter", value, context, localInformation, new Value(entry.getKey())).isTrue()) {
+                                    keysToRemove.add(entry.getKey());
+                                }
+                            }
+                            for (Object key : keysToRemove) {
+                                map.remove(key);
+                            }
+                        } else {
+                            self.getMap().remove(value.getValue());
+                        }
+                        return self;
+                    });
+
+                    put("retainKey", (context, self, values, localInformation) -> {
+                        // first parameter might be a value, might also be a function
+                        // apply modifications directly to the source map
+                        final Value value = values.get(0);
+                        if (value.isFunction()) {
+                            final Map<Object, Value> map = self.getMap();
+                            final List<Object> keysToRemove = new ArrayList<>();
+                            for (Entry<Object, Value> entry : map.entrySet()) {
+                                if (!context.evaluateFunction("filter", value, context, localInformation, new Value(entry.getKey())).isTrue()) {
+                                    keysToRemove.add(entry.getKey());
+                                }
+                            }
+                            for (Object key : keysToRemove) {
+                                map.remove(key);
+                            }
+                        } else {
+                            final Map<Object, Value> map = self.getMap();
+                            final List<Object> keysToRemove = new ArrayList<>();
+                            for (Entry<Object, Value> entry : map.entrySet()) {
+                                if (!entry.getKey().equals(value.getValue())) {
+                                    keysToRemove.add(entry.getKey());
+                                }
+                            }
+                            for (Object key : keysToRemove) {
+                                map.remove(key);
+                            }
+                        }
+                        return self;
+                    });
                 }
             });
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
@@ -643,16 +755,25 @@ public class Value implements Comparable<Value> {
             return Value.empty();
         }
 
-        Value aggregator;
+        Value aggregator = null;
+        if (values.size() == 2) {
+            aggregator = values.get(0);
+        }
+        final Value function = values.get(values.size() - 1);
+
         if (left) {
-            aggregator = list.get(0);
+            if (aggregator == null) {
+                aggregator = list.get(0);
+            }
             for (int i = 1; i < list.size(); i++) {
-                aggregator = applyFunction(toList(aggregator, list.get(i)), values.get(0), context, localInformation, "foldl");
+                aggregator = applyFunction(toList(aggregator, list.get(i)), function, context, localInformation, "foldl");
             }
         } else {
-            aggregator = list.get(list.size() - 1);
+            if (aggregator == null) {
+                aggregator = list.get(list.size() - 1);
+            }
             for (int i = list.size() - 2; i >= 0; i--) {
-                aggregator = applyFunction(toList(aggregator, list.get(i)), values.get(0), context, localInformation, "foldr");
+                aggregator = applyFunction(toList(aggregator, list.get(i)), function, context, localInformation, "foldr");
             }
         }
         return aggregator;
@@ -836,7 +957,7 @@ public class Value implements Comparable<Value> {
         }
 
         if (this.getType().equals(PrimitiveValueType.NUMBER.getType())) {
-            return this.getNumericValue().compareTo(other.getNumericValue()) == 0;
+            return this.toDisplayString().equals(other.toDisplayString());
         } else if (this.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
             return this.isTrue() == other.isTrue();
         }

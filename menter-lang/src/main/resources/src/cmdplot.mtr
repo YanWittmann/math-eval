@@ -1,4 +1,5 @@
 
 native plot()
+native table()
 
-export [plot] as cmdplot
+export [plot, table] as cmdplot
