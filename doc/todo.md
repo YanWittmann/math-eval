@@ -90,6 +90,14 @@ derivative = (p, f) -> (x -> (f(x+p) - f(x-p)) / (2*p))
 plot(space(1, 3*PI), sin, derivative(0.1, sin))
 ```
 
+```
+range(1,6).cross(range(1,6)).filter(x -> x.reduce((+)) > 8).map(x -> x.reduce((+))).sort().frequency()
+```
+
+```
+range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})
+```
+
 Bugs:
 
 ```
@@ -97,17 +105,14 @@ Bugs:
 accessors on maps
 ```
 
-```
-x^^2 + x^^3
-```
+Incorrect assignment operator, these two belong together:
 
 ```
 data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})
 ```
 
-Incorrect assignment operator:
 ```
-data.map(x -> x.summe).foldl({}, (a, val) -> { a[val] += 1 })
+data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1 })
 Error: Node did not evaluate to anything: a[val]
 	in [repl.foldl] at a[val]
 	in [repl.foldl] at a[val] = 1

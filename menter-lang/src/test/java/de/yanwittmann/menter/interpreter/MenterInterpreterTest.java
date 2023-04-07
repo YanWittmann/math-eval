@@ -31,6 +31,18 @@ class MenterInterpreterTest {
     }
 
     @Test
+    public void multipleAssignmentsTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        // these two cases would have failed previously, as they contain assignments in the same line
+        evaluateAndAssertEqual(interpreter, "3", "data = [{k: 2, w: 1}].map(x -> {x.summe = x.k + x.w; x})[0].summe");
+
+        evaluateAndAssertEqual(interpreter, "[{k: 0, w: 2, summe: 2}, {k: 0, w: 4, summe: 4}, {k: 0, w: 6, summe: 6}, {k: 1, w: 1, summe: 2}, {k: 1, w: 3, summe: 4}, {k: 1, w: 5, summe: 6}]",
+                "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x}).filter(x -> x.summe % 2 == 0)");
+    }
+
+    @Test
     public void otherTest() {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
@@ -163,6 +175,9 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "4", "[1, 2].map(x -> x + 3) |> x -> x[0]"); // would not recognize the x[0] as accessed value, as the thisChainIsInvalid flag would never be reset
 
         evaluateAndAssertEqual(interpreter, "2", "([2, 3])[0]"); // brackets would not be evaluated to a value in the accessor system
+
+        evaluateAndAssertEqual(interpreter, "4", "test=\"test\"\ntest[\"test\".functions()[0]]()"); // revered the identifier accessed flattening, otherwise this would have been detected as single accessor chain
+        evaluateAndAssertEqual(interpreter, "4", "test=\"test\"\ntest[\"size\"]()");
     }
 
     @Test
@@ -226,6 +241,8 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "5", "(+)(2, 3)");
         evaluateAndAssertEqual(interpreter, "[false, true]", "[true, false].map([!))");
         evaluateAndAssertEqual(interpreter, "[1, 2, 6, 24]", "[1, 2, 3, 4].map((!])");
+
+        evaluateAndAssertEqual(interpreter, "12", "2^^2 + 2^^3"); // fixed wrong operator precedence
     }
 
     @Test
@@ -295,13 +312,13 @@ class MenterInterpreterTest {
                                                   "sum + keys");
 
         evaluateAndAssertEqual(interpreter, "2", "" +
-                                                  "\"42\".iterator().forEach(k -> k)");
+                                                 "\"42\".iterator().forEach(k -> k)");
 
         evaluateAndAssertEqual(interpreter, "2!", "" +
                                                   "\"42\".forEach(k -> k + \"!\")");
 
         evaluateAndAssertEqual(interpreter, "3", "" +
-                                                  "[1, 2, 3].forEach((k, v) -> v)");
+                                                 "[1, 2, 3].forEach((k, v) -> v)");
     }
 
     @Test
@@ -325,10 +342,10 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterAssignments = true;
 
         evaluateAndAssertEqual(interpreter, "[{id: 0, name: Card Stop}, {id: 1, name: Shop Es!}, {id: 2, name: Card Gate}]", "" +
-                                                  "shops_arr = [\"Card Stop\", \"Shop Es!\", \"Card Gate\"]\n" +
-                                                  "shops = []\n" +
-                                                  "for ((k, v) in shops_arr) shops[k] = {id: k, name: v}\n" +
-                                                  "shops");
+                                                                                                                             "shops_arr = [\"Card Stop\", \"Shop Es!\", \"Card Gate\"]\n" +
+                                                                                                                             "shops = []\n" +
+                                                                                                                             "for ((k, v) in shops_arr) shops[k] = {id: k, name: v}\n" +
+                                                                                                                             "shops");
     }
 
     @Test
@@ -408,6 +425,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
+
         MenterDebugger.logLexedTokens = true;
         MenterDebugger.logParseProgress = true;
         MenterDebugger.logParsedTokens = true;
@@ -416,5 +434,4 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "9", "7 |> x -> x + 1 |> x -> x + 1");
     }
-
 }

@@ -642,11 +642,37 @@ public class Value implements Comparable<Value> {
                             for (Entry<Object, Value> next2 : (values.get(0).getMap()).entrySet()) {
                                 if (filter == null || context.evaluateFunction("filter", filter, context, localInformation, next1.getValue(), next2.getValue()).isTrue()) {
                                     final Map<Object, Value> map = new LinkedHashMap<>();
-                                    map.putAll(next1.getValue().getMap());
-                                    map.putAll(next2.getValue().getMap());
+                                    if (!(next1.getValue().getValue() instanceof Map) && !(next2.getValue().getValue() instanceof Map)) {
+                                        map.put(0, next1.getValue());
+                                        map.put(1, next2.getValue());
+                                    } else if (!(next1.getValue().getValue() instanceof Map)) {
+                                        map.putAll(next2.getValue().getMap());
+                                        int max = findHighestNumericKey(map);
+                                        map.put(max + 1, next1.getValue());
+                                    } else if (!(next2.getValue().getValue() instanceof Map)) {
+                                        map.putAll(next1.getValue().getMap());
+                                        int max = findHighestNumericKey(map);
+                                        map.put(max + 1, next2.getValue());
+                                    } else {
+                                        map.putAll(next1.getValue().getMap());
+                                        map.putAll(next2.getValue().getMap());
+                                    }
                                     result.add(new Value(map));
                                 }
                             }
+                        }
+                        return new Value(result);
+                    });
+
+                    put("frequency", (context, self, values, localInformation) -> {
+                        // count the number of occurrences of each value in the map
+                        final Map<Object, Integer> frequency = new HashMap<>();
+                        for (Value value : (self.getMap()).values()) {
+                            frequency.put(value.getValue(), frequency.getOrDefault(value.getValue(), 0) + 1);
+                        }
+                        final Map<Value, Value> result = new HashMap<>();
+                        for (Entry<Object, Integer> entry : frequency.entrySet()) {
+                            result.put(new Value(entry.getKey()), new Value(entry.getValue()));
                         }
                         return new Value(result);
                     });
@@ -748,6 +774,16 @@ public class Value implements Comparable<Value> {
             });
         }
     };
+
+    private static int findHighestNumericKey(Map<Object, Value> map) {
+        int max = 0;
+        for (Object key : map.keySet()) {
+            if (key instanceof Integer) {
+                max = Math.max(max, (Integer) key);
+            }
+        }
+        return max;
+    }
 
     private static Value fold(GlobalContext context, Value self, List<Value> values, EvaluationContextLocalInformation localInformation, boolean left) {
         final List<Value> list = new ArrayList<>((self.getMap()).values());

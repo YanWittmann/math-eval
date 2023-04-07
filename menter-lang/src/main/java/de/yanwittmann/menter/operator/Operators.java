@@ -52,6 +52,25 @@ public class Operators {
                         }
                 )
         )));
+
+        final BiFunction<Value, Value, Value> power = (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^", leftArgument, rightArgument,
+                new OperatorUtilities.DoubleOperatorTypeAction(
+                        PrimitiveValueType.NUMBER.getType(),
+                        PrimitiveValueType.NUMBER.getType(),
+                        (left, right) -> {
+                            if (right.getNumericValue().signum() != -1) {
+                                return new Value(Math.pow(left.getNumericValue().doubleValue(), right.getNumericValue().doubleValue()));
+                            } else {
+                                // Math.pow doesn't support negative exponents
+                                return new Value(BigDecimal.ONE.divide(BigDecimal.valueOf(Math.pow(left.getNumericValue().doubleValue(), right.getNumericValue().negate().doubleValue())), BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
+                            }
+                        }
+                )
+        );
+        add(OperatorUtilities.makeDouble("^", 145, power));
+        add(OperatorUtilities.makeDouble("^^", 145, power));
+        add(OperatorUtilities.makeDouble("**", 145, power));
+
         add(OperatorUtilities.makeRight("++", 140, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
                 new OperatorUtilities.SingleOperatorTypeAction(
                         PrimitiveValueType.NUMBER.getType(),
@@ -175,7 +194,7 @@ public class Operators {
                 new OperatorUtilities.DoubleOperatorTypeAction(
                         PrimitiveValueType.STRING.getType(),
                         PrimitiveValueType.STRING.getType(),
-                        (left, right) -> new Value(left.getValue() + "" + right.getValue())
+                        (left, right) -> new Value(left.getValue() + String.valueOf(right.getValue()))
                 ),
                 new OperatorUtilities.DoubleOperatorTypeAction(
                         PrimitiveValueType.STRING.getType(),
@@ -254,24 +273,6 @@ public class Operators {
         add(OperatorUtilities.makeDouble("&", 70, (leftArgument, rightArgument) -> {
             return null;
         }));
-
-        final BiFunction<Value, Value, Value> power = (leftArgument, rightArgument) -> OperatorUtilities.operatorTypeHandler("^", leftArgument, rightArgument,
-                new OperatorUtilities.DoubleOperatorTypeAction(
-                        PrimitiveValueType.NUMBER.getType(),
-                        PrimitiveValueType.NUMBER.getType(),
-                        (left, right) -> {
-                            if (right.getNumericValue().signum() != -1) {
-                                return new Value(Math.pow(left.getNumericValue().doubleValue(), right.getNumericValue().doubleValue()));
-                            } else {
-                                // Math.pow doesn't support negative exponents
-                                return new Value(BigDecimal.ONE.divide(BigDecimal.valueOf(Math.pow(left.getNumericValue().doubleValue(), right.getNumericValue().negate().doubleValue())), BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
-                            }
-                        }
-                )
-        );
-        add(OperatorUtilities.makeDouble("^", 60, power));
-        add(OperatorUtilities.makeDouble("^^", 60, power));
-        add(OperatorUtilities.makeDouble("**", 60, power));
 
         add(OperatorUtilities.makeDouble("|", 50, (leftArgument, rightArgument) -> {
             return null;

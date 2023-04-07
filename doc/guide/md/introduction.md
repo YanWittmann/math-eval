@@ -3,8 +3,7 @@
 ## Introduction
 
 Menter is a programming language that is **built in Java**, meaning that it can be run on any platform that supports
-Java. It has a strong emphasis on simplicity and ease of use, combining the commonly known syntax of **Python,
-JavaScript, F# and Java**.
+Java. It has a strong emphasis on simplicity and ease of use.
 
 This guide will:
 
@@ -15,7 +14,7 @@ By the end, you should be able to create your own programs in Menter.
 
 ## A Quick Sample
 
-Here's a small program that creates an array, filters the values and maps them to new values:
+Here's a small program that creates an array, maps them to new values and filters them:
 
 ```result=[1, 2, 3, 4];;;(x) -> { x > 4; };;;[6, 8]
 numbers = range(1, 4);;;filterFunction = x -> x > 4;;;numbers.map(x -> x * 2).filter(filterFunction)

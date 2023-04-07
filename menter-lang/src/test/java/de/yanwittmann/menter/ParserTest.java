@@ -265,14 +265,16 @@ class ParserTest {
     public void subsequentFunctionCallParseTreeTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
-                               "   ├─ IDENTIFIER: a\n" +
-                               "   ├─ CODE_BLOCK\n" +
-                               "   │  └─ IDENTIFIER: b\n" +
-                               "   ├─ IDENTIFIER: c\n" +
-                               "   ├─ IDENTIFIER: d\n" +
-                               "   ├─ CODE_BLOCK\n" +
-                               "   │  └─ IDENTIFIER: e\n" +
-                               "   ├─ IDENTIFIER: f\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │  ├─ IDENTIFIER: a\n" +
+                               "   │  │  ├─ CODE_BLOCK\n" +
+                               "   │  │  │  └─ IDENTIFIER: b\n" +
+                               "   │  │  ├─ IDENTIFIER: c\n" +
+                               "   │  │  └─ IDENTIFIER: d\n" +
+                               "   │  ├─ CODE_BLOCK\n" +
+                               "   │  │  └─ IDENTIFIER: e\n" +
+                               "   │  └─ IDENTIFIER: f\n" +
                                "   ├─ CODE_BLOCK\n" +
                                "   │  └─ STRING_LITERAL: \"g\"\n" +
                                "   ├─ IDENTIFIER: h\n" +
@@ -283,8 +285,9 @@ class ParserTest {
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
-                               "   ├─ IDENTIFIER: test\n" +
-                               "   ├─ IDENTIFIER: t\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: test\n" +
+                               "   │  └─ IDENTIFIER: t\n" +
                                "   ├─ NUMBER_LITERAL: 0\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
@@ -297,11 +300,12 @@ class ParserTest {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ ASSIGNMENT: (=) (10)\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
-                               "   │  ├─ IDENTIFIER: test\n" +
-                               "   │  ├─ CODE_BLOCK\n" +
-                               "   │  │  └─ EXPRESSION: (+) (110)\n" +
-                               "   │  │     ├─ STRING_LITERAL: \"varname-\"\n" +
-                               "   │  │     └─ IDENTIFIER: test\n" +
+                               "   │  ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │  ├─ IDENTIFIER: test\n" +
+                               "   │  │  └─ CODE_BLOCK\n" +
+                               "   │  │     └─ EXPRESSION: (+) (110)\n" +
+                               "   │  │        ├─ STRING_LITERAL: \"varname-\"\n" +
+                               "   │  │        └─ IDENTIFIER: test\n" +
                                "   │  └─ CODE_BLOCK\n" +
                                "   │     └─ EXPRESSION: (+) (110)\n" +
                                "   │        ├─ STRING_LITERAL: \"second\"\n" +
@@ -969,8 +973,9 @@ class ParserTest {
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
-                               "   ├─ IDENTIFIER: test\n" +
-                               "   ├─ IDENTIFIER: t\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: test\n" +
+                               "   │  └─ IDENTIFIER: t\n" +
                                "   ├─ NUMBER_LITERAL: 0\n" +
                                "   └─ FUNCTION_CALL\n" +
                                "      └─ PARENTHESIS_PAIR\n" +
@@ -1173,10 +1178,11 @@ class ParserTest {
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
-                               "   ├─ IDENTIFIER: test\n" +
-                               "   ├─ IDENTIFIER: call\n" +
-                               "   ├─ FUNCTION_CALL\n" +
-                               "   │  └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ IDENTIFIER: test\n" +
+                               "   │  ├─ IDENTIFIER: call\n" +
+                               "   │  └─ FUNCTION_CALL\n" +
+                               "   │     └─ PARENTHESIS_PAIR\n" +
                                "   └─ CODE_BLOCK\n" +
                                "      └─ NUMBER_LITERAL: 7",
                 "test.call()[7]");
@@ -1240,55 +1246,56 @@ class ParserTest {
     public void accessorNightmareTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ IDENTIFIER_ACCESSED\n" +
-                               "   ├─ MAP\n" +
-                               "   │  └─ MAP_ELEMENT\n" +
-                               "   │     ├─ NUMBER_LITERAL: 1\n" +
-                               "   │     └─ EXPRESSION: (*) (120)\n" +
-                               "   │        ├─ NUMBER_LITERAL: 2\n" +
-                               "   │        └─ IDENTIFIER_ACCESSED\n" +
-                               "   │           ├─ IDENTIFIER: core\n" +
-                               "   │           ├─ IDENTIFIER: systemprop\n" +
-                               "   │           └─ FUNCTION_CALL\n" +
-                               "   │              └─ PARENTHESIS_PAIR\n" +
-                               "   │                 └─ EXPRESSION: (*) (120)\n" +
-                               "   │                    ├─ NUMBER_LITERAL: 4\n" +
-                               "   │                    └─ IDENTIFIER_ACCESSED\n" +
-                               "   │                       ├─ STRING_LITERAL: \"key\"\n" +
-                               "   │                       ├─ IDENTIFIER: lower\n" +
-                               "   │                       ├─ FUNCTION_CALL\n" +
-                               "   │                       │  └─ PARENTHESIS_PAIR\n" +
-                               "   │                       ├─ IDENTIFIER: do\n" +
-                               "   │                       ├─ FUNCTION_CALL\n" +
-                               "   │                       │  └─ PARENTHESIS_PAIR\n" +
-                               "   │                       │     └─ EXPRESSION: (*) (120)\n" +
-                               "   │                       │        ├─ MAP\n" +
-                               "   │                       │        │  ├─ MAP_ELEMENT\n" +
-                               "   │                       │        │  │  ├─ IDENTIFIER: myMap\n" +
-                               "   │                       │        │  │  └─ NUMBER_LITERAL: 3\n" +
-                               "   │                       │        │  └─ MAP_ELEMENT\n" +
-                               "   │                       │        │     ├─ NUMBER_LITERAL: 4\n" +
-                               "   │                       │        │     └─ IDENTIFIER_ACCESSED\n" +
-                               "   │                       │        │        ├─ IDENTIFIER: foo\n" +
-                               "   │                       │        │        └─ CODE_BLOCK\n" +
-                               "   │                       │        │           └─ NUMBER_LITERAL: 0\n" +
-                               "   │                       │        └─ NUMBER_LITERAL: 2\n" +
-                               "   │                       ├─ IDENTIFIER: replace\n" +
-                               "   │                       └─ FUNCTION_CALL\n" +
-                               "   │                          └─ PARENTHESIS_PAIR\n" +
-                               "   │                             ├─ STRING_LITERAL: \" \"\n" +
-                               "   │                             └─ STRING_LITERAL: \"_\"\n" +
-                               "   ├─ IDENTIFIER: call\n" +
-                               "   ├─ FUNCTION_CALL\n" +
-                               "   │  └─ PARENTHESIS_PAIR\n" +
-                               "   │     └─ EXPRESSION: (*) (120)\n" +
-                               "   │        ├─ STRING_LITERAL: \"key\"\n" +
-                               "   │        └─ IDENTIFIER_ACCESSED\n" +
-                               "   │           ├─ ARRAY\n" +
-                               "   │           │  ├─ NUMBER_LITERAL: 2\n" +
-                               "   │           │  └─ NUMBER_LITERAL: 3\n" +
-                               "   │           ├─ IDENTIFIER: size\n" +
-                               "   │           └─ FUNCTION_CALL\n" +
-                               "   │              └─ PARENTHESIS_PAIR\n" +
+                               "   ├─ IDENTIFIER_ACCESSED\n" +
+                               "   │  ├─ MAP\n" +
+                               "   │  │  └─ MAP_ELEMENT\n" +
+                               "   │  │     ├─ NUMBER_LITERAL: 1\n" +
+                               "   │  │     └─ EXPRESSION: (*) (120)\n" +
+                               "   │  │        ├─ NUMBER_LITERAL: 2\n" +
+                               "   │  │        └─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │           ├─ IDENTIFIER: core\n" +
+                               "   │  │           ├─ IDENTIFIER: systemprop\n" +
+                               "   │  │           └─ FUNCTION_CALL\n" +
+                               "   │  │              └─ PARENTHESIS_PAIR\n" +
+                               "   │  │                 └─ EXPRESSION: (*) (120)\n" +
+                               "   │  │                    ├─ NUMBER_LITERAL: 4\n" +
+                               "   │  │                    └─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │                       ├─ STRING_LITERAL: \"key\"\n" +
+                               "   │  │                       ├─ IDENTIFIER: lower\n" +
+                               "   │  │                       ├─ FUNCTION_CALL\n" +
+                               "   │  │                       │  └─ PARENTHESIS_PAIR\n" +
+                               "   │  │                       ├─ IDENTIFIER: do\n" +
+                               "   │  │                       ├─ FUNCTION_CALL\n" +
+                               "   │  │                       │  └─ PARENTHESIS_PAIR\n" +
+                               "   │  │                       │     └─ EXPRESSION: (*) (120)\n" +
+                               "   │  │                       │        ├─ MAP\n" +
+                               "   │  │                       │        │  ├─ MAP_ELEMENT\n" +
+                               "   │  │                       │        │  │  ├─ IDENTIFIER: myMap\n" +
+                               "   │  │                       │        │  │  └─ NUMBER_LITERAL: 3\n" +
+                               "   │  │                       │        │  └─ MAP_ELEMENT\n" +
+                               "   │  │                       │        │     ├─ NUMBER_LITERAL: 4\n" +
+                               "   │  │                       │        │     └─ IDENTIFIER_ACCESSED\n" +
+                               "   │  │                       │        │        ├─ IDENTIFIER: foo\n" +
+                               "   │  │                       │        │        └─ CODE_BLOCK\n" +
+                               "   │  │                       │        │           └─ NUMBER_LITERAL: 0\n" +
+                               "   │  │                       │        └─ NUMBER_LITERAL: 2\n" +
+                               "   │  │                       ├─ IDENTIFIER: replace\n" +
+                               "   │  │                       └─ FUNCTION_CALL\n" +
+                               "   │  │                          └─ PARENTHESIS_PAIR\n" +
+                               "   │  │                             ├─ STRING_LITERAL: \" \"\n" +
+                               "   │  │                             └─ STRING_LITERAL: \"_\"\n" +
+                               "   │  ├─ IDENTIFIER: call\n" +
+                               "   │  └─ FUNCTION_CALL\n" +
+                               "   │     └─ PARENTHESIS_PAIR\n" +
+                               "   │        └─ EXPRESSION: (*) (120)\n" +
+                               "   │           ├─ STRING_LITERAL: \"key\"\n" +
+                               "   │           └─ IDENTIFIER_ACCESSED\n" +
+                               "   │              ├─ ARRAY\n" +
+                               "   │              │  ├─ NUMBER_LITERAL: 2\n" +
+                               "   │              │  └─ NUMBER_LITERAL: 3\n" +
+                               "   │              ├─ IDENTIFIER: size\n" +
+                               "   │              └─ FUNCTION_CALL\n" +
+                               "   │                 └─ PARENTHESIS_PAIR\n" +
                                "   └─ CODE_BLOCK\n" +
                                "      └─ NUMBER_LITERAL: 7",
                 "{1: 2 * core.systemprop(4 * \"key\".lower().do({myMap: 3, 4: foo[0]} * 2).replace(\" \", \"_\"))}.call(\"key\" * [2, 3].size())[7]");

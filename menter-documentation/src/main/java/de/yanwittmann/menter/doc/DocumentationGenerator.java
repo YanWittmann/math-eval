@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -66,7 +68,7 @@ public class DocumentationGenerator {
         generate(guideBaseDir, targetBaseDir, templateFile, structureFile);
 
         final Properties properties = new Properties();
-        properties.load(new FileInputStream("doc/credentials.properties"));
+        properties.load(Files.newInputStream(Paths.get("doc/credentials.properties")));
         final String remoteBaseDir = properties.getProperty("remoteBaseDir");
         final String remoteHost = properties.getProperty("remoteHost");
         final String remoteUser = properties.getProperty("remoteUser");

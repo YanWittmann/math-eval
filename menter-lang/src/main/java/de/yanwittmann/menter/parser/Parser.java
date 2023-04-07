@@ -452,8 +452,10 @@ public class Parser {
             return false;
         });
 
-        // flatten successive identifier accesses
-        rules.add(tokens -> {
+        // (flatten successive identifier accesses)
+        // whilst this would lead to a nicer tree, it also causes the parser to merge subsequent accessed identifier
+        // chains into one, even if they are not part of the same chain
+        /* rules.add(tokens -> {
             for (final Object currentToken : tokens) {
                 if (isType(currentToken, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
                     final ParserNode currentNode = (ParserNode) currentToken;
@@ -469,7 +471,7 @@ public class Parser {
                 }
             }
             return false;
-        });
+        }); */
 
         // convert the pipeline operator to a function call
         final Operator pipelineOperatorLast = operators.findOperator("|>", true, true);
@@ -1143,7 +1145,8 @@ public class Parser {
                     if (isOperator(currentToken, "=") || isCombinedAssignment) {
                         if (start != -1) {
                             if (isEvaluableToValue(nextToken)) {
-                                if (isOperator(afterNextToken, "->") || isType(afterNextToken, TokenType.OPERATOR)) {
+                                if (isOperator(afterNextToken, "->") || isType(afterNextToken, TokenType.OPERATOR) ||
+                                    isType(afterNextToken, TokenType.OPEN_PARENTHESIS) || isType(afterNextToken, TokenType.DOT)) {
                                     start = -1;
                                 } else {
                                     end = i + 1;
@@ -1160,7 +1163,10 @@ public class Parser {
             }
 
             if (start != -1 && end != -1) {
-                final ParserNode node = new ParserNode(ParserNode.NodeType.ASSIGNMENT, isCombinedAssignment ? ((ParserNode) tokens.get(start + 1)).getValue() : defaultAssignmentOperator);
+                final ParserNode node = new ParserNode(
+                        ParserNode.NodeType.ASSIGNMENT,
+                        isCombinedAssignment ? ((ParserNode) tokens.get(start + 1)).getValue() : defaultAssignmentOperator
+                );
                 node.addChild(tokens.get(start));
                 node.addChild(tokens.get(end));
                 ParserRule.replace(tokens, node, start, end);
