@@ -65,6 +65,9 @@ class MenterInterpreterTest {
 
         Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("test = 4; test.f = () -> test; test.f() = 43;")); // function calls should not be assignable
         Assertions.assertThrows(ParsingException.class, () -> interpreter.evaluate("a.a(a, b) {}")); // function declaration via object.child() { ... } is not supported
+
+        evaluateAndAssertEqual(interpreter, "{2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}", "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})\n" +
+                                                 "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
     }
 
     @Test
@@ -369,6 +372,14 @@ class MenterInterpreterTest {
         interpreter.evaluateInContextOf("test = 10; export [test] as test", "test-002");
 
         evaluateAndAssertEqual(interpreter, "10", "import test; test.test");
+    }
+
+    @Test
+    public void whileLoopsTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "1", "import system inline; x = 4; while(x > 0) { print(x); x-- }");
     }
 
     @Test

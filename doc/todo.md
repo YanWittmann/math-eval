@@ -1,6 +1,5 @@
 Features:
 
-- [ ] while loops
 - [ ] stack trace line numbers
 - [ ] write documentation
 - [ ] input history for more than one element in documentation
@@ -73,12 +72,17 @@ plot(space(-10, 10), x -> 0.4*x^3, x -> x^2, x -> 3 * x - 20, x -> 16 * sin(x) +
 
 ```
 namen = ["Yan", "Nils", "Holger", "Ute", "Thomas", "Jonas", "Eren"]
-createEntry(min, max) = {name: namen[floor(random(0, namen.size()))], age: round(random(min, max))}
-db ::= range(1, 100).map(x -> createEntry(12, 26))
-db ::= range(1, 100).map(x -> createEntry(27, 32))
+createPerson(min, max) = {name: namen[floor(random(0, namen.size()))], age: round(random(min, max))}
+db ::= range(1, 100).map(x -> createPerson(12, 26))
+db ::= range(1, 100).map(x -> createPerson(27, 32))
 
-db.filter(x -> x.age > 20).size()
-db.filter(x -> x.age > 20).map(x -> x.age).avg()
+print("age frequencies:", db.map(x -> x.age).frequency().sort())
+
+print("people above 20:", db.filter(x -> x.age > 20).size())
+print("average age of people above 20:", db.filter(x -> x.age > 20).map(x -> x.age).avg())
+
+import cmdplot
+cmdplot.table(db)
 ```
 
 ```
@@ -95,7 +99,9 @@ range(1,6).cross(range(1,6)).filter(x -> x.reduce((+)) > 8).map(x -> x.reduce((+
 ```
 
 ```
-range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})
+data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})
+data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })
+# {2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}
 ```
 
 Bugs:
@@ -103,17 +109,4 @@ Bugs:
 ```
 {test:[1], hey: 4}[0]
 accessors on maps
-```
-
-Incorrect assignment operator, these two belong together:
-
-```
-data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})
-```
-
-```
-data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1 })
-Error: Node did not evaluate to anything: a[val]
-	in [repl.foldl] at a[val]
-	in [repl.foldl] at a[val] = 1
 ```

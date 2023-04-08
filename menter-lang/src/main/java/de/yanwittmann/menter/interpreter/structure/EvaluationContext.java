@@ -98,6 +98,10 @@ public abstract class EvaluationContext {
 
             final boolean isDebuggerBreakpoint = MenterDebugger.haltOnEveryExecutionStep || (MenterDebugger.breakpointActivationCode != null && node.reconstructCode().equals(MenterDebugger.breakpointActivationCode.trim()));
 
+            if (isDebuggerBreakpoint) {
+                breakpointReached(localInformation, node);
+            }
+
             if (!isMultiExpressionNode) {
                 if (MenterDebugger.logInterpreterEvaluationStyle > 0 || isDebuggerBreakpoint) {
                     if (MenterDebugger.logInterpreterEvaluationStyle == 2) {
@@ -233,7 +237,7 @@ public abstract class EvaluationContext {
                 result = variable;
 
                 if (MenterDebugger.logInterpreterAssignments) {
-                    LOG.info("Assigned value [{}] to variable [{}] from: {}", value, ParserNode.reconstructCode(node.getChildren().get(0)), node.reconstructCode());
+                    LOG.info("Assignment: [{}] = [{}] from: {}", ParserNode.reconstructCode(node.getChildren().get(0)), value, node.reconstructCode());
                 }
 
             } else if (node.getType() == ParserNode.NodeType.PARENTHESIS_PAIR) {
@@ -366,6 +370,9 @@ public abstract class EvaluationContext {
 
             } else if (node.getType() == ParserNode.NodeType.LOOP_FOR) {
                 result = forLoop(node, globalContext, symbolCreationMode, localInformation);
+
+            } else if (node.getType() == ParserNode.NodeType.LOOP_WHILE) {
+                result = whileLoop(node, globalContext, symbolCreationMode, localInformation);
 
             } else if (node.getType() == ParserNode.NodeType.CONSTRUCTOR_CALL) {
                 final Value constructorIdentifier = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
@@ -560,9 +567,38 @@ public abstract class EvaluationContext {
         return result;
     }
 
+    public Value whileLoop(ParserNode originNode, GlobalContext globalContext, SymbolCreationMode symbolCreationMode, EvaluationContextLocalInformation localInformation) {
+        final Object conditionNode = originNode.getChildren().get(0);
+        final Object loopCode = originNode.getChildren().get(1);
+
+        final EvaluationContextLocalInformation loopLocalInformation = localInformation.deriveNewContext();
+        Value result = Value.empty();
+
+        while (true) {
+            final Value condition = evaluate(conditionNode, globalContext, symbolCreationMode, loopLocalInformation);
+            if (!condition.getType().equals(PrimitiveValueType.BOOLEAN.getType())) {
+                throw localInformation.createException("While condition is not a boolean: " + condition);
+            }
+            if (!condition.isTrue()) {
+                break;
+            }
+
+            result = evaluate(loopCode, globalContext, symbolCreationMode, loopLocalInformation);
+
+            if (result.unwrapBreak()) {
+                break;
+            }
+            result.unwrapContinue();
+        }
+
+        return result;
+    }
+
     private void breakpointReached(EvaluationContextLocalInformation localInformation, ParserNode node) {
         MenterDebugger.haltOnEveryExecutionStep = true;
         while (true) {
+            MenterDebugger.printer.print(">>> " + node.reconstructCode() + " [stack, symbols, resume]");
+
             final int action = MenterDebugger.waitForDebuggerResume();
 
             if (action == 0) {
@@ -581,8 +617,6 @@ public abstract class EvaluationContext {
                 MenterDebugger.haltOnEveryExecutionStep = false;
                 break;
             }
-
-            MenterDebugger.printer.print(node.reconstructCode() + " ");
         }
     }
 

@@ -9,8 +9,14 @@ import java.util.List;
 public abstract class CoreModuleDebug {
 
     static {
+        EvaluationContext.registerNativeFunction("debug.mtr", "breakFlow", CoreModuleDebug::breakFlow);
         EvaluationContext.registerNativeFunction("debug.mtr", "switch", CoreModuleDebug::debugSwitch);
         EvaluationContext.registerNativeFunction("debug.mtr", "stackTraceValues", CoreModuleDebug::stackTraceValues);
+    }
+
+    public static Value breakFlow(List<Value> arguments) {
+        MenterDebugger.haltOnEveryExecutionStep = true;
+        return Value.empty();
     }
 
     public static Value debugSwitch(List<Value> arguments) {

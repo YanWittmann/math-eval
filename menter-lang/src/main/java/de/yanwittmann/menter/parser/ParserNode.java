@@ -118,7 +118,8 @@ public class ParserNode {
         ARRAY, LISTED_ELEMENTS,
         MAP, MAP_ELEMENT,
         CONDITIONAL, CONDITIONAL_BRANCH, CONDITIONAL_BRACKET,
-        LOOP_FOR, LOOP_FOR_BRACKET, LOOP_WHILE,
+        LOOP_FOR, LOOP_FOR_BRACKET,
+        LOOP_WHILE, LOOP_WHILE_BRACKET,
         CONSTRUCTOR_CALL
     }
 
@@ -177,7 +178,11 @@ public class ParserNode {
 
                 case ASSIGNMENT:
                     reconstructCode(node.getChildren().get(0), sb);
-                    sb.append(" = ");
+                    if (node.getValue() != null && node.getValue() instanceof Operator && !((Operator) node.getValue()).getSymbol().equals("=")) {
+                        sb.append(" ").append(((Operator) node.getValue()).getSymbol()).append("= ");
+                    } else {
+                        sb.append(" = ");
+                    }
                     reconstructCode(node.getChildren().get(1), sb);
                     break;
 

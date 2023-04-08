@@ -30,6 +30,56 @@ class ParserTest {
     }
 
     @Test
+    public void whileLoopsTest() {
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ LOOP_WHILE\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ BOOLEAN_LITERAL: true\n" +
+                               "   └─ FUNCTION_CALL\n" +
+                               "      ├─ IDENTIFIER: print\n" +
+                               "      └─ PARENTHESIS_PAIR\n" +
+                               "         └─ STRING_LITERAL: \"test\"",
+                "while (true) print(\"test\")");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ LOOP_WHILE\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ EXPRESSION: (==) (80)\n" +
+                               "   │     ├─ NUMBER_LITERAL: 12\n" +
+                               "   │     └─ NUMBER_LITERAL: 4\n" +
+                               "   └─ CODE_BLOCK\n" +
+                               "      ├─ FUNCTION_CALL\n" +
+                               "      │  ├─ IDENTIFIER: print\n" +
+                               "      │  └─ PARENTHESIS_PAIR\n" +
+                               "      │     └─ STRING_LITERAL: \"test\"\n" +
+                               "      └─ ASSIGNMENT: (=) (10)\n" +
+                               "         ├─ IDENTIFIER: t\n" +
+                               "         └─ NUMBER_LITERAL: 1",
+                "while (12 == 4) { print(\"test\"); t = 1 }");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ LOOP_WHILE\n" +
+                               "   ├─ PARENTHESIS_PAIR\n" +
+                               "   │  └─ EXPRESSION: (==) (80)\n" +
+                               "   │     ├─ NUMBER_LITERAL: 12\n" +
+                               "   │     └─ NUMBER_LITERAL: 4\n" +
+                               "   └─ LOOP_WHILE\n" +
+                               "      ├─ PARENTHESIS_PAIR\n" +
+                               "      │  └─ EXPRESSION: (>) (90)\n" +
+                               "      │     ├─ IDENTIFIER: x\n" +
+                               "      │     └─ NUMBER_LITERAL: 5\n" +
+                               "      └─ FUNCTION_CALL\n" +
+                               "         ├─ IDENTIFIER: print\n" +
+                               "         └─ PARENTHESIS_PAIR\n" +
+                               "            └─ STRING_LITERAL: \"test\"\n" +
+                               "STATEMENT\n" +
+                               "└─ ASSIGNMENT: (=) (10)\n" +
+                               "   ├─ IDENTIFIER: t\n" +
+                               "   └─ NUMBER_LITERAL: 1",
+                "while (12 == 4) while (x > 5) print(\"test\"); t = 1");
+    }
+
+    @Test
     public void forLoopsTest() {
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ LOOP_FOR\n" +
