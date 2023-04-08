@@ -32,7 +32,7 @@ public class Operators {
     public Operators() {
         // precedence values see https://introcs.cs.princeton.edu/java/11precedence/
 
-        add(OperatorUtilities.makeLeft("++", 150, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+        add(OperatorUtilities.makeLeft("++", 150, (argument) -> OperatorUtilities.operatorTypeHandler("++", argument,
                 new OperatorUtilities.SingleOperatorTypeAction(
                         PrimitiveValueType.NUMBER.getType(),
                         (value) -> {
@@ -42,7 +42,7 @@ public class Operators {
                         }
                 )
         )));
-        add(OperatorUtilities.makeLeft("--", 150, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+        add(OperatorUtilities.makeLeft("--", 150, (argument) -> OperatorUtilities.operatorTypeHandler("--", argument,
                 new OperatorUtilities.SingleOperatorTypeAction(
                         PrimitiveValueType.NUMBER.getType(),
                         (value) -> {
@@ -71,7 +71,7 @@ public class Operators {
         add(OperatorUtilities.makeDouble("^^", 145, power));
         add(OperatorUtilities.makeDouble("**", 145, power));
 
-        add(OperatorUtilities.makeRight("++", 140, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+        add(OperatorUtilities.makeRight("++", 140, (argument) -> OperatorUtilities.operatorTypeHandler("++", argument,
                 new OperatorUtilities.SingleOperatorTypeAction(
                         PrimitiveValueType.NUMBER.getType(),
                         (value) -> {
@@ -80,7 +80,7 @@ public class Operators {
                         }
                 )
         )));
-        add(OperatorUtilities.makeRight("--", 140, (argument) -> OperatorUtilities.operatorTypeHandler("-", argument,
+        add(OperatorUtilities.makeRight("--", 140, (argument) -> OperatorUtilities.operatorTypeHandler("--", argument,
                 new OperatorUtilities.SingleOperatorTypeAction(
                         PrimitiveValueType.NUMBER.getType(),
                         (value) -> {

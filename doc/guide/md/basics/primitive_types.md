@@ -51,9 +51,9 @@ listOrObj = [1, 2, 3];;;listOrObj["key"] = 7;;;listOrObj
 A function is a way to transform values. There are multiple ways functions can be defined in Menter, which are all
 reduced to a single internal representation.
 
-- Traditional functions: `name(arg1, arg2) { ... }`
-- Expression assignment: `name(arg1, arg2) = ...`
-- Arrow functions: `name = (arg1, arg2) -> ...`
+- Traditional functions: `name(a, b) { ... }`
+- Expression assignment: `name(a, b) = ...`
+- Arrow functions: `name = (a, b) -> ...`
 
 ```result=(a, b) -> { a + b; };;;(a, b) -> { a + b; };;;(a, b) -> { a + b; }
 add(a, b) { a + b };;;add(a, b) = a + b;;;add = (a, b) -> a + b
