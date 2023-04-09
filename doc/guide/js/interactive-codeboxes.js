@@ -128,20 +128,29 @@ function applyCodeFormatting(text, lang = "menter") {
 function createStyleHighlightsForText(text, lang = "menter") {
     let isMenter = lang === "menter";
     let isXml = lang === "xml";
+    let isJava = lang === "java";
 
     let keywords = [];
+    let keywords_alt = [];
     let identifiers = [];
     let numbers = [];
     let strings = [];
     let comments = [];
     let xmlTags = [];
 
-    if (isMenter) {
+    if (isMenter || isJava) {
         keywords = [
             "for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue",
             "import", "export", "in", "as", "value_function", "native_function", "reflective_function", "string",
             "number", "boolean", "array", "object", "any", "instanceof", "new", "inline"
         ];
+
+        if (isJava) {
+            keywords.push("public", "private", "protected", "class", "void", "abstract", "extends", "implements");
+            keywords_alt.push("@Override", "@TypeFunction", "@TypeMetaData", "Value", "ArrayList", "List", "Arrays",
+                "String", "CustomType")
+        }
+
         identifiers = text.match(/[a-zA-Z]+/g);
         numbers = text.match(/-?\d+(\.\d+)?/g);
         strings = text.match(/["'].*?["']/g);
@@ -173,6 +182,10 @@ function createStyleHighlightsForText(text, lang = "menter") {
 
     for (let i = 0; i < keywords.length; i++) {
         replacements[keywords[i]] = ":STYLE:COLOR:PINK:" + keywords[i] + ":STYLE:END:";
+    }
+
+    for (let i = 0; i < keywords_alt.length; i++) {
+        replacements[keywords_alt[i]] = ":STYLE:COLOR:CYAN:" + keywords_alt[i] + ":STYLE:END:";
     }
 
     if (numbers !== null) {

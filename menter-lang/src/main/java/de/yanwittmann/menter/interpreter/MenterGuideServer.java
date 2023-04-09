@@ -32,7 +32,11 @@ public class MenterGuideServer {
     public MenterGuideServer(MenterInterpreter interpreter, boolean safeMode, int port) throws IOException {
         System.out.println("Starting MenterGuideServer...");
 
-        mirrorDocumentationIntoTempDir();
+        try {
+            mirrorDocumentationIntoTempDir();
+        } catch (Exception e) {
+            System.out.println("Unable to mirror the documentation from " + REMOTE_GUIDE_BASE_DIR_URL);
+        }
 
         HttpServer server;
         final int serverPort = port != -1 ? port : 26045;

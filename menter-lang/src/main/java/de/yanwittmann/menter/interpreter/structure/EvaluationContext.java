@@ -541,7 +541,14 @@ public abstract class EvaluationContext {
         while (iteratorIterator.hasNext()) {
             final EvaluationContextLocalInformation loopLocalInformation = localInformation.deriveNewContext();
 
-            final Value iteratorElement = iteratorIterator.next();
+            final Object nextObject = iteratorIterator.next();
+            if (nextObject == null) {
+                throw localInformation.createException("Object returned by iterator is null");
+            } else if (!(nextObject instanceof Value)) { // this condition is not always false, no matter what your IDE tells you.
+                throw localInformation.createException("Object returned by iterator is not a Value, but a [" + nextObject.getClass().getSimpleName() + "]: " + nextObject);
+            }
+
+            final Value iteratorElement = (Value) nextObject;
             if (iteratorElement.isMapAnArray() && iteratorElement.getMap().size() == 2) {
                 final LinkedHashMap<Object, Value> inputParameterValues = iteratorElement.getMap();
                 final Iterator<Value> parameterElementIterator = inputParameterValues.values().iterator();
