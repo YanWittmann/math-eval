@@ -10,7 +10,6 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.json.JSONArray;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -100,7 +99,11 @@ public class DocumentationGenerator {
         if (!targetBaseDir.exists()) {
             targetBaseDir.mkdirs();
         }
-        FileUtils.cleanDirectory(targetBaseDir);
+        try {
+            FileUtils.cleanDirectory(targetBaseDir);
+        } catch (IOException e) {
+            System.out.println("Could not clean target directory:" + e.getMessage());
+        }
 
         // copy files to output directory
         Arrays.stream(new File[]{
@@ -135,7 +138,11 @@ public class DocumentationGenerator {
             for (int i = 0; i < outLines.size(); i++) {
                 final String line = outLines.get(i);
                 if (line.contains("{{ content.main }}")) {
-                    outLines.set(i, line.replace("{{ content.main }}", formatSpecialCharacters(documentationPage.renderPageContent(renderer).render())));
+                    try {
+                        outLines.set(i, line.replace("{{ content.main }}", formatSpecialCharacters(documentationPage.renderPageContent(renderer).render())));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 } else if (line.contains("{{ content.sidebar }}")) {
                     outLines.set(i, line.replace("{{ content.sidebar }}", sidebarContent));
                 } else if (line.contains("{{ script.js }}")) {

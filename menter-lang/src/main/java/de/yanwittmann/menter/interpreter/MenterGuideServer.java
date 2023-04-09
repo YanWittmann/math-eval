@@ -52,7 +52,6 @@ public class MenterGuideServer {
 
         if (safeMode) {
             interpreter.getModuleOptions().addForbiddenImport("io");
-            interpreter.getModuleOptions().addForbiddenImport("system");
             interpreter.getModuleOptions().addForbiddenImport("debug");
         }
 

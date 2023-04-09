@@ -104,6 +104,10 @@ data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })
 # {2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}
 ```
 
+```
+double = x -> x * 2; (([1, 2].map(x -> x + 3) |> x -> [x[0], -x[1]])[1] |> double) + " !"
+```
+
 Bugs:
 
 ```

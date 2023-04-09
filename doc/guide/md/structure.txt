@@ -4,6 +4,8 @@ Introduction >> introduction.md
 Core Language >> core_lang.md
     Primitive Types >> basics/primitive_types.md
     Operators >> basics/operators.md
+    Operator list >> basics/operators_list.md
+    For >> basics/for.md
 
 Modules >> modules.md
     reflect.md >> provided_modules/reflect.md

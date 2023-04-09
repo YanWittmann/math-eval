@@ -65,5 +65,3 @@ functions as arguments to other functions.
 ```result=(a, b) -> { a + b; };;;(f, a, b) -> { f(a, b); };;;3
 add = (a, b) -> a + b;;;apply = (f, a, b) -> f(a, b);;;apply(add, 1, 2)
 ```
-
-But more on functions later.
