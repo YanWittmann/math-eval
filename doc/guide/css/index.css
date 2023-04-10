@@ -63,6 +63,7 @@ html, body {
     font-family: linux_biolinum_gregular, 'Amethysta', Arial, Helvetica, sans-serif;
     font-size: 20px;
     color: var(--color-text-base);
+    background: var(--color-background-base);
     background-image: var(--image-background-base);
     scroll-behavior: smooth;
     overflow-x: hidden;
@@ -564,5 +565,55 @@ blockquote {
     }
     100% {
         background-position: -100% 0;
+    }
+}
+
+#fade-fullscreen-in {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-background-base);
+    z-index: 900;
+
+    animation: fadeInPartially ease 0.2s forwards;
+    -webkit-animation: fadeInPartially ease 0.2s forwards;
+    -moz-animation: fadeInPartially ease 0.2s forwards;
+    -o-animation: fadeInPartially ease 0.2s forwards;
+    -ms-animation: fadeInPartially ease 0.2s forwards;
+}
+
+@keyframes fadeInPartially {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 0.9;
+    }
+}
+
+#fade-fullscreen-out {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-background-base);
+    z-index: 900;
+
+    animation: fadeOutPartially ease 0.2s forwards;
+    -webkit-animation: fadeOutPartially ease 0.2s forwards;
+    -moz-animation: fadeOutPartially ease 0.2s forwards;
+    -o-animation: fadeOutPartially ease 0.2s forwards;
+    -ms-animation: fadeOutPartially ease 0.2s forwards;
+}
+
+@keyframes fadeOutPartially {
+    0% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
     }
 }

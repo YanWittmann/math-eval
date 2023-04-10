@@ -89,6 +89,89 @@ function addWarningText(text, level) {
     }
 }
 
+function getPageList() {
+    let pageList = [];
+    let pageListElements = document.querySelectorAll(".sidebar-menu-item");
+    for (let i = 0; i < pageListElements.length; i++) {
+        pageList.push(pageListElements[i].getAttribute("href"));
+    }
+    return pageList;
+}
+
+function fadeEntirePageIntoColor() {
+    let fade = document.getElementById("fade");
+    if (!fade) {
+        fade = document.createElement("div");
+        fade.id = "fade-fullscreen-in";
+        document.body.appendChild(fade);
+    }
+}
+
+function fadeEntirePageOutOfColor() {
+    let fade = document.getElementById("fade");
+    if (!fade) {
+        fade = document.createElement("div");
+        fade.id = "fade-fullscreen-out";
+        document.body.appendChild(fade);
+    }
+    setTimeout(() => fade.remove(), 200);
+}
+
+function getActivePage() {
+    let activePage = document.querySelector(".sidebar-menu-item.active");
+    if (activePage) {
+        return activePage.getAttribute("href");
+    }
+    return null;
+}
+
+function nextPage() {
+    let pageList = getPageList();
+    let activePage = getActivePage();
+    if (activePage) {
+        let nextPageIndex = (pageList.indexOf(activePage) + 1) % pageList.length;
+        selectPage(pageList[nextPageIndex]);
+    }
+}
+
+function previousPage() {
+    let pageList = getPageList();
+    let activePage = getActivePage();
+    if (activePage) {
+        let prevPageIndex = (pageList.indexOf(activePage) - 1 + pageList.length) % pageList.length;
+        selectPage(pageList[prevPageIndex]);
+    }
+}
+
+function selectPage(link) {
+    fadeEntirePageIntoColor();
+    setTimeout(() => document.location = link, 200);
+}
+
+document.onkeyup = function (e) {
+    // check if the user is typing in an input field
+    if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") {
+        return;
+    }
+
+    if (e.key === "ArrowRight") {
+        nextPage();
+    } else if (e.key === "ArrowLeft") {
+        previousPage();
+    }
+}
+
+function disableAllSidebarNavigationLinks() {
+    let sidebarNavigationLinks = document.querySelectorAll(".sidebar-menu-item");
+    for (let i = 0; i < sidebarNavigationLinks.length; i++) {
+        sidebarNavigationLinks[i].onclick = function (e) {
+            e.preventDefault();
+            selectPage(sidebarNavigationLinks[i].getAttribute("href"));
+        }
+    }
+}
+
+
 function initDocumentation() {
     window.onresize = function () {
         setTimeout(adjustSidebarVisibility, 400);
@@ -104,6 +187,9 @@ function initDocumentation() {
             activePage.classList.add("active");
         }
     }
+
+    fadeEntirePageOutOfColor();
+    disableAllSidebarNavigationLinks();
 }
 
 initDocumentation();

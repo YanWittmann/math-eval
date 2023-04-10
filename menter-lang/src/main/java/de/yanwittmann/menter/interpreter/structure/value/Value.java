@@ -498,6 +498,25 @@ public class Value implements Comparable<Value> {
                     put("contains", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).values().stream().anyMatch(value -> value.equals(values.get(0)))));
                     put("containsKey", (context, self, values, localInformation) -> new Value(((Map<?, ?>) self.getValue()).keySet().stream().anyMatch(key -> key.equals(values.get(0).getValue()))));
 
+                    put("push", (context, self, values, localInformation) -> {
+                        // either one or two arguments, if only one argument is given, the key is the size of the map
+                        if (values.size() == 1) {
+                            final BigDecimal max = findHighestNumericKey((Map<Object, Value>) self.getValue());
+                            ((Map<Object, Value>) self.getValue()).put(max.add(BigDecimal.ONE), values.get(0));
+                        } else {
+                            ((Map<Object, Value>) self.getValue()).put(values.get(0).getValue(), values.get(1));
+                        }
+                        return self;
+                    });
+                    put("pop", (context, self, values, localInformation) -> {
+                        if (isMapAnArray((Map<Object, Value>) self.getValue())) {
+                            final BigDecimal max = findHighestNumericKey((Map<Object, Value>) self.getValue());
+                            return ((Map<Object, Value>) self.getValue()).remove(max);
+                        } else {
+                            return ((Map<Object, Value>) self.getValue()).remove(values.get(0).getValue());
+                        }
+                    });
+
                     put("map", (context, self, values, localInformation) -> {
                         final Map<Object, Value> map = new LinkedHashMap<>();
 
@@ -647,12 +666,12 @@ public class Value implements Comparable<Value> {
                                         map.put(1, next2.getValue());
                                     } else if (!(next1.getValue().getValue() instanceof Map)) {
                                         map.putAll(next2.getValue().getMap());
-                                        int max = findHighestNumericKey(map);
-                                        map.put(max + 1, next1.getValue());
+                                        BigDecimal max = findHighestNumericKey(map);
+                                        map.put(max.add(BigDecimal.ONE), next1.getValue());
                                     } else if (!(next2.getValue().getValue() instanceof Map)) {
                                         map.putAll(next1.getValue().getMap());
-                                        int max = findHighestNumericKey(map);
-                                        map.put(max + 1, next2.getValue());
+                                        BigDecimal max = findHighestNumericKey(map);
+                                        map.put(max.add(BigDecimal.ONE), next2.getValue());
                                     } else {
                                         map.putAll(next1.getValue().getMap());
                                         map.putAll(next2.getValue().getMap());
@@ -775,11 +794,11 @@ public class Value implements Comparable<Value> {
         }
     };
 
-    private static int findHighestNumericKey(Map<Object, Value> map) {
-        int max = 0;
+    private static BigDecimal findHighestNumericKey(Map<Object, Value> map) {
+        BigDecimal max = BigDecimal.valueOf(-1);
         for (Object key : map.keySet()) {
-            if (key instanceof Integer) {
-                max = Math.max(max, (Integer) key);
+            if (key instanceof BigDecimal) {
+                max = max.max((BigDecimal) key);
             }
         }
         return max;
@@ -938,6 +957,9 @@ public class Value implements Comparable<Value> {
             } else if (object instanceof Method) {
                 final Method method = (Method) object;
                 return method.getDeclaringClass().getSimpleName() + "." + method.getName();
+
+            } else if (object.getClass().getSimpleName().contains("Lambda$")) {
+                return "<<lambda>>";
 
             } else {
                 // custom type overrides the toString method, which is why not separate call is needed

@@ -15,6 +15,24 @@ looped over by calling the `forEach` method:
 iterable.forEach(x -> { ... })
 ```
 
+## continue and break
+
+The `continue` and `break` keywords work exactly as in other languages.
+
+`break` will break out of the current loop, `continue` will skip the current iteration and continue with the next one,
+if there is one.
+
+```result=[];;;[1, 2, 3, 4, 6, 7]
+numbers = [];;;for (i in range(1, 10)) {
+  if (i == 5) continue
+  if (i == 8) break
+  numbers.push(i)
+}
+numbers
+```
+
+To learn more about how this works internally, read the chapter about [value markers](Java_value_markers.html).
+
 ## Iterators
 
 Anything that implements an `iterator()` method is iterable.
