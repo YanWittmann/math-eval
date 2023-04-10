@@ -10,6 +10,9 @@ value, even control structures like `if`, `for`, and so on.
 
 For a list of all operators that can be applied to values, see [Operators](Core_Language_operators.html).
 
+Although the types are referred to as 'primitive' or 'basic' types, they are all objects that can have methods or
+properties that can be called using the dot `.` syntax.
+
 ## Numbers `number`
 
 Unlike most languages, numbers in Menter can grow as large as you need them to be, as they are internally represented by
@@ -46,7 +49,13 @@ This can be seen when creating a list and setting a non-integer key to a value:
 listOrObj = [1, 2, 3];;;listOrObj["key"] = 7;;;listOrObj
 ```
 
-TODO: write about how accessing uninitialized variables creates objects in some cases
+You may note that if you try to assign a value to a key in an object that does not exist yet, the according keys are
+created automatically. This even applies over multiple layers of nested objects, as long as the type is an object, the
+according keys are created:
+
+```result=Yan;;;[];;;"Programming"
+person.name = "Yan";;;person.interests = []  # required for the next line to work;;;person.interests[0] = "Programming"
+```
 
 ## Functions `function`, `value_function`, `native_function`, `reflective_function`
 
