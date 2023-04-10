@@ -46,6 +46,8 @@ This can be seen when creating a list and setting a non-integer key to a value:
 listOrObj = [1, 2, 3];;;listOrObj["key"] = 7;;;listOrObj
 ```
 
+TODO: write about how accessing uninitialized variables creates objects in some cases
+
 ## Functions `function`, `value_function`, `native_function`, `reflective_function`
 
 A function is a way to transform values. There are multiple ways functions can be defined in Menter, which are all

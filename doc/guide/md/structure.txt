@@ -9,6 +9,8 @@ Core Language >> core_lang.md
     If else >> basics/if_else.md
     For loop / iterator >> basics/for.md
     While loop >> basics/while.md
+    Functions >> basics/functions.md
+    Closure >> basics/closure.md
 
 Modules >> modules.md
     reflect.md >> provided_modules/reflect.md
