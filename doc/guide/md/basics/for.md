@@ -1,7 +1,6 @@
 # For loop
 
-Menter only knows 'for each' loops, not traditional indexed for loops, similar to python.  
-With each iteration, the variable is assigned the next value from the iterable.
+Similar to Python, Menter does not know traditional indexed 'for' loops, only 'for each' loops.
 
 Syntax:
 
@@ -9,7 +8,8 @@ Syntax:
 for (variable in iterable) { ... };;;for (variable : iterable) { ... }
 ```
 
-Anything that is iterable can also be looped over by calling the `forEach` method:
+With each iteration, the variable is assigned the next value from the iterable. Anything that is iterable can also be
+looped over by calling the `forEach` method:
 
 ```static
 iterable.forEach(x -> { ... })
@@ -22,11 +22,13 @@ Anything that implements an `iterator()` method is iterable.
 It is recommended to have a local Menter server running whilst viewing some of the code boxes below, as the print output
 cannot be seen otherwise.
 
-Iterators can actually be called manually and obviously return themselves when called again.
+Iterators can actually be called manually and return themselves when called again.
 
 ```result=<<iterator>>
 "str".iterator();;;"str".iterator().forEach(print)
 ```
+
+Let's go over some of the primitive types that are iterable:
 
 ### List
 
@@ -47,7 +49,7 @@ for ((index, value) in range(2, 4))
 
 ### Objects
 
-Since objects and lists are represented by the same data structure internally, the iterable works quite similar. When
+Since objects and lists are represented by the same data structure internally, their iterable works quite similar. When
 providing one variable as iterator parameter, only the values are returned. When providing two, the key is passed
 alongside the value.
 
@@ -67,12 +69,12 @@ Strings simply iterate over all their characters, in order of appearance.
 
 ## Making your custom java type iterable
 
-To learn more about custom java types, see this section. This chapter will assume you know how to create your own java
-type.
+This chapter will assume you know how to create your own java type.
+To learn more about custom java types, [see this section](Java_custom_java_types.html).
 
-As mentioned above, the pretty much only addition that has to be made to a type class is an iterator method. As with all
-function signatures, the method has to return a `Value`, which means that the iterator has to be wrapped inside a value
-object before returning it.
+The only addition that has to be made to a type class is an `iterator` method. As with all function signatures, the
+method has to return a `Value`, which means that the iterator has to be wrapped inside a `Value` object before returning
+it.
 
 ```static---lang=java
 @Override
@@ -94,18 +96,18 @@ public Value iterator() {
 A full class could look like this:
 
 ```static---lang=java
-@TypeMetaData(typeName = "MyIterableTyoe", moduleName = "test")
-public class MyIterableTyoe extends CustomType {
+@TypeMetaData(typeName = "MyIterableType", moduleName = "test")
+public class MyIterableType extends CustomType {
 
-    private List<String> asStrings = new ArrayList<>();
+    private List<Value> asStrings = new ArrayList<>();
 
-    public MyIterableTyoe(List<Value> parameters) {
+    public MyIterableType(List<Value> parameters) {
         super(parameters);
     }
 
     @TypeFunction
     public Value addValue(List<Value> parameters) {
-        asStrings.add(parameters.get(0).toString());
+        parameters.forEach(param -> asStrings.add(new Value(param.toString())));
     }
 
     @Override

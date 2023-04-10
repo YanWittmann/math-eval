@@ -108,6 +108,10 @@ data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })
 double = x -> x * 2; (([1, 2].map(x -> x + 3) |> x -> [x[0], -x[1]])[1] |> double) + " !"
 ```
 
+```
+clear() = "\n" * 100 |> print
+```
+
 Bugs:
 
 ```

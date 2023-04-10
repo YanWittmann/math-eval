@@ -140,7 +140,7 @@ function createStyleHighlightsForText(text, lang = "menter") {
 
     if (isMenter || isJava) {
         keywords = [
-            "for", "while", "if", "else", "return", "function", "true", "false", "null", "break", "continue",
+            "for", "while", "if", "else", "elif", "return", "function", "true", "false", "null", "break", "continue",
             "import", "export", "in", "as", "value_function", "native_function", "reflective_function", "string",
             "number", "boolean", "array", "object", "any", "instanceof", "new", "inline"
         ];

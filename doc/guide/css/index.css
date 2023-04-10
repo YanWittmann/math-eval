@@ -435,6 +435,10 @@ h1 + h2 {
     margin-top: 25px;
 }
 
+h3 {
+    margin-top: 40px;
+}
+
 p {
     text-align: justify;
 }

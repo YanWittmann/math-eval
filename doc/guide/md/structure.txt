@@ -5,7 +5,10 @@ Core Language >> core_lang.md
     Primitive Types >> basics/primitive_types.md
     Operators >> basics/operators.md
     Operator list >> basics/operators_list.md
+    Statements >> basics/indentation_statements.md
+    If else >> basics/if_else.md
     For loop / iterator >> basics/for.md
+    While loop >> basics/while.md
 
 Modules >> modules.md
     reflect.md >> provided_modules/reflect.md
@@ -15,3 +18,6 @@ Hints >> hints.md
     Testing >> demo.md
     Subchapter >> subdir/subchapter.md
     Plot Test >> subdir/plot.md
+
+Java >> java.md
+    Types >> java/custom_java_types.md
