@@ -29,8 +29,13 @@ public class DocumentationGenerator {
         final File structureFile = new File(markdownBaseDir, "structure.txt");
         final File templateFile = new File(guideBaseDir, "template.html");
 
-        developmentAccess(guideBaseDir, targetBaseDir, structureFile, templateFile);
-        // deploy(guideBaseDir, targetBaseDir, structureFile, templateFile);
+        if (args.length == 0 || args[0].equals("development")) {
+            developmentAccess(guideBaseDir, targetBaseDir, structureFile, templateFile);
+        } else if (args[0].equals("deploy")) {
+            deploy(guideBaseDir, targetBaseDir, structureFile, templateFile);
+        } else {
+            System.out.println("Unknown argument: " + args[0]);
+        }
     }
 
     public static void fileChangeListener(File directory, String[] fileTypes, Consumer<File> consumer) {

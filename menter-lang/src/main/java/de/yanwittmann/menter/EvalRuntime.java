@@ -331,6 +331,13 @@ public class EvalRuntime {
         }
     }
 
+    public void deleteContext(String context) {
+        globalContexts.stream()
+                .filter(c -> c.getSource().equals(context))
+                .findFirst().ifPresent(globalContexts::remove);
+        LOG.info("Removed context [{}], now at [{}] contexts", context, globalContexts.size());
+    }
+
     public ModuleOptions getModuleOptions() {
         return moduleOptions;
     }

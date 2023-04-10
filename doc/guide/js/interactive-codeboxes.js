@@ -5,6 +5,8 @@ let lastInput = {};
 
 let loadedCodeboxIds = [];
 
+let isConnectedToServer = false;
+
 /**
  * Appends the text provided to the end of the codebox.
  * Supports:
@@ -411,10 +413,6 @@ function isInterpreterAvailable() {
         let xhr = new XMLHttpRequest();
         xhr.timeout = 1000;
         xhr.open("GET", evaluationEndpoint);
-
-        //xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
-        //xhr.setRequestHeader("Content-Type", "application/json");
-
         xhr.send();
 
         xhr.onload = function () {
@@ -430,6 +428,48 @@ function isInterpreterAvailable() {
             reject(false);
         }
     });
+}
+
+function sendDestroyCodeBoxToServer(codeboxId) {
+    let evaluationEndpoint = apiLocation + "/api/guide";
+
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", evaluationEndpoint);
+
+    xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    let content = JSON.stringify({
+        context: codeboxId,
+        destroy: true
+    });
+    xhr.setRequestHeader("Content-Length", content.length + "");
+    xhr.send(content);
+
+    xhr.onload = function () {
+        let code = xhr.status;
+        if (code === 200 && !xhr.responseText.includes("error")) {
+            console.log("Successfully destroyed codebox: " + codeboxId);
+        } else {
+            console.error("Error while destroying codebox: " + codeboxId);
+        }
+    };
+
+    xhr.onerror = function () {
+        console.error("Error while destroying codebox: " + codeboxId);
+    };
+}
+
+function sendDestroyAllCodeBoxesToServer() {
+    if (!isConnectedToServer) return;
+
+    let codeboxes = document.getElementsByClassName("codebox-container");
+    for (let i = 0; i < codeboxes.length; i++) {
+        let codebox = codeboxes[i];
+        if (codebox.getAttribute("initialized") === "true") {
+            sendDestroyCodeBoxToServer(codebox.getAttribute("id"));
+        }
+    }
 }
 
 function createCodeBox(initialContent, interactive, originalCodeboxId, initialCodebox, setInitialized = true) {
@@ -525,6 +565,8 @@ function evaluateCodeBlockFromSubmitButton(codebox) {
 }
 
 function initializePage(interpreterIsAvailable = true) {
+    isConnectedToServer = true;
+
     let codeboxes = document.getElementsByClassName("codebox-container");
 
     for (let i = 0; i < codeboxes.length; i++) {

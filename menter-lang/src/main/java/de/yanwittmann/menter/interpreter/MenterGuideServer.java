@@ -78,24 +78,45 @@ public class MenterGuideServer {
                 } else {
                     final JSONObject requestJson = new JSONObject(requestBody);
 
-                    final Value result;
-                    try {
-                        final String code = requestJson.getString("code");
-                        final String context = requestJson.getString("context");
-                        LOG.info("Executing code [{}]: {}", context, code);
-                        result = interpreter.evaluateInContextOf(code, context);
+                    final boolean deleteAction = requestJson.optBoolean("destroy", false);
+                    if (deleteAction) {
+                        try {
+                            final String context = requestJson.getString("context");
+                            interpreter.deleteContext(context);
 
-                        responseJson.put("result", result.toDisplayString());
-                        responseJson.put("print", printBuffer[0]);
-                        printBuffer[0] = "";
-                        exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
-                    } catch (JSONException e) {
-                        responseJson.put("error", "Invalid request body.");
-                        exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
-                    } catch (Exception e) {
-                        responseJson.put("result", Value.empty().toDisplayString());
-                        responseJson.put("print", e.getMessage());
-                        exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                            responseJson.put("result", Value.empty().toDisplayString());
+                            responseJson.put("print", printBuffer[0]);
+                            printBuffer[0] = "";
+                            exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                        } catch (JSONException e) {
+                            responseJson.put("error", "Invalid request body.");
+                            exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                        } catch (Exception e) {
+                            responseJson.put("result", Value.empty().toDisplayString());
+                            responseJson.put("print", e.getMessage());
+                            exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                        }
+
+                    } else {
+                        final Value result;
+                        try {
+                            final String code = requestJson.getString("code");
+                            final String context = requestJson.getString("context");
+                            LOG.info("Executing code [{}]: {}", context, code);
+                            result = interpreter.evaluateInContextOf(code, context);
+
+                            responseJson.put("result", result.toDisplayString());
+                            responseJson.put("print", printBuffer[0]);
+                            printBuffer[0] = "";
+                            exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                        } catch (JSONException e) {
+                            responseJson.put("error", "Invalid request body.");
+                            exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                        } catch (Exception e) {
+                            responseJson.put("result", Value.empty().toDisplayString());
+                            responseJson.put("print", e.getMessage());
+                            exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
+                        }
                     }
                 }
 

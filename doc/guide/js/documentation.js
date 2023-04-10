@@ -146,19 +146,7 @@ function previousPage() {
 function selectPage(link) {
     fadeEntirePageIntoColor();
     setTimeout(() => document.location = link, 200);
-}
-
-document.onkeyup = function (e) {
-    // check if the user is typing in an input field
-    if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") {
-        return;
-    }
-
-    if (e.key === "ArrowRight") {
-        nextPage();
-    } else if (e.key === "ArrowLeft") {
-        previousPage();
-    }
+    setTimeout(() => sendDestroyAllCodeBoxesToServer(), 1);
 }
 
 function disableAllSidebarNavigationLinks() {
@@ -190,6 +178,14 @@ function initDocumentation() {
 
     fadeEntirePageOutOfColor();
     disableAllSidebarNavigationLinks();
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight") {
+            nextPage();
+        } else if (e.key === "ArrowLeft") {
+            previousPage();
+        }
+    });
 }
 
 initDocumentation();
