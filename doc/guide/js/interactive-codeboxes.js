@@ -603,7 +603,7 @@ function initializePage(interpreterIsAvailable = true) {
     }
 
     if (!interpreterIsAvailable && codeboxes.length > 0) {
-        addWarningText("Learn how to enable <a href='Hints_evaluation_server.html'>interactive code blocks</a>", 2);
+        addWarningText("Learn how to enable <a href='execute_code.html'>interactive code blocks</a>", 2);
         setIntervalX(() => {
             isInterpreterAvailable().then(nowAvailable => {
                 if (nowAvailable) window.location.reload();
