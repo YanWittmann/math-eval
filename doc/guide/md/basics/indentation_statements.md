@@ -36,7 +36,7 @@ result += 5
 ```
 
 But why only almost all of them?
-There are exceptions when a newline is not considered a statement separator: if the next line starts with
+There are exceptions when a newline is not considered a statement separator: if the next line starts with one of
 
 - `.`
 - `elif` or `else`
@@ -52,8 +52,8 @@ result =
     10
 ```
 
-In the next two cases, it would obviously make sense to indent the follow-up lines by a bit, but for the demonstration,
-they all hava the same and are still treated as single statements:
+As you can see in the next example, the operators and `.` make the lines go into a single statement, even though they
+have the same indentation:
 
 ```result=15;;;[4, 16, 36, 64, 100]
 result
@@ -66,7 +66,7 @@ result
 ## Example
 
 This small constructor function does not use semicolons to separate the statements. The first line `person.name = name`
-is the only line in the demo that is more incremented than the previous line, meaning only it will be joined with the
+is the only line in the demo that is more indented than the previous line, meaning only it will be joined with the
 line before it. This previous line ends in a `{` which means that the joining does not make a difference, as `{ }` are
 considered statement separators in of themselves.
 
@@ -85,21 +85,36 @@ indentation and newline-based separations are mapped to the semicolon and curly 
 (name, alter) -> { person.name = name; person.alter = alter; person; }
 ```
 
+## Code blocks
+
+Code blocks are defined by curly brackets `{ }`. The opening and closing brackets are considered statement separators,
+so there is no need to add a `;` before or after them.
+
+Code blocks can be used anywhere, but **will NOT open a new variable scope**. Code blocks will return the last evaluated
+value in them, meaning there is no need to call an anonymous function and return the value manually, if a new scope is
+not needed.
+
+```result=10;;;10;;;5
+value = (() -> { # anonymous function, new scope
+  result = 5
+  result + 5
+})();;;value = { # code block, parent scope
+  result = 5
+  result + 5
+};;;result # is 5, as `result + 5` was never assigned to `result`
+```
+
 ## Reasoning
 
-When you are new to the language, I'd recommend using the semicolon syntax, as the indentation and newline based one
-might be confusing at first.
+If you are new to Menter, it is recommended to start using the semicolon syntax, as the newline-based one might be
+confusing at first.
 
-It may seem strange at first, but seeing where this language comes from and the use-case it was made for, it makes a bit
-more sense:
+Although it may seem unusual, the newline-based syntax was adopted in Menter because the language was designed to
+replace the old expression evaluator in the [Launch Anything Bar](https://github.com/YanWittmann/launch-anything), where 
+code needed to be written in a single line.  
+However, I also wanted to allow Menter to be used for other purposes, such as writing small scripts. The newline-based
+separation of statements is an interesting approach to solve the statement separation problem, even though it is not
+perfect. Therefore, Menter allows the use of both newlines and semicolons.
 
-Code in Menter needs to be able to be able to be written in a single line, since the main reason it was developed was
-that it should replace the old expression evaluator in the
-[Launch Anything Bar](https://github.com/YanWittmann/launch-anything). On the other hand, I wanted to allow other use
-cases for the language, such as writing small scripts. I find that newline separation is an interesting approach to
-solve the statement separation problem, even if it is not perfect. This is why Menter allows both newlines and
-semicolons.
-
-Also, this language is has been a major learning experience for me and I wanted to try out as many new things as I
-could. This alternate syntax is one of the few things that actually made sense (at least, for me) and therefore I left
-it in.
+As Menter was a major learning experience for me, I wanted to experiment with as many new things as possible, including
+the alternative syntax.

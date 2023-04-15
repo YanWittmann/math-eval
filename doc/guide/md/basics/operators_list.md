@@ -2,6 +2,9 @@
 
 Operators are listed in the order of precedence, from highest to lowest.
 
+Understandably, you may skip over most of this. I would recommend however that you at least check out the bottom part of
+the page, where some of the more interesting parts like `(::)`, `(->)` and `(|>)` are explained.
+
 ### `(++]` (150) and `(--]` (150)
 
 The `(++]`/`(--]` operators are used to in/decrement a value by one.
@@ -188,7 +191,7 @@ The `=` operator is the assignment operator. It assigns a value to a variable.
 x = 1;;;x = 2
 ```
 
-Learn more about [combined assignment operators here](Core_Language_operators.html).
+Learn more about [compound assignment operators here](Core_Language_operators.html).
 
 ### `(->)` (5)
 
@@ -206,13 +209,14 @@ The body may look like this:
 - `x` - A single expression
 - `{ x }` - A block of expressions
 
-```result=(x) -> { x + 1; };;;(a, b) -> { a + b; };;;() -> { 1; }
-x -> x + 1;;;(a, b) -> a + b;;;() -> 1
+```result=(x) -> { x + 1; };;;(a, b) -> { c = a + b; c + 4; };;;() -> { 1; }
+x -> x + 1;;;(a, b) -> { c = a + b; c + 4 };;;() -> 1
 ```
 
 ### `(|>)` (0) and `(>|)` (0)
 
-The `|>` and `>|` operators are used to pipe the result of an expression into the parameter list of a function.  
+The `|>` and `>|` operators are called pipeline operators and are used to pipe the result of an expression into the
+parameter list of a function.  
 The two variants differ in that they insert the value at the beginning `>|` or at the end `|>` of the parameter list.
 
 ```result=(a, b) -> { a - b; };;;-3;;;3
@@ -221,6 +225,6 @@ sub = (a, b) -> a - b;;;5 |> sub(2);;;5 >| sub(2)
 
 This can be chained to create a pipeline of functions where inline functions can be called as well.
 
-```result=(x, y) -> { x + y; };;;(x) -> { x * 2; };;;14
-add = (x, y) -> x + y;;;double = x -> x * 2;;;1 |> add(2) |> double |> ((x, y) -> x + y)(3) |> x -> x + 5
+```result=<<lambda>>;;;(x) -> { x * 2; };;;14
+add = (+);;;double = x -> x * 2;;;1 |> add(2) |> double |> ((x, y) -> x + y)(3) |> x -> x + 5
 ```

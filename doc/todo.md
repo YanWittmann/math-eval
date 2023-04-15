@@ -112,9 +112,30 @@ double = x -> x * 2; (([1, 2].map(x -> x + 3) |> x -> [x[0], -x[1]])[1] |> doubl
 clear() = "\n" * 100 |> print
 ```
 
-Bugs:
+on modules:
+
+```
+>> import other
+>> other.otherVal
+(x) -> { x + 4 + test; }
+>> other.test
+Error: Illegal access on [other.test]: module does not export symbol
+        in [repl] at other.test
+        Local symbols:  otherVal (function), test (number)
+```
+
+## Bugs:
+
+accessors on maps:
 
 ```
 {test:[1], hey: 4}[0]
-accessors on maps
+```
+
+module returns `null`:
+
+```
+>> import hello
+>> hello
+Error: Cannot invoke "de.yanwittmann.menter.interpreter.structure.value.Value.isReturn()" because "result" is null
 ```

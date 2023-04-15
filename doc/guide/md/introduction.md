@@ -21,7 +21,7 @@ numbers = range(1, 4);;;filterFunction = x -> x > 4;;;numbers.map(x -> x * 2).fi
 ```
 
 Did you know that you can make these code boxes interactive by running a local Menter server?
-[Find out how here](Hints_evaluation_server.html)!
+[Find out how here](execute_code.html)!
 
 ## Getting Started
 
@@ -43,3 +43,5 @@ After building and installing the Java library yourself using maven, you can add
     <version>version</version>
 </dependency>
 ```
+
+Navigate between pages using the arrow keys or the bar on the left.

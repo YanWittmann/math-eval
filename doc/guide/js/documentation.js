@@ -180,6 +180,9 @@ function initDocumentation() {
     disableAllSidebarNavigationLinks();
 
     document.addEventListener("keydown", function (e) {
+        if (document.activeElement.tagName === "TEXTAREA" || document.activeElement.tagName === "INPUT") {
+            return;
+        }
         if (e.key === "ArrowRight") {
             nextPage();
         } else if (e.key === "ArrowLeft") {

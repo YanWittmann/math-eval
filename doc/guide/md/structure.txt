@@ -1,6 +1,8 @@
 
 Introduction >> introduction.md
 
+Running Menter code >> execute_code.md
+
 Core Language >> core_lang.md
     Primitive Types >> basics/primitive_types.md
     Operators >> basics/operators.md
@@ -16,11 +18,11 @@ Modules >> modules.md
     reflect.md >> provided_modules/reflect.md
 
 Hints >> hints.md
-    Evaluation Server >> hints/evaluation_server.md
     Testing >> demo.md
     Subchapter >> subdir/subchapter.md
     Plot Test >> subdir/plot.md
 
 Java >> java.md
+    Getting started >> java/getting_started.md
     Types >> java/custom_java_types.md
     Value markers >> java/value_markers.md

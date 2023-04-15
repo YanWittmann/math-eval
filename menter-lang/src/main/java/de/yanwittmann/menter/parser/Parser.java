@@ -112,7 +112,8 @@ public class Parser {
                isType(token, ParserNode.NodeType.LOOP_FOR) || isType(token, ParserNode.NodeType.CONSTRUCTOR_CALL) ||
                isType(token, ParserNode.NodeType.OPERATOR_FUNCTION) || isType(token, TokenType.PASS) ||
                isType(token, TokenType.CONTINUE) || isType(token, TokenType.BREAK) ||
-               isType(token, ParserNode.NodeType.LOOP_WHILE) || isKeyword(token, "null");
+               isType(token, ParserNode.NodeType.LOOP_WHILE) || isKeyword(token, "null") ||
+               isType(token, ParserNode.NodeType.CODE_BLOCK);
     }
 
     public static boolean isListable(Object token) {

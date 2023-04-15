@@ -177,7 +177,9 @@ public class DocumentationGenerator {
         for (DocumentationPage documentationPage : documentationPages) {
             sidebarItems.add(documentationPage.renderSidebarItem());
         }
-        return sidebarItems.stream().map(ATag::render).collect(Collectors.joining("\n"));
+        return sidebarItems.stream()
+                .map(ATag::render)
+                .collect(Collectors.joining("\n")) + "<a class=\"sidebar-menu-item\">&nbsp;</a>";
     }
 
     private static List<DocumentationPage> parseStructure(File file) throws IOException {

@@ -1,12 +1,26 @@
 # Variable scope and Closure
 
-This is a topic that should not bother you, if I have done a good job implementing it in this language (which I hope
-so!). It is still useful to know about this topic, as I most certainly did not before writing Menter.
+Variable scope and closure are important concepts in programming, and Menter uses them to manage local variables and
+functions. In this documentation entry, we'll explain how Menter implements variable scope and closure, and how you can
+use it to create effectively private variables.
 
-Menter uses the scope system that most languages (_not Python for some reason_) use. A variable is only visible in the
-code block that it was created in (which is it's closure), which upon exiting removes that variable. When accessing a
-local variable, first the current scope is checked, then up through the parent scopes until the variable is found (or
-not).
+## Variable Scope
+
+Menter uses the standard scope system found in most languages, where a variable is only visible in the scope that
+it was created in (which is its closure). When accessing a local variable, Menter checks the current scope, then up
+through the parent scopes until the variable is found (or not).
+
+New scopes are created on:
+
+- Function calls
+- Loop iterations
+- If statements
+
+but **NOT** on:
+
+- Code blocks
+
+Here's an example:
 
 ```result=# server required;;;# server required
 fun() {
@@ -16,16 +30,17 @@ fun() {
 fun();;;print("fails:", a) # fails
 ```
 
-But Menter is a language with first-class citizen functions and therefore:
+In this example, `a` is only visible inside the `fun()` function, and attempting to access it outside of that function
+will result in an error.
 
-> A closure is a persistent local variable scope.  
-> A closure is a record storing a function together with an environment.
+## Closure
 
-... which means that variables are not truly lost when a code block is closed. If a function is defined in a code block,
-that function will remember the local variable scope that the original block had access to. When a function like this is
-called from a different scope, the scope will temporarily be replaced by the scope the called function had access to.
+Menter is a language with first-class citizen functions, which means that it also supports closures. A closure is a
+persistent local variable scope, and it is created when a function is defined inside a code block. The function will
+remember the local variable scope that the original block had access to, and when the function is called from a
+different scope, the scope will temporarily be replaced by the scope the called function had access to.
 
-What does that mean? An example:
+Here's an example:
 
 ```result=() -> { a = 8; () -> { a; }; };;;() -> { a; };;;4;;;8;;;4
 fun() {
@@ -34,17 +49,14 @@ fun() {
 };;;val = fun();;;a = 4;;;val();;;a
 ```
 
-As you can see, the variable `a` should be lost when exiting the scope of the `fun()` function. However, the anonymous
-function `() -> a` that is returned by the `fun()` function still remembers the scope where `a` was visible. When
-called, `val()` fully replaces the current scope with the one it was defined in for the duration of its evaluation. The
-outer scope and `a` are not used by the function.
+In this example, the anonymous function `() -> a` remembers the scope where `a` was visible, even though a should be
+lost when exiting the `fun()` function. When called, `val()` fully replaces the current scope with the one it was
+defined in for the duration of its evaluation. The outer scope and `a` are not used by the function.
 
 ## Effectively private variables
 
-If you know enough about this concept, you might also know that this introduces an opportunity for effectively private
-variables. Menter does not currently support creating custom types purely in Menter
-([only via Java](Java_custom_java_types.html), but I plan on changing that in the future), which is why this is
-currently the only option to archive this.
+Menter does not currently support creating custom types purely in Menter ([only via Java](Java_custom_java_types.html),
+but we plan on changing that in the future), but you can still use closures to create effectively private variables.
 
 Here's an example:
 
@@ -65,7 +77,7 @@ Person = (name, age) -> {
 
 So, what is happening here?
 
-The `Person` constructor function has two local variables `public` and `private`. The `private` object stores all
+The `Person` constructor function has two local variables, `public` and `private`. The `private` object stores all
 attributes that should not be modifiable from the outside, the `public` object contains all functions that should be
 used to access that stored data.  
 Since the functions in `public` are all created inside the scope of the `Person` function, they can all access the
@@ -76,3 +88,8 @@ When a `Person` is created, the fields are initialized and `public` is returned.
 access and modify the local variables.  
 The `execute` function, as the comment suggests, allows for accessing the `private` fields as if the scope was inside
 the `Person` function, since they are passed to the callback from inside the `Person` function.
+
+This pattern of using closures to create effectively private variables is quite common in programming. It allows for
+encapsulating data and functions to create a clean and organized interface for interacting with that data. However, it's
+important to note that this does not provide true security or privacy as the data can still be accessed and modified if
+someone really wants to. It's more of a convention for organizing code and preventing accidental modification of data.

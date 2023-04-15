@@ -4,7 +4,7 @@
 import cmdplot;;;generate_points = r -> {
     p.x = []
     p.y = []
-    for (i in space(0, 2 * pi, 360)) {
+    for (i in space(0, 2 * PI, 360)) {
         p.x = p.x :: (r * cos(i))
         p.y = p.y :: (r * sin(i))
     }

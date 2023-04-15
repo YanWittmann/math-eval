@@ -5,7 +5,7 @@ syntax and principles of Menter.
 
 A few things to note about the code boxes, as seen below:
 
-- You can make them interactive using a [local Menter sever](Hints_evaluation_server.html)
+- You can make them interactive using a [local Menter sever](execute_code.html)
 - Input code that spans multiple lines is indicated using `|` pipe symbols. This code is then sent to the server as a
   single input (but still as separate lines)
 - Hold down `shift` and press `enter` to enter multiple lines of code yourself
@@ -19,4 +19,5 @@ foldl(funct, acc, list) {
 };;;val = [1, 2, 3] |> foldl((*), 1);;;print("Result: " + val)
 ```
 
-But now go check out the subchapters and start with [Primitive Types](Core_Language_primitive_types.html).
+But now go check out the subchapters and start with [Primitive Types](Core_Language_primitive_types.html) by clicking
+the link or using the right arrow key.

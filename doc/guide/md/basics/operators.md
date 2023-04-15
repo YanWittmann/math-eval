@@ -26,8 +26,8 @@ Using the interval syntax above, operators can be transformed into functions tha
 For example, the `+` operator can be transformed into a function that takes two arguments, or the `!` operator with one
 argument.
 
-```result=3;;;120
-(+)(1, 2);;;(!](5)
+```result=<<lambda>>;;;3;;;120
+add = (+) # store in function...;;;add(1, 2);;;(!](5) # ...or call directly
 ```
 
 That way, operators can be passed as arguments to other functions.
