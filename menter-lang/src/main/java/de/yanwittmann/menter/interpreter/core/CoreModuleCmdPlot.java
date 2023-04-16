@@ -339,41 +339,105 @@ public class CoreModuleCmdPlot {
     private static Value table(List<Value> arguments) {
         if (arguments.size() == 0 || arguments.size() > 2) {
             throw new MenterExecutionException("The table function expects exactly one or two arguments: [index: boolean]? [list of maps]");
-        } else if (!arguments.get(arguments.size() - 1).isMapAnArray()) {
-            throw new MenterExecutionException("The table function expects a list of maps as argument.");
         }
 
         final boolean showIndex = arguments.size() == 2 && arguments.get(0).isTrue();
 
-        final Value inputMapValue = arguments.get(arguments.size() - 1);
-        final List<String> keys = inputMapValue.getMap().values().stream()
-                .filter(v -> !v.isEmpty())
-                .map(Value::getMap)
-                .flatMap(m -> m.keySet().stream())
-                .distinct()
-                .map(String::valueOf)
-                .collect(Collectors.toList());
-
         final List<String> header = new ArrayList<>();
-        if (showIndex) header.add("");
-        header.addAll(keys);
-
         final List<List<String>> rows = new ArrayList<>();
-        rows.add(header);
 
-        for (int i = 0; i < inputMapValue.getMap().size(); i++) {
-            final List<String> row = new ArrayList<>();
-            if (showIndex) row.add(String.valueOf(i));
-            for (String key : keys) {
-                final Value value = inputMapValue.getMap().get(new BigDecimal(i)).getMap().get(key);
-                if (value == null) {
-                    row.add("");
-                } else {
-                    row.add(value.toDisplayString());
+        if (arguments.get(arguments.size() - 1).isMapAnArray()) {
+            final Value inputMapValue = arguments.get(arguments.size() - 1);
+            final List<String> keys = inputMapValue.getMap().values().stream()
+                    .filter(v -> !v.isEmpty())
+                    .map(Value::getMap)
+                    .flatMap(m -> m.keySet().stream())
+                    .distinct()
+                    .map(String::valueOf)
+                    .collect(Collectors.toList());
+
+            if (showIndex) header.add("");
+            header.addAll(keys);
+
+            rows.add(header);
+
+            for (int i = 0; i < inputMapValue.getMap().size(); i++) {
+                final List<String> row = new ArrayList<>();
+                if (showIndex) row.add(String.valueOf(i));
+                for (String key : keys) {
+                    final Value value = inputMapValue.getMap().get(new BigDecimal(i)).getMap().get(key);
+                    if (value == null) {
+                        row.add("");
+                    } else {
+                        row.add(value.toDisplayString());
+                    }
                 }
+                rows.add(row);
             }
-            rows.add(row);
+        } else {
+            // {Mira: 19.53, Thomas: [15.76, 34.22], John: 19.71, Viola: 20.33, Yan: [20.12, 41.32], Daniel: 15.92}
+            // should become:
+            //  Key    | 0 | 1
+            //  -------+----------
+            //  Daniel | 20.47    |
+            //  John   | 19.27    |
+            //  Yan    | 17.43    | 41.32
+            //  Thomas | 1 | 34.22
+            //  Viola  | 20.6     |
+            //  Mira   | 18.46  |
+
+            final Value inputMapValue = arguments.get(arguments.size() - 1);
+            final List<String> keys = inputMapValue.getMap().keySet().stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.toList());
+
+            if (showIndex) header.add("");
+            header.add("Key");
+
+            // dynamically determine the number of columns
+            final int maxColumnCount = inputMapValue.getMap().values().stream()
+                    .filter(v -> v.isMapAnArray())
+                    .map(Value::getMap)
+                    .map(Map::size)
+                    .max(Integer::compareTo)
+                    .orElse(1);
+            for (int i = 0; i < maxColumnCount; i++) {
+                header.add(String.valueOf(i));
+            }
+
+            rows.add(header);
+
+            for (String key : keys) {
+                final List<String> row = new ArrayList<>();
+                if (showIndex) row.add("");
+                row.add(key);
+                final Value value = inputMapValue.getMap().get(key);
+                if (value == null || value.isEmpty()) {
+                    for (int i = 0; i < maxColumnCount; i++) {
+                        row.add("");
+                    }
+                } else {
+                    if (value.isMapAnArray()) {
+                        for (int i = 0; i < maxColumnCount; i++) {
+                            final Value v = value.getMap().get(new BigDecimal(i));
+                            if (v == null || v.isEmpty()) {
+                                row.add("");
+                            } else {
+                                row.add(v.toDisplayString());
+                            }
+                        }
+                    } else {
+                        row.add(value.toDisplayString());
+                        for (int i = 1; i < maxColumnCount; i++) {
+                            row.add("");
+                        }
+                    }
+                }
+                rows.add(row);
+            }
         }
+
+        // generate table from rows
 
         final List<Integer> columnWidths = new ArrayList<>();
         for (int i = 0; i < header.size(); i++) {

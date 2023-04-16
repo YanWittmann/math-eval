@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static j2html.TagCreator.*;
@@ -37,8 +39,51 @@ public class DocumentationPage {
 
     void parseContent(Parser parser) throws IOException {
         if (content == null) {
-            content = parser.parse(String.join("\n", FileUtils.readLines(originFile, StandardCharsets.UTF_8)));
+            content = parser.parse(
+                    String.join("\n", replaceVariables(
+                            FileUtils.readLines(originFile, StandardCharsets.UTF_8)
+                    ))
+            );
         }
+    }
+
+    private final static Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{\\s[^ ]+:\\s[^ ]+\\s}}");
+
+    private List<String> replaceVariables(List<String> input) {
+        // embedded files: {{ file: menter-lang/src/main/resources/src/system.mtr }}
+
+        final List<String> output = new ArrayList<>();
+
+        for (String line : input) {
+            final String trimmedLine = line.trim();
+            final Matcher matcher = VARIABLE_PATTERN.matcher(trimmedLine);
+
+            while (matcher.find()) {
+                final String variable = matcher.group();
+                final String[] variableParts = variable.substring(3, variable.length() - 3).split(":", 2);
+                final String variableType = variableParts[0].trim();
+                final String variableName = variableParts[1].trim();
+
+                if (variableType.equals("file")) {
+                    final File file = new File(variableName);
+                    if (!file.exists()) {
+                        throw new IllegalArgumentException("File " + file.getAbsolutePath() + " does not exist!");
+                    }
+                    try {
+                        final List<String> lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
+                        line = line.replace(variable, String.join("\n", lines));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unknown variable type " + variableType + "!");
+                }
+            }
+
+            output.add(line);
+        }
+
+        return output;
     }
 
     public void setTitle(String title) {

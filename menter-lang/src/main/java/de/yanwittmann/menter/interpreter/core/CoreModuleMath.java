@@ -95,7 +95,6 @@ public abstract class CoreModuleMath {
     }
 
     public static Value space(List<Value> parameters) {
-        // find a fitting step size for the range and then use CoreModuleCommon.range to generate the values
         final BigDecimal min = (BigDecimal) parameters.get(0).getValue();
         final BigDecimal max = (BigDecimal) parameters.get(1).getValue();
         final BigDecimal range = max.subtract(min);
@@ -107,9 +106,13 @@ public abstract class CoreModuleMath {
             return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(BigDecimal.ONE)));
         }
 
-        final BigDecimal stepSize = range.divide(BigDecimal.valueOf(targetValueCount), Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_UP);
+        // Calculate the number of steps as a BigDecimal
+        final BigDecimal stepCount = new BigDecimal(targetValueCount - 1);
 
-        return CoreModuleMath.range(Arrays.asList(new Value(parameters.get(0)), new Value(parameters.get(1)), new Value(stepSize)));
+        // Calculate the step size using BigDecimal division with RoundingMode.HALF_UP
+        final BigDecimal stepSize = range.divide(stepCount, Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_UP);
+
+        return CoreModuleMath.range(Arrays.asList(new Value(min), new Value(max), new Value(stepSize)));
     }
 
     private static Value applySingleValueFunction(String name, List<Value> arguments, Function<BigDecimal, BigDecimal> function) {

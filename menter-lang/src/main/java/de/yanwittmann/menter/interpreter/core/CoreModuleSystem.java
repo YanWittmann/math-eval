@@ -18,11 +18,11 @@ public class CoreModuleSystem {
     }
 
     public static Value getProperty(List<Value> arguments) {
-        return new Value(System.getProperty(arguments.get(0).toString()));
+        return new Value(System.getProperty(arguments.get(0).toDisplayString()));
     }
 
     public static Value getEnv(List<Value> arguments) {
-        return new Value(System.getenv(arguments.get(0).toString()));
+        return new Value(System.getenv(arguments.get(0).toDisplayString()));
     }
 
     public static Value sleep(List<Value> arguments) {

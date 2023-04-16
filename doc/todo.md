@@ -1,7 +1,6 @@
 Features:
 
 - [ ] stack trace line numbers
-- [ ] write documentation
 - [ ] input history for more than one element in documentation
 - [ ] if ...: ... elif ...: ... else: ...
 - [ ] for ...: ...
@@ -11,6 +10,14 @@ Features:
 - [ ] documentation: info/warning/error boxes
 - [ ] cross operator (X ?)
 - [ ] rethink `::` operator
+- [ ] write documentation:
+  - Modules
+    - Creating modules
+    - Importing modules
+  - Java
+    - How to integrate into java
+    - Custom Java types
+  - Debugging --> this is also a topic I need to revisit
 
 To be thought about:
 
@@ -112,6 +119,10 @@ double = x -> x * 2; (([1, 2].map(x -> x + 3) |> x -> [x[0], -x[1]])[1] |> doubl
 clear() = "\n" * 100 |> print
 ```
 
+```
+plot(237, 65, space(-14, 23, 237), x -> (x - 1) * (x + 9) * ((x - 15)^^2), x -> -100 * ((x- 6)^^2) + 30000)
+```
+
 on modules:
 
 ```
@@ -138,4 +149,19 @@ module returns `null`:
 >> import hello
 >> hello
 Error: Cannot invoke "de.yanwittmann.menter.interpreter.structure.value.Value.isReturn()" because "result" is null
+```
+
+empty files do not evaluate to anything and throw an exception.
+
+I know that this one is incorrect, but even the syntax tree is incorrect:
+
+```
+import cmdplot inline
+table(
+  [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+  ]
+)
 ```

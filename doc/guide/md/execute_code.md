@@ -62,7 +62,12 @@ menter repl
 ```
 
 In the REPL, you can enter Menter code one line at a time and see the result of each evaluation immediately.
-Code Boxes
+
+You can combine the `repl` flag with the `file` flag to load files into the REPL:
+
+```static
+menter repl -f "path/to/file.mtr"
+```
 
 ### Documentation Code Boxes
 

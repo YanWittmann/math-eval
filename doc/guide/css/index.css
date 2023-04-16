@@ -4,6 +4,7 @@
     --image-background-base: url('../img/background-image-noise-dark.png');
 
     --color-background-base: #1b1f29;
+    --color-background-base-rgb: 27, 31, 41;
     --color-background-input-codebox: #070c0e;
     --color-background-danger: #2b4667;
     --color-background-red: #b34444;
@@ -30,6 +31,7 @@
         --image-background-base: url('../img/background-image-noise-light.png');
 
         --color-background-base: #fffcf8;
+        --color-background-base-rgb: 255, 252, 248;
         --color-background-input-codebox: #efefef;
         --color-background-danger: #bddaff;
         --color-background-red: #ff5454;

@@ -52,3 +52,14 @@ doStuff()
 ```
 
 To learn more about how this works internally, read the chapter about [value markers](Java_value_markers.html).
+
+## Native functions
+
+Menter allows for the creation of native functions, which are functions that are implemented in Java. This chapter will
+not go into detail about how to create native functions, check out the [Java integration](java.html) chapters for that.
+
+When visiting the [modules chapters](modules.html), you will find a lot of these kind of functions.
+
+```static
+native add()
+```

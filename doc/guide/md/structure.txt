@@ -15,7 +15,12 @@ Core Language >> core_lang.md
     Closure >> basics/closure.md
 
 Modules >> modules.md
-    reflect.md >> provided_modules/reflect.md
+    system.mtr >> menter_modules/system.md
+    math.mtr >> menter_modules/math.md
+    io.mtr >> menter_modules/io.md
+    debug.mtr >> menter_modules/debug.md
+    cmdplot.mtr >> menter_modules/cmdplot.md
+    reflect.mtr >> menter_modules/reflect.md
 
 Hints >> hints.md
     Testing >> demo.md

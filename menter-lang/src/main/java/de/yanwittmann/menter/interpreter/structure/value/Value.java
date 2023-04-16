@@ -509,11 +509,16 @@ public class Value implements Comparable<Value> {
                         return self;
                     });
                     put("pop", (context, self, values, localInformation) -> {
-                        if (isMapAnArray((Map<Object, Value>) self.getValue())) {
-                            final BigDecimal max = findHighestNumericKey((Map<Object, Value>) self.getValue());
-                            return ((Map<Object, Value>) self.getValue()).remove(max);
+                        final Map<Object, Value> map = (Map<Object, Value>) self.getValue();
+                        if (map.size() > 0) {
+                            if (isMapAnArray(map)) {
+                                final BigDecimal max = findHighestNumericKey(map);
+                                return (map).remove(max);
+                            } else {
+                                return (map).remove(values.get(0).getValue());
+                            }
                         } else {
-                            return ((Map<Object, Value>) self.getValue()).remove(values.get(0).getValue());
+                            return Value.empty();
                         }
                     });
 
@@ -601,6 +606,20 @@ public class Value implements Comparable<Value> {
                         } else {
                             return new Value((self.getMap()).entrySet().stream()
                                     .sorted((a, b) -> comparator.compare(a.getValue(), b.getValue()))
+                                    .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
+                        }
+                    });
+
+                    put("sortKey", (context, self, values, localInformation) -> {
+                        final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
+
+                        if (isMapAnArray((self.getMap()))) {
+                            return new Value((self.getMap()).values().stream()
+                                    .sorted(comparator)
+                                    .collect(Collectors.toList()));
+                        } else {
+                            return new Value((self.getMap()).entrySet().stream()
+                                    .sorted((a, b) -> comparator.compare(new Value(a.getKey()), new Value(b.getKey())))
                                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
                         }
                     });
