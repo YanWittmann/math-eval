@@ -36,7 +36,7 @@ width = 90
 height = 12;;;plot(
   width, height,
   [1, 3, 6, -4], # x values
-  [-4, 3, 7, 5]   # y values
+  [-4, 3, 7, 5]  # y values
 )
 ```
 

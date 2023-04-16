@@ -217,6 +217,6 @@ public class EvaluationContextLocalInformation {
     }
 
     public void printStackTrace(String message) {
-        System.err.println(formatStackTrace(message));
+        MenterDebugger.printer.println(formatStackTrace(message));
     }
 }
