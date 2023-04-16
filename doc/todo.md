@@ -11,9 +11,6 @@ Features:
 - [ ] cross operator (X ?)
 - [ ] rethink `::` operator
 - [ ] write documentation:
-  - Modules
-    - Creating modules
-    - Importing modules
   - Java
     - How to integrate into java
     - Custom Java types
@@ -134,6 +131,8 @@ Error: Illegal access on [other.test]: module does not export symbol
         in [repl] at other.test
         Local symbols:  otherVal (function), test (number)
 ```
+
+![testimg](guide/navbar_icon.png)
 
 ## Bugs:
 

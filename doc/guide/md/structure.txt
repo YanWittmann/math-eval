@@ -22,11 +22,6 @@ Modules >> modules.md
     cmdplot.mtr >> menter_modules/cmdplot.md
     reflect.mtr >> menter_modules/reflect.md
 
-Hints >> hints.md
-    Testing >> demo.md
-    Subchapter >> subdir/subchapter.md
-    Plot Test >> subdir/plot.md
-
 Java >> java.md
     Getting started >> java/getting_started.md
     Types >> java/custom_java_types.md

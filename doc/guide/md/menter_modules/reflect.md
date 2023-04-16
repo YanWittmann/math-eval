@@ -2,27 +2,6 @@
 
 ```static
 {{ file: menter-lang/src/main/resources/src/reflect.mtr }}
-native inherit()
-native access()
-
-native setVariable()
-native getVariable()
-native removeVariable()
-
-native getContextName()
-native getImports()
-native getModules()
-native getVariables()
-
-native callFunctionByName()
-native getStackTrace()
-native printStackTrace()
-
-export [inherit, access,
-        setVariable, getVariable, removeVariable,
-        getContextName, getImports, getModules, getVariables,
-        callFunctionByName, getStackTrace, printStackTrace
-        ] as reflect
 ```
 
 The `reflect` module allows you to access the internals of the Menter interpreter.
