@@ -32,6 +32,7 @@ public enum PrimitiveValueType {
     }
 
     public static boolean isType(Value actual, PrimitiveValueType expected) {
+        if (actual == null) return false;
         return isType(actual.getType(), expected.getType());
     }
 

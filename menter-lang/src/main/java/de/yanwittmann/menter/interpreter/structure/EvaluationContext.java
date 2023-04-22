@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -134,16 +135,24 @@ public abstract class EvaluationContext {
                 throw localInformation.createException("Import statements are not supported in the interpreter");
 
             } else if (node.getType() == ParserNode.NodeType.ARRAY) {
-                final Map<Object, Value> array = new LinkedHashMap<>();
+                result = new Value(new LinkedHashMap<>());
+
                 final List<Object> children = node.getChildren();
                 for (int i = 0; i < children.size(); i++) {
-                    array.put(new BigDecimal(i), evaluate(children.get(i), globalContext, symbolCreationMode, localInformation));
+                    final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                    mapElementResolveLocalInformation.putSelf(result);
+
+                    final Value evaluated = evaluate(children.get(i), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                    result.create(new Value(i), evaluated, true);
                 }
-                result = new Value(array);
 
             } else if (node.getType() == ParserNode.NodeType.MAP) {
-                final Map<Object, Value> map = new LinkedHashMap<>();
+                result = new Value(new LinkedHashMap<>());
+
                 for (Object child : node.getChildren()) {
+                    final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                    mapElementResolveLocalInformation.putSelf(result);
+
                     final ParserNode childNode = (ParserNode) child;
 
                     final Object keyNode = childNode.getChildren().get(0);
@@ -152,20 +161,19 @@ public abstract class EvaluationContext {
                         key = ((Value) keyNode).getValue();
                     } else if (keyNode instanceof Token) {
                         if (Parser.isLiteral(keyNode)) {
-                            key = evaluate(keyNode, globalContext, symbolCreationMode, localInformation).getValue();
+                            key = evaluate(keyNode, globalContext, symbolCreationMode, mapElementResolveLocalInformation).getValue();
                         } else {
                             key = ((Token) keyNode).getValue();
                         }
                     } else if (keyNode instanceof ParserNode) {
-                        key = evaluate(keyNode, globalContext, symbolCreationMode, localInformation).toDisplayString();
+                        key = evaluate(keyNode, globalContext, symbolCreationMode, mapElementResolveLocalInformation).toDisplayString();
                     } else {
-                        throw localInformation.createException("Invalid map key type: " + keyNode.getClass().getName());
+                        throw mapElementResolveLocalInformation.createException("Invalid map key type: " + keyNode.getClass().getName());
                     }
 
-                    final Value value = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, localInformation);
-                    map.put(key, value);
+                    final Value value = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                    result.create(new Value(key), value, true);
                 }
-                result = new Value(map);
 
             } else if (node.getType() == ParserNode.NodeType.EXPRESSION) {
                 final Object operator = node.getValue();
@@ -378,6 +386,9 @@ public abstract class EvaluationContext {
                 final Value constructorIdentifier = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                 final List<Value> constructorParameters = makeFunctionArguments(node, globalContext, localInformation);
 
+                if (!(constructorIdentifier.getValue() instanceof Class)) {
+                    throw localInformation.createException("Constructor identifier is not a class: " + constructorIdentifier);
+                }
                 result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorIdentifier.getValue(), constructorParameters));
             }
 
@@ -636,6 +647,13 @@ public abstract class EvaluationContext {
     }
 
     public Value evaluateFunction(Value functionValue, List<Value> functionParameters, GlobalContext globalContext, EvaluationContextLocalInformation localInformation, String originalFunctionName) {
+        return evaluateFunction(functionValue, functionParameters, globalContext, localInformation, originalFunctionName, null);
+    }
+
+    public Value evaluateFunction(Value functionValue, List<Value> functionParameters,
+                                  GlobalContext globalContext, EvaluationContextLocalInformation localInformation,
+                                  String originalFunctionName,
+                                  Consumer<EvaluationContextLocalInformation> functionContextTransformer) {
         try {
             localInformation.provideFunctionNameForNextStackTraceElement(originalFunctionName);
 
@@ -660,6 +678,10 @@ public abstract class EvaluationContext {
                 }
 
                 final EvaluationContextLocalInformation functionLocalInformation = localInformation.deriveNewFunctionContext();
+
+                if (functionContextTransformer != null) {
+                    functionContextTransformer.accept(functionLocalInformation);
+                }
 
                 functionLocalInformation.putLocalSymbol(executableFunction.getParentContext().getVariables());
 
@@ -816,6 +838,7 @@ public abstract class EvaluationContext {
         final GlobalContext originalGlobalContext = globalContext;
         Module switchedModule = null;
         Value value = null;
+        Value selfMapValue = null;
 
         for (int i = 0; i < identifiers.size(); i++) {
             final Object id = identifiers.get(i);
@@ -827,6 +850,10 @@ public abstract class EvaluationContext {
 
             final boolean isFinalIdentifier = id == identifiers.get(identifiers.size() - 1);
             final Value previousValue = value;
+
+            if (PrimitiveValueType.isType(previousValue, PrimitiveValueType.OBJECT)) {
+                selfMapValue = previousValue;
+            }
 
             if (value == null) {
                 if (localInformation.hasLocalSymbol(stringKey)) {
@@ -943,10 +970,18 @@ public abstract class EvaluationContext {
                 if (Parser.isType(id, ParserNode.NodeType.FUNCTION_CALL)) {
                     final List<Value> functionParameters = makeFunctionArguments(id, originalGlobalContext, localInformation);
                     try {
-                        value = evaluateFunction(value, functionParameters, globalContext, localInformation, ParserNode.reconstructCode(identifiers.get(i - 1)));
+                        final Value finalSelfMapValue = selfMapValue;
+                        value = evaluateFunction(value, functionParameters, globalContext, localInformation, ParserNode.reconstructCode(identifiers.get(i - 1)),
+                                functionContext -> {
+                                    if (finalSelfMapValue != null) {
+                                        functionContext.putSelf(finalSelfMapValue);
+                                    }
+                                });
+
                         if (MenterDebugger.logInterpreterResolveSymbols) {
                             LOG.info("Symbol resolve: [{}] from function call", value);
                         }
+
                     } catch (Exception e) {
                         throw localInformation.createException(e.getMessage() + ": " + ParserNode.reconstructCode(identifiers.get(i - 1)), e);
                     }

@@ -36,6 +36,10 @@ public class EvaluationContextLocalInformation {
         localSymbolHierarchy.get(localSymbolHierarchy.size() - 1).put(name, value);
     }
 
+    public void putLocalSymbolOnTop(String name, Value value) {
+        localSymbolHierarchy.get(localSymbolHierarchy.size() - 1).put(name, value);
+    }
+
     public void putLocalSymbol(Map<String, Value> localSymbols) {
         localSymbols.forEach(this::putLocalSymbol);
     }
@@ -44,6 +48,20 @@ public class EvaluationContextLocalInformation {
         for (Map<String, Value> symbols : context.localSymbolHierarchy) {
             putLocalSymbol(symbols);
         }
+    }
+
+    /**
+     * Checks if a <code>self</code> Value already exists in the local symbol hierarchy. In this case, a
+     * <code>super</code> Value is created and put into the local symbol hierarchy. The <code>self</code> Value is then
+     * replaced by the given <code>value</code>.
+     *
+     * @param value The new <code>self</code> Value.
+     */
+    public void putSelf(Value value) {
+        if (hasLocalSymbol("self")) {
+            putLocalSymbolOnTop("super", getLocalSymbol("self"));
+        }
+        putLocalSymbolOnTop("self", value);
     }
 
     public Value getLocalSymbol(String name) {

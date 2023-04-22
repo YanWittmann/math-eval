@@ -180,10 +180,10 @@ public class Value implements Comparable<Value> {
     }
 
     public void setValue(Object value) {
-        if (value instanceof Integer) this.value = new BigDecimal("" + value);
-        else if (value instanceof Long) this.value = new BigDecimal("" + value);
-        else if (value instanceof Float) this.value = new BigDecimal("" + value);
-        else if (value instanceof Double) this.value = new BigDecimal("" + value);
+        if (value instanceof Integer) this.value = new BigDecimal(String.valueOf(value));
+        else if (value instanceof Long) this.value = new BigDecimal(String.valueOf(value));
+        else if (value instanceof Float) this.value = new BigDecimal(String.valueOf(value));
+        else if (value instanceof Double) this.value = new BigDecimal(String.valueOf(value));
         else if (value instanceof Character) this.value = String.valueOf(value);
         else if (value instanceof List) {
             final Map<Object, Value> map = new LinkedHashMap<>();
