@@ -7,9 +7,7 @@ An interpreted language for evaluating expressions with functions and variables 
 
 **This is very much a work in progress.**
 
-## Specification
-
-Check out the [loose specification](menter-documentation/doc/requirements.md) for the language.
+See a preview of the documentation [here](https://yanwittmann.de/projects/menter/guide/introduction.html).
 
 # Build
 
