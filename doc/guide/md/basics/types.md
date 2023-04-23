@@ -14,8 +14,8 @@ Before diving into custom types, it's important to understand the use of `self`,
 
 `self`
 
-```9;;;15;;;11
-{fun: x -> self.a + x, a: 7}.fun(2);;;{a: 5, b: x -> { # works even inside constructs inside functions
+```result=9;;;15;;;11
+{fun: x -> self.a + x, a: 7}.fun(2);;;{a: 5, b: x -> { # multiple layers deep inside an object
   for (i in range(1, self.a)) x++
   return x
 }}.b(10);;;tmp = [{a: 5}, self[0].a + 6] # and with lists
@@ -24,7 +24,7 @@ tmp[1]
 
 `super`
 
-```result=3
+```result=3;;;8
 {c: 3, d: {e: super.c}}.d.e;;;{a: 5, b: { # accessing layers that are even higher is only
     c: 3,   # possible by creating functions that return super
     souper: () -> super,

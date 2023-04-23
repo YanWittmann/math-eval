@@ -28,7 +28,6 @@ public abstract class EvaluationContext {
 
     private static final Logger LOG = LogManager.getLogger(EvaluationContext.class);
 
-    private final EvaluationContext parentContext;
     private final Map<String, Value> variables;
     protected final static Map<String[], NativeFunction> nativeFunctions = new HashMap<>();
 
@@ -45,25 +44,20 @@ public abstract class EvaluationContext {
         }
     }
 
+    public EvaluationContext() {
+        this(new HashMap<>());
+    }
+
+    public EvaluationContext(Map<String, Value> variables) {
+        this.variables = variables;
+    }
+
     public static void registerNativeFunction(String context, String module, NativeFunction function) {
         nativeFunctions.put(new String[]{context, module}, function);
     }
 
     public static void registerNativeFunction(String context, String module, Function<List<Value>, Value> function) {
         nativeFunctions.put(new String[]{context, module}, (evaluationContext, localInformation, values) -> function.apply(values));
-    }
-
-    public EvaluationContext(EvaluationContext parentContext) {
-        this(parentContext, new HashMap<>());
-    }
-
-    public EvaluationContext(EvaluationContext parentContext, Map<String, Value> variables) {
-        this.parentContext = parentContext;
-        this.variables = variables;
-    }
-
-    public EvaluationContext getParentContext() {
-        return parentContext;
     }
 
     public Map<String, Value> getVariables() {
@@ -79,11 +73,7 @@ public abstract class EvaluationContext {
     }
 
     public Value getVariable(String name) {
-        final Value value = variables.get(name);
-        if (value == null && parentContext != null) {
-            return parentContext.getVariable(name);
-        }
-        return value;
+        return variables.get(name);
     }
 
     public Value evaluate(Object nodeOrToken, GlobalContext globalContext, SymbolCreationMode symbolCreationMode, EvaluationContextLocalInformation localInformation) {
@@ -775,7 +765,7 @@ public abstract class EvaluationContext {
                 break;
             } else if (action == 1) {
                 final StringBuilder sb = new StringBuilder();
-                localInformation.appendStackTraceSymbols(sb, new MenterStackTraceElement(this.getParentContext() instanceof GlobalContext ? ((GlobalContext) this.getParentContext()) : null, node), true);
+                localInformation.appendStackTraceSymbols(sb, new MenterStackTraceElement(null, node), true);
                 MenterDebugger.printer.println("Symbols:" + sb);
             } else if (action == 2) {
                 localInformation.printStackTrace("Debugger stack trace:");

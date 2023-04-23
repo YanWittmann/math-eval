@@ -25,7 +25,6 @@ public class GlobalContext extends EvaluationContext {
     private final List<Import> imports = new ArrayList<>();
 
     public GlobalContext(Object source) {
-        super(null);
         this.source = source;
     }
 

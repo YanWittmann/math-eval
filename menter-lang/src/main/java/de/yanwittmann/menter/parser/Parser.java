@@ -75,7 +75,11 @@ public class Parser {
                     }
                 }
 
-                throw new ParsingException("Invalid token tree:\n" + toString(tokenTree));
+                if (MenterDebugger.detailedParseException) {
+                    throw new ParsingException("Invalid token tree:\n" + toString(tokenTree));
+                } else {
+                    throw new ParsingException("Syntax error starting from: ", token, tokenTree);
+                }
             }
         }
 

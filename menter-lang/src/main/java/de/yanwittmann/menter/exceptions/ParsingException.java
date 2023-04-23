@@ -2,6 +2,8 @@ package de.yanwittmann.menter.exceptions;
 
 import de.yanwittmann.menter.parser.ParserNode;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -19,7 +21,9 @@ public class ParsingException extends RuntimeException {
         this(message + "\n" + createAdditionalMessage(token, tokens));
     }
 
-    private final static int ADDITIONAL_MESSAGE_PADDING = 7;
+    private final static int ADDITIONAL_MESSAGE_PADDING = 10;
+    private final static String MESSAGE_LEFT_DELIMITER = "-->>";
+    private final static String MESSAGE_RIGHT_DELIMITER = "<<--";
 
     private static String createAdditionalMessage(Object token, List<Object> tokens) {
         int index = tokens.indexOf(token);
@@ -36,11 +40,11 @@ public class ParsingException extends RuntimeException {
 
             for (int i = Math.max(0, index - ADDITIONAL_MESSAGE_PADDING); i < Math.min(tokens.size(), index + ADDITIONAL_MESSAGE_PADDING); i++) {
                 if (i == index) {
-                    sb.add(">>>");
+                    sb.add(MESSAGE_LEFT_DELIMITER);
                 }
                 sb.add(ParserNode.reconstructCode(tokens.get(i)));
                 if (i == index) {
-                    sb.add("<<<");
+                    sb.add(MESSAGE_RIGHT_DELIMITER);
                 }
             }
 
@@ -48,7 +52,38 @@ public class ParsingException extends RuntimeException {
                 sb.add("...");
             }
 
-            additionalMessage = sb.toString();
+            // remove all from left and right until the string is short enough
+            final String joined = sb.toString();
+            final List<String> split = Arrays.asList(joined.split(" "));
+
+            final int includeLeftBorder = split.indexOf(MESSAGE_LEFT_DELIMITER);
+            final int includeRightBorder = split.lastIndexOf(MESSAGE_RIGHT_DELIMITER);
+
+            // add center part
+            final List<String> selection = new ArrayList<>(
+                    split.subList(includeLeftBorder, includeRightBorder + 1)
+            );
+            final int centerSize = selection.size();
+
+            int caretLeft = includeLeftBorder - 1;
+            int caretRight = includeRightBorder + 1;
+
+            while (true) {
+                if ((selection.size() - centerSize) > ADDITIONAL_MESSAGE_PADDING) break;
+
+                if (caretLeft >= 0) {
+                    selection.add(0, split.get(caretLeft));
+                    caretLeft--;
+                }
+                if (caretRight < split.size()) {
+                    selection.add(split.get(caretRight));
+                    caretRight++;
+                }
+
+                if (caretLeft < 0 && caretRight >= split.size()) break;
+            }
+
+            additionalMessage = String.join(" ", selection);
         }
 
         return additionalMessage;
