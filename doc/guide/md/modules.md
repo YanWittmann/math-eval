@@ -43,7 +43,7 @@ modules with functions like `print` or `cos`.
 The upper code box exports a module called `listModule` with the symbols `push` and `pop`. The lower code box imports
 the module as `lm` and uses it to modify the list `data`.
 
-```result=() -> { data.pop(); };;;null---id=listModule1
+```result=() -> { data.pop() };;;null---id=listModule1
 data = []
 push = data.push
 pop = data.pop;;;export [push, pop] as listModule

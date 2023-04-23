@@ -161,6 +161,8 @@ public class DocumentationPage {
                 tag = em();
             } else if (node instanceof StrongEmphasis) {
                 tag = strong();
+            } else if (node instanceof BlockQuote) {
+                tag = blockquote();
             } else if (node instanceof Image) {
                 final String imageUrl = ((Image) node).getUrl().toString();
                 final String alt = ((Image) node).getText().toString();

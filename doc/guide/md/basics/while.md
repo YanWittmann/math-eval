@@ -11,7 +11,7 @@ while (condition) { ... }
 
 There isn't much more to say, so here is a small example:
 
-```result=(x) -> { x % 15 == 0; };;;1;;;15
+```result=(x) -> { x % 15 == 0 };;;1;;;15
 condition = x -> x % 15 == 0;;;i = 1;;;while (!condition(i))
   ++i
 ```

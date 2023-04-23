@@ -42,7 +42,7 @@ different scope, the scope will temporarily be replaced by the scope the called 
 
 Here's an example:
 
-```result=() -> { a = 8; () -> { a; }; };;;() -> { a; };;;4;;;8;;;4
+```result=() -> { a = 8; () -> { a } };;;() -> { a };;;4;;;8;;;4
 fun() {
   a = 8
   () -> a

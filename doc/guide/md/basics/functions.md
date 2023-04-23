@@ -15,14 +15,14 @@ Functions can be created in three different ways, which are all mapped to the sa
 As with all control structures, the function body can only contain one statement. If you need more than one statement,
 use `{ }` to group multiple statements into one.
 
-```result=(a, b) -> { a + b; };;;(a, b) -> { a + b; };;;(a, b) -> { a + b; }
+```result=(a, b) -> { a + b };;;(a, b) -> { a + b };;;(a, b) -> { a + b }
 add(a, b) { a + b };;;add(a, b) = a + b;;;add = (a, b) -> a + b
 ```
 
 Functions are not named, but can be assigned to a variable and called via that variable. This makes it possible to pass
 functions as arguments to other functions.
 
-```result=(a, b) -> { a + b; };;;(f, a, b) -> { f(a, b); };;;3
+```result=(a, b) -> { a + b };;;(f, a, b) -> { f(a, b) };;;3
 add = (a, b) -> a + b;;;apply = (f, a, b) -> f(a, b);;;apply(add, 1, 2)
 ```
 

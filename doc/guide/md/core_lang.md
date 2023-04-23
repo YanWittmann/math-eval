@@ -12,7 +12,7 @@ A few things to note about the code boxes, as seen below:
 - The result of an expression is displayed behind an `->`
 - If the expression printed something to the output stream, it is displayed below the expression
 
-```result=(funct, acc, list) -> { if (list.size() == 0) acc else { foldl(funct, funct(list.head(), acc), list.tail()); }; };;;6;;;Result: 6
+```result=(funct, acc, list) -> { if (list.size() == 0) acc else { foldl(funct, funct(list.head(), acc), list.tail()) } };;;6;;;Result: 6
 foldl(funct, acc, list) {
     if (list.size() == 0) acc
     else foldl(funct, funct(list.head(), acc), list.tail())

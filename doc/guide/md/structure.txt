@@ -13,6 +13,7 @@ Core Language >> core_lang.md
     While loop >> basics/while.md
     Functions >> basics/functions.md
     Closure >> basics/closure.md
+    Types >> basics/types.md
 
 Modules >> modules.md
     system.mtr >> menter_modules/system.md

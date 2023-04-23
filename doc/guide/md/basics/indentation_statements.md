@@ -70,7 +70,7 @@ is the only line in the demo that is more indented than the previous line, meani
 line before it. This previous line ends in a `{` which means that the joining does not make a difference, as `{ }` are
 considered statement separators in of themselves.
 
-```result=(name, alter) -> { person.name = name; person.alter = alter; person; };;;{name: Yan, alter: 22};;;Yan
+```result=(name, alter) -> { person.name = name; person.alter = alter; person };;;{name: Yan, alter: 22};;;Yan
 Person = (name, alter) -> {
     person.name = name
     person.alter = alter

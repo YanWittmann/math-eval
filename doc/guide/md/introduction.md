@@ -16,7 +16,7 @@ By the end, you should be able to create your own programs in Menter.
 
 Here's a small program that creates an array, maps them to new values and filters them:
 
-```result=[1, 2, 3, 4];;;(x) -> { x > 4; };;;[6, 8]
+```result=[1, 2, 3, 4];;;(x) -> { x > 4 };;;[6, 8]
 numbers = range(1, 4);;;filterFunction = x -> x > 4;;;numbers.map(x -> x * 2).filter(filterFunction)
 ```
 

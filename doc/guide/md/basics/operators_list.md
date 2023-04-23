@@ -209,7 +209,7 @@ The body may look like this:
 - `x` - A single expression
 - `{ x }` - A block of expressions
 
-```result=(x) -> { x + 1; };;;(a, b) -> { c = a + b; c + 4; };;;() -> { 1; }
+```result=(x) -> { x + 1 };;;(a, b) -> { c = a + b; c + 4 };;;() -> { 1 }
 x -> x + 1;;;(a, b) -> { c = a + b; c + 4 };;;() -> 1
 ```
 
@@ -219,12 +219,12 @@ The `|>` and `>|` operators are called pipeline operators and are used to pipe t
 parameter list of a function.  
 The two variants differ in that they insert the value at the beginning `>|` or at the end `|>` of the parameter list.
 
-```result=(a, b) -> { a - b; };;;-3;;;3
+```result=(a, b) -> { a - b };;;-3;;;3
 sub = (a, b) -> a - b;;;5 |> sub(2);;;5 >| sub(2)
 ```
 
 This can be chained to create a pipeline of functions where inline functions can be called as well.
 
-```result=<<lambda>>;;;(x) -> { x * 2; };;;14
+```result=<<lambda>>;;;(x) -> { x * 2 };;;14
 add = (+);;;double = x -> x * 2;;;1 |> add(2) |> double |> ((x, y) -> x + y)(3) |> x -> x + 5
 ```

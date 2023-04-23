@@ -273,7 +273,7 @@ public abstract class EvaluationContext {
                     }
 
                     if (isConstructorValue) {
-                        if ("$init".equals(key) || "$extends".equals(key)) {
+                        if ("$init".equals(key) || "$extends".equals(key) || "$fields".equals(key)) {
                             continue;
                         }
 

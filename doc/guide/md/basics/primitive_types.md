@@ -57,6 +57,8 @@ according keys are created:
 person.name = "Yan";;;person.interests = []  # required for the next line to work;;;person.interests[0] = "Programming"
 ```
 
+There are more features connected to objects, but more on those in the [Types](Core_Language_types.html) section.
+
 ## Functions `function`, `value_function`, `native_function`, `reflective_function`
 
 A function is a way to transform values. There are multiple ways functions can be defined in Menter, which are all
@@ -66,13 +68,13 @@ reduced to a single internal representation.
 - Expression assignment: `name(a, b) = ...`
 - Arrow functions: `name = (a, b) -> ...`
 
-```result=(a, b) -> { a + b; };;;(a, b) -> { a + b; };;;(a, b) -> { a + b; }
+```result=(a, b) -> { a + b };;;(a, b) -> { a + b };;;(a, b) -> { a + b }
 add(a, b) { a + b };;;add(a, b) = a + b;;;add = (a, b) -> a + b
 ```
 
 Functions are not named, but instead assigned to a variable and called via that variable. This makes it possible to pass
 functions as arguments to other functions.
 
-```result=(a, b) -> { a + b; };;;(f, a, b) -> { f(a, b); };;;3
+```result=(a, b) -> { a + b };;;(f, a, b) -> { f(a, b) };;;3
 add = (a, b) -> a + b;;;apply = (f, a, b) -> f(a, b);;;apply(add, 1, 2)
 ```

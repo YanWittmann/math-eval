@@ -24,7 +24,7 @@ import reflect inline;;;a = 1;;;inherit(a, 10);;;a
 
 ... in contrast to this one:
 
-```result=null;;;1;;;(x) -> { inherit(x, 10); };;;10;;;10
+```result=null;;;1;;;(x) -> { inherit(x, 10) };;;10;;;10
 import reflect inline;;;a = 1;;;fun = x -> inherit(x, 10);;;fun(a);;;a
 ```
 
@@ -33,7 +33,7 @@ This function then set the value referenced by the variable to the value _of the
 
 This also defeats the purpose of the effectively private variables created using closures:
 
-```result=null;;;(name) -> { private.name = name; public.getName = () -> { private.name; }; public; };;;{getName: () -> { private.name; }};;;Thomas;;;Thomas;;;Cannot assign to yan.getName()
+```result=null;;;(name) -> { private.name = name; public.getName = () -> { private.name }; public };;;{getName: () -> { private.name }};;;Thomas;;;Thomas;;;Cannot assign to yan.getName()
 import reflect inline;;;Person = name -> {
     private.name = name
     public.getName = () -> private.name
@@ -141,7 +141,7 @@ import reflect inline;;;fun = (!];;;callFunctionByName("fun", [4])
 
 The getStackTrace function returns a list of function names that are currently on the stack.
 
-```result=null;;;() -> { ((x) -> { getStackTrace(); })(2); };;;[fun, ((x) -> { getStackTrace(); })]
+```result=null;;;() -> { ((x) -> { getStackTrace() })(2) };;;[fun, ((x) -> { getStackTrace() })]
 import reflect inline;;;fun = () -> { (x -> getStackTrace())(2) };;;fun()
 ```
 
@@ -151,6 +151,6 @@ The printStackTrace function prints the stack trace to the default print stream.
 
 This is most useful when debugging, as it allows you to see the call stack.
 
-```result=null;;;() -> { ((x) -> { printStackTrace(); })(2); };;;[fun, ((x) -> { printStackTrace(); })]
+```result=null;;;() -> { ((x) -> { printStackTrace() })(2) };;;[fun, ((x) -> { printStackTrace() })]
 import reflect inline;;;fun = () -> { (x -> printStackTrace())(2) };;;fun()
 ```

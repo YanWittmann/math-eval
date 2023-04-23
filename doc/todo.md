@@ -104,7 +104,7 @@ range(1,6).cross(range(1,6)).filter(x -> x.reduce((+)) > 8).map(x -> x.reduce((+
 
 ```
 data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})
-data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })
+data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc })
 # {2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}
 ```
 
@@ -125,7 +125,7 @@ on modules:
 ```
 >> import other
 >> other.otherVal
-(x) -> { x + 4 + test; }
+(x) -> { x + 4 + test }
 >> other.test
 Error: Illegal access on [other.test]: module does not export symbol
         in [repl] at other.test
