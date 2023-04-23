@@ -252,9 +252,14 @@ public class ParserNode {
 
                 case CODE_BLOCK:
                     sb.append("{ ");
-                    for (Object child : node.getChildren()) {
+                    for (Iterator<Object> iterator = node.getChildren().iterator(); iterator.hasNext(); ) {
+                        Object child = iterator.next();
                         reconstructCode(child, sb);
-                        sb.append("; ");
+                        if (iterator.hasNext()) {
+                            sb.append("; ");
+                        } else {
+                            sb.append(" ");
+                        }
                     }
                     sb.append("}");
                     break;

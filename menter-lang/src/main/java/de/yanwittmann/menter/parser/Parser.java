@@ -1027,34 +1027,6 @@ public class Parser {
                 new Object[]{}
         ));
 
-        // find constructor calls
-        this.rules.add(ParserRule.inOrderRule(ParserNode.NodeType.CONSTRUCTOR_CALL, (t) -> null, 0, (t, i) -> !isType(t, TokenType.KEYWORD), (t, i) -> true,
-                (t, i) -> {
-                    if (isType(t, ParserNode.NodeType.FUNCTION_CALL)) {
-                        return ((ParserNode) t).getChildren();
-
-                    } else if (isType(t, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
-                        final ParserNode node = (ParserNode) t;
-                        final Object lastChild = node.getChildren().get(node.getChildren().size() - 1);
-
-                        if (isType(lastChild, ParserNode.NodeType.FUNCTION_CALL)) {
-                            final ParserNode function = (ParserNode) lastChild;
-                            node.removeChild(function);
-                            if (isType(function.getChildren().get(0), ParserNode.NodeType.PARENTHESIS_PAIR)) {
-                                final ParserNode parenthesis = (ParserNode) function.getChildren().get(0);
-                                return Arrays.asList(node, parenthesis);
-                            }
-                        }
-
-                        throw new ParsingException("Expected constructor call to be terminated by a parenthesis pair: " + node.reconstructCode());
-                    } else {
-                        return t;
-                    }
-                },
-                t -> isKeyword(t, "new"),
-                t -> isIdentifier(t) || isType(t, ParserNode.NodeType.FUNCTION_CALL)
-        ));
-
         // listed elements , separated
         rules.add(tokens -> {
             final ParserNode node = new ParserNode(ParserNode.NodeType.LISTED_ELEMENTS);
@@ -1125,6 +1097,34 @@ public class Parser {
 
             return false;
         });
+
+        // find constructor calls
+        this.rules.add(ParserRule.inOrderRule(ParserNode.NodeType.CONSTRUCTOR_CALL, (t) -> null, 0, (t, i) -> !isType(t, TokenType.KEYWORD), (t, i) -> true,
+                (t, i) -> {
+                    if (isType(t, ParserNode.NodeType.FUNCTION_CALL)) {
+                        return ((ParserNode) t).getChildren();
+
+                    } else if (isType(t, ParserNode.NodeType.IDENTIFIER_ACCESSED)) {
+                        final ParserNode node = (ParserNode) t;
+                        final Object lastChild = node.getChildren().get(node.getChildren().size() - 1);
+
+                        if (isType(lastChild, ParserNode.NodeType.FUNCTION_CALL)) {
+                            final ParserNode function = (ParserNode) lastChild;
+                            node.removeChild(function);
+                            if (isType(function.getChildren().get(0), ParserNode.NodeType.PARENTHESIS_PAIR)) {
+                                final ParserNode parenthesis = (ParserNode) function.getChildren().get(0);
+                                return Arrays.asList(node, parenthesis);
+                            }
+                        }
+
+                        throw new ParsingException("Expected constructor call to be terminated by a parenthesis pair: " + node.reconstructCode());
+                    } else {
+                        return t;
+                    }
+                },
+                t -> isKeyword(t, "new"),
+                t -> isIdentifier(t) || isType(t, ParserNode.NodeType.FUNCTION_CALL)
+        ));
 
         final Operator defaultAssignmentOperator = operators.findOperator("=", true, true);
         // assignment

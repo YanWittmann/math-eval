@@ -173,7 +173,7 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "[0]", "foo(x) = x + x; mapper(f, val) = f(val); [mapper(foo, 3)].keys()");
 
         evaluateAndAssertEqual(interpreter, "3", "(x -> x + 1)(2)");
-        evaluateAndAssertEqual(interpreter, "(x) -> { print(x); }", "x -> print(x)");
+        evaluateAndAssertEqual(interpreter, "(x) -> { print(x) }", "x -> print(x)");
 
         evaluateAndAssertEqual(interpreter, "4", "[1, 2].map(x -> x + 3) |> x -> x[0]"); // would not recognize the x[0] as accessed value, as the thisChainIsInvalid flag would never be reset
 
@@ -440,8 +440,10 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "15", "import math inline; {a: 5, b: x -> { for (i in range(1, self.a)) x++; x }}.b(10)");
         evaluateAndAssertEqual(interpreter, "12", "{a: 5, b: x -> if (self.a > 3) x + self.a else x}.b(7)");
 
-        // list of maps
+        // lists are objects too
         evaluateAndAssertEqual(interpreter, "11", "tmp = [{a: 5}, self[0].a + 6]; tmp[1]");
+
+        Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("{a: 5, b: () -> self.a}.b(); self"));
     }
 
     @Test
@@ -451,6 +453,8 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "3", "{c: 3, d: {e: super.c}}.d.e");
         evaluateAndAssertEqual(interpreter, "8", "{a: 5, b: {c: 3, souper: () -> super, d: {e: super.souper().a + super.c}}}.b.d.e");
+
+        Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("{a: 5, b: () -> super.a}.b()"));
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
@@ -470,6 +474,6 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluationStyle = 2;
         // MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "9", "7 |> x -> x + 1 |> x -> x + 1");
+        evaluateAndAssertEqual(interpreter, "20", "Person = (name, age) -> { $name: args.name, $age: args.age, getName: () -> self.name, getAge: () -> self.age }; p = new Person(\"John\", 20); p.getAge()");
     }
 }

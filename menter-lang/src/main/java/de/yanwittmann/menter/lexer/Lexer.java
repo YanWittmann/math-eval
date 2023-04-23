@@ -149,6 +149,10 @@ public class Lexer {
             return false;
         }
 
+        private boolean isIdentifierCharacter(char c) {
+            return Character.isLetterOrDigit(c) || c == '_' || c == '$';
+        }
+
         private void findNext() {
             final StringBuffer buffer = new StringBuffer();
             int state = 0;
@@ -230,11 +234,11 @@ public class Lexer {
                             buffer.append(c);
                             buffer.append(this.stringIterator.next());
                             state = 10;
-                        } else if (Character.isLetter(c)) {
+                        } else if (isIdentifierCharacter(c)) {
                             buffer.append(c);
                             state = 8;
                         } else if (isSingleCharacterToken(c) &&
-                                   (!isOperator("" + c + this.stringIterator.peek()) && !isOperator("" + c + this.stringIterator.peek() + this.stringIterator.peek(1)))) {
+                                   (!isOperator(String.valueOf(c) + this.stringIterator.peek()) && !isOperator(String.valueOf(c) + this.stringIterator.peek() + this.stringIterator.peek(1)))) {
                             buffer.append(c);
                             if (c == '(') {
                                 nextToken = createToken(buffer, TokenType.OPEN_PARENTHESIS);
@@ -258,18 +262,18 @@ public class Lexer {
                                 nextToken = createToken(buffer, TokenType.OPERATOR);
                             }
                             return;
-                        } else if (isOperator("" + c + this.stringIterator.peek() + this.stringIterator.peek(1))) {
+                        } else if (isOperator(String.valueOf(c) + this.stringIterator.peek() + this.stringIterator.peek(1))) {
                             buffer.append(c);
                             buffer.append(this.stringIterator.next());
                             buffer.append(this.stringIterator.next());
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             return;
-                        } else if (isOperator("" + c + this.stringIterator.peek())) {
+                        } else if (isOperator(String.valueOf(c) + this.stringIterator.peek())) {
                             buffer.append(c);
                             buffer.append(this.stringIterator.next());
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             return;
-                        } else if (isOperator("" + c)) {
+                        } else if (isOperator(String.valueOf(c))) {
                             buffer.append(c);
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             return;
@@ -358,7 +362,7 @@ public class Lexer {
                         }
                         break;
                     case 8:
-                        if (Character.isLetterOrDigit(c) || c == '_') {
+                        if (isIdentifierCharacter(c)) {
                             buffer.append(c);
                         } else {
                             if (isKeyword(buffer.toString())) {
@@ -389,11 +393,11 @@ public class Lexer {
                         }
                         break;
                     case 9:
-                        if (isSingleCharacterToken(c) || isOperator("" + c)) {
+                        if (isSingleCharacterToken(c) || isOperator(String.valueOf(c))) {
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             this.stringIterator.stepBack();
                             return;
-                        } else if (isOperator("" + c + this.stringIterator.peek())) {
+                        } else if (isOperator(String.valueOf(c) + this.stringIterator.peek())) {
                             nextToken = createToken(buffer, TokenType.OPERATOR);
                             this.stringIterator.stepBack();
                             return;

@@ -17,8 +17,8 @@ import org.apache.logging.log4j.Logger;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -149,6 +149,8 @@ public abstract class EvaluationContext {
             } else if (node.getType() == ParserNode.NodeType.MAP) {
                 result = new Value(new LinkedHashMap<>());
 
+                final List<Object> keys = new ArrayList<>();
+
                 for (Object child : node.getChildren()) {
                     final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
                     mapElementResolveLocalInformation.putSelf(result);
@@ -171,9 +173,71 @@ public abstract class EvaluationContext {
                         throw mapElementResolveLocalInformation.createException("Invalid map key type: " + keyNode.getClass().getName());
                     }
 
-                    final Value value = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
-                    result.create(new Value(key), value, true);
+                    keys.add(key);
                 }
+
+                final boolean isMapAType = keys.stream()
+                        .anyMatch(key -> key instanceof String && ((String) key).startsWith("$"));
+
+                if (isMapAType) {
+                    for (int i = 0; i < node.getChildren().size(); i++) {
+                        final Object key = keys.get(i);
+
+                        final boolean isConstructorValue;
+                        if (key instanceof String) {
+                            isConstructorValue = ((String) key).startsWith("$");
+                        } else {
+                            isConstructorValue = false;
+                        }
+
+                        if (!isConstructorValue) {
+                            final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                            mapElementResolveLocalInformation.putSelf(result);
+
+                            final ParserNode childNode = (ParserNode) node.getChildren().get(i);
+                            final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                            result.create(new Value(key), evaluated, true);
+
+                        } else {
+                            // $init is a constructor function that is called when the object is created and takes no arguments
+                            // $private one $ means private value
+
+                            final String keyString = (String) key;
+
+                            if (keyString.startsWith("$")) {
+                                final String keyStringWithoutPrefix = keyString.substring(1);
+
+                                final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                                mapElementResolveLocalInformation.putSelf(result);
+
+                                final ParserNode childNode = (ParserNode) node.getChildren().get(i);
+                                final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                                result.create(new Value(keyStringWithoutPrefix), evaluated, true);
+
+                            } else {
+                                final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                                mapElementResolveLocalInformation.putSelf(result);
+
+                                final ParserNode childNode = (ParserNode) node.getChildren().get(i);
+                                final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                                result.create(new Value(key), evaluated, true);
+                            }
+                        }
+                    }
+
+                } else {
+                    for (int i = 0; i < node.getChildren().size(); i++) {
+                        final Object key = keys.get(i);
+
+                        final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                        mapElementResolveLocalInformation.putSelf(result);
+
+                        final ParserNode childNode = (ParserNode) node.getChildren().get(i);
+                        final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                        result.create(new Value(key), evaluated, true);
+                    }
+                }
+
 
             } else if (node.getType() == ParserNode.NodeType.EXPRESSION) {
                 final Object operator = node.getValue();
@@ -386,10 +450,23 @@ public abstract class EvaluationContext {
                 final Value constructorIdentifier = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                 final List<Value> constructorParameters = makeFunctionArguments(node, globalContext, localInformation);
 
-                if (!(constructorIdentifier.getValue() instanceof Class)) {
-                    throw localInformation.createException("Constructor identifier is not a class: " + constructorIdentifier);
+                if (constructorIdentifier.getValue() instanceof Class) {
+                    result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorIdentifier.getValue(), constructorParameters));
+
+                } else if (PrimitiveValueType.isType(constructorIdentifier, PrimitiveValueType.FUNCTION)) {
+                    result = evaluateFunction(constructorIdentifier, constructorParameters, globalContext, localInformation, ParserNode.reconstructCode(node.getChildren().get(0)),
+                            (functionContext, args) -> {
+                                // create "args" Value of type Map with the arguments
+                                final Value argsValue = new Value(new LinkedHashMap<>());
+                                for (Map.Entry<String, Value> nameValue : args.entrySet()) {
+                                    argsValue.create(new Value(nameValue.getKey()), nameValue.getValue(), true);
+                                }
+                                functionContext.putLocalSymbolOnTop("args", argsValue);
+                            });
+
+                } else {
+                    throw localInformation.createException("Constructor call is not a function or a class: " + constructorIdentifier.getValue());
                 }
-                result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorIdentifier.getValue(), constructorParameters));
             }
 
             if (result == null) {
@@ -653,7 +730,7 @@ public abstract class EvaluationContext {
     public Value evaluateFunction(Value functionValue, List<Value> functionParameters,
                                   GlobalContext globalContext, EvaluationContextLocalInformation localInformation,
                                   String originalFunctionName,
-                                  Consumer<EvaluationContextLocalInformation> functionContextTransformer) {
+                                  BiConsumer<EvaluationContextLocalInformation, Map<String, Value>> functionContextTransformer) {
         try {
             localInformation.provideFunctionNameForNextStackTraceElement(originalFunctionName);
 
@@ -679,8 +756,16 @@ public abstract class EvaluationContext {
 
                 final EvaluationContextLocalInformation functionLocalInformation = localInformation.deriveNewFunctionContext();
 
+                final Map<String, Value> argumentValues = new HashMap<>();
+                for (int i = 0; i < functionArgumentNames.size(); i++) {
+                    final String argumentName = functionArgumentNames.get(i);
+                    final Value argumentValue = functionParameters.get(i);
+
+                    argumentValues.put(argumentName, argumentValue);
+                }
+
                 if (functionContextTransformer != null) {
-                    functionContextTransformer.accept(functionLocalInformation);
+                    functionContextTransformer.accept(functionLocalInformation, argumentValues);
                 }
 
                 functionLocalInformation.putLocalSymbol(executableFunction.getParentContext().getVariables());
@@ -690,10 +775,8 @@ public abstract class EvaluationContext {
                     functionLocalInformation.putLocalSymbol(parentClosureLocalSymbols);
                 }
 
-                for (int i = 0; i < functionArgumentNames.size(); i++) {
-                    final String argumentName = functionArgumentNames.get(i);
-                    final Value argumentValue = functionParameters.get(i);
-                    functionLocalInformation.putLocalSymbol(argumentName, argumentValue);
+                for (Map.Entry<String, Value> args : argumentValues.entrySet()) {
+                    functionLocalInformation.putLocalSymbol(args.getKey(), args.getValue());
                 }
 
                 result = evaluate(executableFunction.getBody(), effectiveParentClosureContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
@@ -851,8 +934,8 @@ public abstract class EvaluationContext {
             final boolean isFinalIdentifier = id == identifiers.get(identifiers.size() - 1);
             final Value previousValue = value;
 
-            if (PrimitiveValueType.isType(previousValue, PrimitiveValueType.OBJECT)) {
-                selfMapValue = previousValue;
+            if (PrimitiveValueType.isType(value, PrimitiveValueType.OBJECT)) {
+                selfMapValue = value;
             }
 
             if (value == null) {
@@ -972,7 +1055,7 @@ public abstract class EvaluationContext {
                     try {
                         final Value finalSelfMapValue = selfMapValue;
                         value = evaluateFunction(value, functionParameters, globalContext, localInformation, ParserNode.reconstructCode(identifiers.get(i - 1)),
-                                functionContext -> {
+                                (functionContext, args) -> {
                                     if (finalSelfMapValue != null) {
                                         functionContext.putSelf(finalSelfMapValue);
                                     }

@@ -62,6 +62,7 @@ public class EvaluationContextLocalInformation {
             putLocalSymbolOnTop("super", getLocalSymbol("self"));
         }
         putLocalSymbolOnTop("self", value);
+        putLocalSymbolOnTop("this", value);
     }
 
     public Value getLocalSymbol(String name) {

@@ -227,6 +227,21 @@ class ParserTest {
 
         assertParsedTreeEquals("STATEMENT\n" +
                                "└─ CONSTRUCTOR_CALL\n" +
+                               "   ├─ IDENTIFIER: Type001\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      └─ NUMBER_LITERAL: 3",
+                "new Type001(3)");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONSTRUCTOR_CALL\n" +
+                               "   ├─ IDENTIFIER: Type001\n" +
+                               "   └─ PARENTHESIS_PAIR\n" +
+                               "      ├─ NUMBER_LITERAL: 3\n" +
+                               "      └─ STRING_LITERAL: \"d\"",
+                "new Type001(3, \"d\")");
+
+        assertParsedTreeEquals("STATEMENT\n" +
+                               "└─ CONSTRUCTOR_CALL\n" +
                                "   ├─ IDENTIFIER_ACCESSED\n" +
                                "   │  ├─ IDENTIFIER: test\n" +
                                "   │  └─ IDENTIFIER: Type001\n" +
