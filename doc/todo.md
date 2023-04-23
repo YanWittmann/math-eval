@@ -134,6 +134,12 @@ Error: Illegal access on [other.test]: module does not export symbol
 
 ![testimg](guide/navbar_icon.png)
 
+```
+Person = (name, age) -> { $fields: [name, age], addAge: (n) -> { age += n } }
+Manager = (name, age, departement) -> { $extends: Person(name, age), $fields: [departement] }
+yan = new Manager("Yan", 22, "HR")
+```
+
 ## Bugs:
 
 accessors on maps:

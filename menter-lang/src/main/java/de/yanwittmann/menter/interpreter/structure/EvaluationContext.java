@@ -149,7 +149,7 @@ public abstract class EvaluationContext {
             } else if (node.getType() == ParserNode.NodeType.MAP) {
                 result = new Value(new LinkedHashMap<>());
 
-                final List<Object> keys = new ArrayList<>();
+                final Map<Object, Object> keyValues = new LinkedHashMap<>();
 
                 for (Object child : node.getChildren()) {
                     final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
@@ -173,68 +173,143 @@ public abstract class EvaluationContext {
                         throw mapElementResolveLocalInformation.createException("Invalid map key type: " + keyNode.getClass().getName());
                     }
 
-                    keys.add(key);
+                    keyValues.put(key, childNode.getChildren().get(1));
                 }
 
-                final boolean isMapAType = keys.stream()
-                        .anyMatch(key -> key instanceof String && ((String) key).startsWith("$"));
+                // before
+                for (Map.Entry<Object, Object> keyValue : keyValues.entrySet()) {
+                    final Object key = keyValue.getKey();
+                    final Object value = keyValue.getValue();
 
-                if (isMapAType) {
-                    for (int i = 0; i < node.getChildren().size(); i++) {
-                        final Object key = keys.get(i);
+                    if ("$extends".equals(key)) {
+                        final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                        mapElementResolveLocalInformation.putSelf(result);
 
-                        final boolean isConstructorValue;
-                        if (key instanceof String) {
-                            isConstructorValue = ((String) key).startsWith("$");
-                        } else {
-                            isConstructorValue = false;
+                        if (!(value instanceof ParserNode)) {
+                            throw localInformation.createException("Invalid $extends value, expected a constructor call: " + value.getClass().getName());
                         }
 
-                        if (!isConstructorValue) {
-                            final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
-                            mapElementResolveLocalInformation.putSelf(result);
+                        final ParserNode topLevelNode = (ParserNode) value;
+                        final List<ParserNode> multiExtendsNodes = new ArrayList<>();
 
-                            final ParserNode childNode = (ParserNode) node.getChildren().get(i);
-                            final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
-                            result.create(new Value(key), evaluated, true);
+                        if (ParserNode.NodeType.ARRAY == topLevelNode.getType()) {
+                            // get all child nodes and add them to the multiExtendsNodes list
+                            for (Object child : topLevelNode.getChildren()) {
+                                if (child instanceof ParserNode) {
+                                    multiExtendsNodes.add((ParserNode) child);
+                                } else {
+                                    throw localInformation.createException("Invalid $extends value, expected an array of constructor calls: " + child.getClass().getName());
+                                }
+                            }
+
+                        } else if (ParserNode.NodeType.FUNCTION_CALL == topLevelNode.getType()) {
+                            multiExtendsNodes.add(topLevelNode);
 
                         } else {
-                            // $init is a constructor function that is called when the object is created and takes no arguments
-                            // $private one $ means private value
+                            throw localInformation.createException("Invalid $extends value, expected constructor call or an array of constructor calls: " + topLevelNode.getType());
+                        }
 
-                            final String keyString = (String) key;
+                        for (ParserNode extendsNode : multiExtendsNodes) {
+                            final ParserNode constructorCallNode = new ParserNode(ParserNode.NodeType.CONSTRUCTOR_CALL, null, extendsNode.getChildren());
+                            final Value extendsObject = evaluate(constructorCallNode, globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                            if (!PrimitiveValueType.isType(extendsObject, PrimitiveValueType.OBJECT)) {
+                                throw localInformation.createException("Invalid $extends value, expected an object: " + extendsObject.getType());
+                            }
 
-                            if (keyString.startsWith("$")) {
-                                final String keyStringWithoutPrefix = keyString.substring(1);
-
-                                final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
-                                mapElementResolveLocalInformation.putSelf(result);
-
-                                final ParserNode childNode = (ParserNode) node.getChildren().get(i);
-                                final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
-                                result.create(new Value(keyStringWithoutPrefix), evaluated, true);
-
-                            } else {
-                                final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
-                                mapElementResolveLocalInformation.putSelf(result);
-
-                                final ParserNode childNode = (ParserNode) node.getChildren().get(i);
-                                final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
-                                result.create(new Value(key), evaluated, true);
+                            for (Map.Entry<Object, Value> extendsEntry : extendsObject.getMap().entrySet()) {
+                                result.create(new Value(extendsEntry.getKey()), extendsEntry.getValue(), true);
                             }
                         }
+
+                    } else if ("$fields".equals(key)) {
+                        final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                        mapElementResolveLocalInformation.putSelf(result);
+
+                        if (!(value instanceof ParserNode)) {
+                            throw localInformation.createException("Invalid $fields value, expected a list of attributes: " + value.getClass().getName());
+                        }
+
+                        final ParserNode listOfFieldsNode = (ParserNode) value;
+                        if (!(listOfFieldsNode.getType().equals(ParserNode.NodeType.ARRAY))) {
+                            throw localInformation.createException("Invalid $fields value, expected a list of attributes: " + listOfFieldsNode.getType());
+                        }
+
+                        final List<String> fieldsNames = new ArrayList<>();
+                        for (Object child : listOfFieldsNode.getChildren()) {
+                            if (!(child instanceof Token)) {
+                                throw localInformation.createException("Invalid $fields value, token is not an identifier: " + child);
+                            }
+
+                            final Token fieldToken = (Token) child;
+                            if (!fieldToken.getType().equals(TokenType.IDENTIFIER)) {
+                                throw localInformation.createException("Invalid fields value, token is not an identifier: " + fieldToken.getType());
+                            }
+
+                            fieldsNames.add(fieldToken.getValue());
+                        }
+
+                        final Value args = localInformation.getLocalSymbol("args");
+                        for (String fieldName : fieldsNames) {
+                            final Value argsValue = args.access(new Value(fieldName));
+                            if (argsValue == null) {
+                                throw localInformation.createException("Invalid $fields value, field not found in args: " + fieldName);
+                            }
+
+                            result.create(new Value(fieldName), argsValue, true);
+                        }
+                    }
+                }
+
+                // middle
+                for (Map.Entry<Object, Object> keyValue : keyValues.entrySet()) {
+                    final Object key = keyValue.getKey();
+                    final Object value = keyValue.getValue();
+
+                    final boolean isConstructorValue;
+                    if (key instanceof String) {
+                        isConstructorValue = ((String) key).startsWith("$");
+                    } else {
+                        isConstructorValue = false;
                     }
 
-                } else {
-                    for (int i = 0; i < node.getChildren().size(); i++) {
-                        final Object key = keys.get(i);
+                    if (isConstructorValue) {
+                        if ("$init".equals(key) || "$extends".equals(key)) {
+                            continue;
+                        }
+
+                        // currently no different to without $, but maybe in the future (with private fields?)
+                        final String keyString = (String) key;
+                        final String keyStringWithoutPrefix = keyString.substring(1);
 
                         final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
                         mapElementResolveLocalInformation.putSelf(result);
 
-                        final ParserNode childNode = (ParserNode) node.getChildren().get(i);
-                        final Value evaluated = evaluate(childNode.getChildren().get(1), globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                        final Value evaluated = evaluate(value, globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                        result.create(new Value(keyStringWithoutPrefix), evaluated, true);
+
+                    } else {
+                        final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                        mapElementResolveLocalInformation.putSelf(result);
+
+                        final Value evaluated = evaluate(value, globalContext, symbolCreationMode, mapElementResolveLocalInformation);
                         result.create(new Value(key), evaluated, true);
+                    }
+                }
+
+                // after
+                for (Map.Entry<Object, Object> keyValue : keyValues.entrySet()) {
+                    final Object key = keyValue.getKey();
+                    final Object value = keyValue.getValue();
+
+                    if ("$init".equals(key)) {
+                        // $init is a constructor function: must be called last and takes no arguments
+
+                        final EvaluationContextLocalInformation mapElementResolveLocalInformation = localInformation.deriveNewContext();
+                        mapElementResolveLocalInformation.putSelf(result);
+
+                        final Value initFunction = evaluate(value, globalContext, symbolCreationMode, mapElementResolveLocalInformation);
+                        evaluateFunction("$init", initFunction, globalContext, mapElementResolveLocalInformation);
+
                     }
                 }
 

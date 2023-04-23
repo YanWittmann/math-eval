@@ -67,7 +67,7 @@ class MenterInterpreterTest {
         Assertions.assertThrows(ParsingException.class, () -> interpreter.evaluate("a.a(a, b) {}")); // function declaration via object.child() { ... } is not supported
 
         evaluateAndAssertEqual(interpreter, "{2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}", "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})\n" +
-                                                 "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
+                                                                                    "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
     }
 
     @Test
@@ -457,6 +457,35 @@ class MenterInterpreterTest {
         Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("{a: 5, b: () -> super.a}.b()"));
     }
 
+    @Test
+    public void menterTypeTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "21", "Person = (name, age) -> { $init: () -> { self.age++ }, $name: args.name, $age: args.age, getName: () -> self.name, getAge: () -> self.age }; p = new Person(\"John\", 20); p.getAge()");
+        Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("Person = (age) -> { getAge: () -> args.name }; p = new Person(\"John\", 20); p.getAge()"));
+
+        evaluateAndAssertEqual(interpreter, "HR", "Person = (name, age) -> { $init: () -> { self.age++ }, name: args.name, age: args.age }\n" +
+                                                  "Manager = (name, age, departement) -> { $extends: Person(args.name, args.age), departement: args.departement }\n" +
+                                                  "p = new Manager(\"John\", 20, \"HR\")\n" +
+                                                  "p.departement");
+        // multi-extends
+        evaluateAndAssertEqual(interpreter, "[HR, 1000]", "Person = (name, age) -> { $init: () -> { self.age++ }, $name: args.name, $age: args.age }\n" +
+                                                          "Billable = (billingAmount) -> { billingAmount: billingAmount }\n" +
+                                                          "Manager = (name, age, departement) -> { $extends: [Person(args.name, args.age), Billable(1000)], $departement: args.departement }\n" +
+                                                          "p = new Manager(\"John\", 20, \"HR\")\n" +
+                                                          "[p.departement, p.billingAmount]");
+
+        // fields
+        evaluateAndAssertEqual(interpreter, "John", "Person = (name, age) -> { $fields: [name, age] }\n" +
+                                                    "p = new Person(\"John\", 20)\n" +
+                                                    "p.name");
+        evaluateAndAssertEqual(interpreter, "[HR, 22]", "Person = (name, age) -> { $init: () -> self.age++, $fields: [name, age] }\n" +
+                                                        "Manager = (name, age, departement) -> { $extends: Person(name, age + 1), $fields: [departement] }\n" +
+                                                        "p = new Manager(\"John\", 20, \"HR\")\n" +
+                                                        "[p.departement, p.age]");
+    }
+
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
         Assertions.assertEquals(expected, interpreter.evaluate(expression).toDisplayString());
     }
@@ -474,6 +503,9 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluationStyle = 2;
         // MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "20", "Person = (name, age) -> { $name: args.name, $age: args.age, getName: () -> self.name, getAge: () -> self.age }; p = new Person(\"John\", 20); p.getAge()");
+        evaluateAndAssertEqual(interpreter, "[HR, 22]", "Person = (name, age) -> { $init: () -> self.age++, $fields: [name, age] }\n" +
+                                                  "Manager = (name, age, departement) -> { $extends: Person(name, age + 1), $fields: [departement] }\n" +
+                                                  "p = new Manager(\"John\", 20, \"HR\")\n" +
+                                                  "[p.departement, p.age]");
     }
 }
