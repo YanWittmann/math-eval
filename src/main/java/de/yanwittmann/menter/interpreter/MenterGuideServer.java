@@ -24,7 +24,7 @@ public class MenterGuideServer {
 
     private static final Logger LOG = LogManager.getLogger(MenterGuideServer.class);
 
-    private final static String REMOTE_GUIDE_BASE_DIR_URL = "https://yanwittmann.de/projects/menter/guide";
+    private final static String REMOTE_GUIDE_BASE_DIR_URL = "https://yanwittmann.github.io/menter-lang-docs/";
     private final static String REMOTE_GUIDE_INTRODUCTION_URL = REMOTE_GUIDE_BASE_DIR_URL + "/introduction.html";
 
     private final Map<String, File> mirroredGuideDocFiles = new LinkedHashMap<>();
@@ -192,7 +192,7 @@ public class MenterGuideServer {
         createDirOrThrow(docsDir);
         System.out.println("Mirroring documentation into " + docsDir.getAbsolutePath());
 
-        final JSONArray docsIndex = new JSONArray(String.join("", getRemoteFileContent(REMOTE_GUIDE_BASE_DIR_URL + "/index.json")));
+        final JSONArray docsIndex = new JSONArray(String.join("", getRemoteFileContent(REMOTE_GUIDE_BASE_DIR_URL + "/chapters.json")));
 
         for (int i = 0; i < docsIndex.length(); i++) {
             final JSONObject doc = docsIndex.getJSONObject(i);
