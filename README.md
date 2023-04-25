@@ -1,22 +1,17 @@
 # Menter
 
-![Menter Thumbnail](doc/guide/img/navbar_icon.png)
+<img alt="Menter Thumbnail" src="doc/menter_logo.webp" width="300"/>
 
-An interpreted language for evaluating expressions with functions and variables originally written for the
-[LaunchAnything Bar](https://github.com/YanWittmann/launch-anything). This is the third iteration of the evaluator.
+A functional programming language written in Java.  
+It is highly recommended to check out
+the [main page and documentation](https://yanwittmann.github.io/menter-lang-docs/) to get started with Menter.
 
-**This is very much a work in progress.**
-
-See a preview of the documentation [here](https://yanwittmann.de/projects/menter/guide/introduction.html).
+This project has originally been written for the [LaunchAnything Bar](https://github.com/YanWittmann/launch-anything).
 
 # Build
 
 Run these commands in the root directory of the project using mavens `mvn` command:
 
 ```bash
-mvn clean install
-cd doc
 mvn clean package
 ```
-
-![Menter Thumbnail](doc/guide/img/navbar_icon_original.png)
