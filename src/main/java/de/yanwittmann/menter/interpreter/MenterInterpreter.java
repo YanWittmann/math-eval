@@ -151,6 +151,7 @@ public class MenterInterpreter extends EvalRuntime {
         if (isHelp) {
             MenterDebugger.printer.println("Menter Interpreter");
             MenterDebugger.printer.println("  [-f, --file] <file> ... - load Menter source files");
+            MenterDebugger.printer.println("  [-mp, --module-path] <file> - add module path from which imports will be resolved");
             MenterDebugger.printer.println("  [-e, --eval] <code> - evaluate Menter code");
             MenterDebugger.printer.println("  [-repl, --repl, repl] - start REPL");
             MenterDebugger.printer.println("  [-gs, --guide-server, guide-server] <unsafe, us> <port> - start guide server (unsafe mode, port)");

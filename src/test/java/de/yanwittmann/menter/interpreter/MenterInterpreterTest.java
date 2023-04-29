@@ -486,6 +486,54 @@ class MenterInterpreterTest {
                                                         "[p.departement, p.age]");
     }
 
+    @Test
+    public void regexTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "true", "\"test\".matches(r/.+/)");
+        evaluateAndAssertEqual(interpreter, "true", "\"teSt\".matches(r/[tes]+/i)");
+        evaluateAndAssertEqual(interpreter, "false", "\"teSt\".matches(r/[tes]+/)");
+
+        evaluateAndAssertEqual(interpreter, "hello t fre t", "\"hello 1.3 fre 23.43\".replace(r/\\d+\\.\\d+/, \"t\")");
+        evaluateAndAssertEqual(interpreter, "hello i-1-i fre i-23-i", "\"hello 1.3 fre 23.43\".replace(r/(\\d+)\\.\\d+/, \"i-$1-i\")");
+
+        evaluateAndAssertEqual(interpreter, "hello t fre t", "\"hello 1.3 fre 23.43\".replaceAll(\"\\\\d+\\\\.\\\\d+\", \"t\")");
+        evaluateAndAssertEqual(interpreter, "hello i-1-i fre i-23-i", "\"hello 1.3 fre 23.43\".replaceAll(\"(\\\\d+)\\\\.\\\\d+\", \"i-$1-i\")");
+    }
+
+    @Test
+    public void otherStringMethodsTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "true", "\"test\".startsWith(\"t\")");
+        evaluateAndAssertEqual(interpreter, "true", "\"test!\".endsWith(\"!\")");
+        evaluateAndAssertEqual(interpreter, "true", "\"test\".contains(\"es\")");
+
+        evaluateAndAssertEqual(interpreter, "[1, 2, 3, 4]", "\"1, 2, 3, 4\".split(\", \")");
+        evaluateAndAssertEqual(interpreter, "[2, 3, 4, 5]", "import math;\"1, 2, 3, 4\".split(\", \").map(math.toNumber) + 1");
+        evaluateAndAssertEqual(interpreter, "[1, 2, 3, 4]", "\"1,2, 3,4\".split(r/, ?/)");
+        evaluateAndAssertEqual(interpreter, "[11, 21, 31, 41]", "\"1,2, 3,4\".split(r/, ?/) + 1");
+
+        evaluateAndAssertEqual(interpreter, "true", "\"test\".equals(\"test\")");
+        evaluateAndAssertEqual(interpreter, "false", "\"test\".equals(\"test!\")");
+
+        evaluateAndAssertEqual(interpreter, "true", "\"test\".equalsIgnoreCase(\"TEST\")");
+        evaluateAndAssertEqual(interpreter, "false", "\"test\".equalsIgnoreCase(\"TEST!\")");
+
+        evaluateAndAssertEqual(interpreter, "TEST", "\"test\".toUpperCase()");
+        evaluateAndAssertEqual(interpreter, "test", "\"TEST\".toLowerCase()");
+
+        evaluateAndAssertEqual(interpreter, "test", "\"test\".trim()");
+        evaluateAndAssertEqual(interpreter, "test", "\" test \".trim()");
+        evaluateAndAssertEqual(interpreter, "test", "\"  test  \".trim()");
+        evaluateAndAssertEqual(interpreter, "test", "\"-test-\".trim(\"-\")");
+        evaluateAndAssertEqual(interpreter, "test", "\"--test--\".trim(\"-\")");
+        evaluateAndAssertEqual(interpreter, " test test ", "\"0 test test 0\".trim(\" \").trim(\"0\")");
+        evaluateAndAssertEqual(interpreter, "test test", "\"0 test test 0\".trim(\"0\").trim(\" \")");
+    }
+
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
         Assertions.assertEquals(expected, interpreter.evaluate(expression).toDisplayString());
     }
@@ -503,9 +551,6 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterEvaluationStyle = 2;
         // MenterDebugger.logInterpreterResolveSymbols = true;
 
-        evaluateAndAssertEqual(interpreter, "[HR, 22]", "Person = (name, age) -> { $init: () -> self.age++, $fields: [name, age] }\n" +
-                                                  "Manager = (name, age, departement) -> { $extends: Person(name, age + 1), $fields: [departement] }\n" +
-                                                  "p = new Manager(\"John\", 20, \"HR\")\n" +
-                                                  "[p.departement, p.age]");
+        evaluateAndAssertEqual(interpreter, "hello i-1-i fre i-23-i", "\"hello 1.3 fre 23.43\".replace(r/(\\d+)\\.\\d+/, \"i-$1-i\")");
     }
 }

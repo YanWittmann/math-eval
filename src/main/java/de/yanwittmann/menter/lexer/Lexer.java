@@ -178,7 +178,10 @@ public class Lexer {
                             unicode[i] = this.stringIterator.next();
                         }
                         buffer.append((char) Integer.parseInt(new String(unicode), 16));
+                    } else if (state != 10) { // 10 = regex
+                        buffer.append(next);
                     } else {
+                        buffer.append('\\');
                         buffer.append(next);
                     }
                     continue;

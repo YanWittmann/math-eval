@@ -7,6 +7,7 @@ import de.yanwittmann.menter.lexer.Token;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -206,6 +207,12 @@ public class Value implements Comparable<Value> {
             setValue(((Token) value).getValue());
         } else if (value instanceof BigDecimal) {
             this.value = ((BigDecimal) value).stripTrailingZeros();
+        } else if (value != null && value.getClass().isArray()) { /* checks for array, converts to list */
+            final List<Object> list = new ArrayList<>();
+            for (int i = 0; i < Array.getLength(value); i++) {
+                list.add(Array.get(value, i));
+            }
+            setValue(list);
         } else {
             this.value = value;
         }
@@ -500,6 +507,12 @@ public class Value implements Comparable<Value> {
 
                     put("push", (context, self, values, localInformation) -> {
                         // either one or two arguments, if only one argument is given, the key is the size of the map
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.ANY.getType()},
+                                {PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "push", values, parameterCombinations);
+
                         if (values.size() == 1) {
                             final BigDecimal max = findHighestNumericKey((Map<Object, Value>) self.getValue());
                             ((Map<Object, Value>) self.getValue()).put(max.add(BigDecimal.ONE), values.get(0));
@@ -523,6 +536,12 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("map", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.FUNCTION.getType()},
+                                {PrimitiveValueType.FUNCTION.getType(), PrimitiveValueType.FUNCTION.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "map", values, parameterCombinations);
+
                         final Map<Object, Value> map = new LinkedHashMap<>();
 
                         if (values.get(0).getValue() instanceof MenterNodeFunction && ((MenterNodeFunction) values.get(0).getValue()).getArgumentNames().size() == 2) {
@@ -538,6 +557,9 @@ public class Value implements Comparable<Value> {
                         return new Value(map);
                     });
                     put("mapKeys", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "mapKeys", values, parameterCombinations);
+
                         final Map<Object, Value> map = new LinkedHashMap<>();
                         for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                             map.put(applyFunction(toList(entry.getKey()), values.get(0), context, localInformation, "mapKeys").getValue(), entry.getValue());
@@ -546,6 +568,9 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("filter", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "filter", values, parameterCombinations);
+
                         if (isMapAnArray((self.getMap()))) {
                             final List<Value> mapped = new ArrayList<>();
                             for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
@@ -566,6 +591,9 @@ public class Value implements Comparable<Value> {
                         }
                     });
                     put("filterKeys", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "filterKeys", values, parameterCombinations);
+
                         final Map<Object, Value> map = new LinkedHashMap<>();
                         for (Entry<Object, Value> entry : (self.getMap()).entrySet()) {
                             if (applyFunction(toList(entry.getKey()), values.get(0), context, localInformation, "filterKeys").isTrue()) {
@@ -597,6 +625,9 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("sort", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "sort", values, parameterCombinations);
+
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
 
                         if (isMapAnArray((self.getMap()))) {
@@ -611,6 +642,9 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("sortKey", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "sortKey", values, parameterCombinations);
+
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
 
                         if (isMapAnArray((self.getMap()))) {
@@ -625,6 +659,13 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("join", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.STRING.getType()},
+                                {PrimitiveValueType.STRING.getType(), PrimitiveValueType.STRING.getType()},
+                                {PrimitiveValueType.STRING.getType(), PrimitiveValueType.STRING.getType(), PrimitiveValueType.STRING.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "join", values, parameterCombinations);
+
                         final String separator = values.size() > 0 ? values.get(0).toDisplayString() : "";
                         final String prefix = values.size() > 1 ? values.get(1).toDisplayString() : "";
                         final String suffix = values.size() > 2 ? values.get(2).toDisplayString() : "";
@@ -673,6 +714,12 @@ public class Value implements Comparable<Value> {
                     put("cross", (context, self, values, localInformation) -> {
                         // generate all combinations of the two maps (self, parameter)
                         // might apply the filter function in the second parameter
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.OBJECT.getType()},
+                                {PrimitiveValueType.OBJECT.getType(), PrimitiveValueType.FUNCTION.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "cross", values, parameterCombinations);
+
                         final List<Value> result = new ArrayList<>();
                         final Value filter = values.size() > 1 ? values.get(1) : null;
 
@@ -681,8 +728,8 @@ public class Value implements Comparable<Value> {
                                 if (filter == null || context.evaluateFunction("filter", filter, context, localInformation, next1.getValue(), next2.getValue()).isTrue()) {
                                     final Map<Object, Value> map = new LinkedHashMap<>();
                                     if (!(next1.getValue().getValue() instanceof Map) && !(next2.getValue().getValue() instanceof Map)) {
-                                        map.put(0, next1.getValue());
-                                        map.put(1, next2.getValue());
+                                        map.put(BigDecimal.ZERO, next1.getValue());
+                                        map.put(BigDecimal.ONE, next2.getValue());
                                     } else if (!(next1.getValue().getValue() instanceof Map)) {
                                         map.putAll(next2.getValue().getMap());
                                         BigDecimal max = findHighestNumericKey(map);
@@ -717,6 +764,9 @@ public class Value implements Comparable<Value> {
 
                     put("rename", (context, self, values, localInformation) -> {
                         // modifies the source map by renaming the key (first parameter) to the second parameter
+                        final String[][] parameterCombinations = {{PrimitiveValueType.ANY.getType(), PrimitiveValueType.ANY.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "rename", values, parameterCombinations);
+
                         final Map<Object, Value> map = self.getMap();
                         final Object key = values.get(0).getValue();
                         final Object newKey = values.get(1).getValue();
@@ -732,6 +782,12 @@ public class Value implements Comparable<Value> {
                     put("removeKey", (context, self, values, localInformation) -> {
                         // first parameter might be a value, might also be a function
                         // apply modifications directly to the source map
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.ANY.getType()},
+                                {PrimitiveValueType.FUNCTION.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "removeKey", values, parameterCombinations);
+
                         final Value value = values.get(0);
                         if (value.isFunction()) {
                             final Map<Object, Value> map = self.getMap();
@@ -753,6 +809,12 @@ public class Value implements Comparable<Value> {
                     put("retainKey", (context, self, values, localInformation) -> {
                         // first parameter might be a value, might also be a function
                         // apply modifications directly to the source map
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.ANY.getType()},
+                                {PrimitiveValueType.FUNCTION.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "retainKey", values, parameterCombinations);
+
                         final Value value = values.get(0);
                         if (value.isFunction()) {
                             final Map<Object, Value> map = self.getMap();
@@ -784,7 +846,189 @@ public class Value implements Comparable<Value> {
             put(PrimitiveValueType.STRING.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("size", (context, self, values, localInformation) -> new Value(self.size()));
-                    put("charAt", (context, self, values, localInformation) -> new Value(((String) self.getValue()).charAt(values.get(0).getNumericValue().intValue())));
+                    put("charAt", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.NUMBER.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "charAt", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).charAt(values.get(0).getNumericValue().intValue()));
+                    });
+                    put("indexOf", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "indexOf", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).indexOf(values.get(0).toDisplayString()));
+                    });
+
+                    put("contains", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "contains", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).contains(values.get(0).toDisplayString()));
+                    });
+                    put("endsWith", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "endsWith", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).endsWith(values.get(0).toDisplayString()));
+                    });
+                    put("startsWith", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "startsWith", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).startsWith(values.get(0).toDisplayString()));
+                    });
+
+                    put("isEmpty", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "isEmpty", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).isEmpty());
+                    });
+                    put("hasText", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "isEmpty", values, parameterCombinations);
+
+                        return new Value(!"".equals(self.getValue()));
+                    });
+                    put("lastIndexOf", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "lastIndexOf", values, parameterCombinations);
+
+                        return new Value(((String) self.getValue()).lastIndexOf(values.get(0).toDisplayString()));
+                    });
+                    put("matches", (context, self, values, localInformation) -> {
+                        final Value regex = values.get(0);
+                        if (PrimitiveValueType.isType(regex, PrimitiveValueType.REGEX)) {
+                            final Pattern pattern = (Pattern) regex.getValue();
+                            final boolean matches = pattern.matcher((String) self.getValue()).matches();
+                            return new Value(matches);
+                        } else {
+                            return new Value(((String) self.getValue()).matches(regex.toDisplayString()));
+                        }
+                    });
+                    put("replace", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.STRING.getType(), PrimitiveValueType.STRING.getType()},
+                                {PrimitiveValueType.REGEX.getType(), PrimitiveValueType.STRING.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "replace", values, parameterCombinations);
+
+                        final Value regex = values.get(0);
+                        if (PrimitiveValueType.isType(regex, PrimitiveValueType.REGEX)) {
+                            final Pattern pattern = (Pattern) regex.getValue();
+                            final String replacement = values.get(1).toDisplayString();
+                            final String replaced = pattern.matcher((String) self.getValue()).replaceAll(replacement);
+                            return new Value(replaced);
+                        } else {
+                            final String replaced = ((String) self.getValue()).replace(regex.toDisplayString(), values.get(1).toDisplayString());
+                            return new Value(replaced);
+                        }
+                    });
+                    put("replaceAll", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.STRING.getType(), PrimitiveValueType.STRING.getType()},
+                                {PrimitiveValueType.REGEX.getType(), PrimitiveValueType.STRING.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "replace", values, parameterCombinations);
+
+                        final Value regex = values.get(0);
+                        if (PrimitiveValueType.isType(regex, PrimitiveValueType.REGEX)) {
+                            final Pattern pattern = (Pattern) regex.getValue();
+                            final String replacement = values.get(1).toDisplayString();
+                            final String replaced = pattern.matcher((String) self.getValue()).replaceAll(replacement);
+                            return new Value(replaced);
+                        } else {
+                            final String replaced = ((String) self.getValue()).replaceAll(regex.toDisplayString(), values.get(1).toDisplayString());
+                            return new Value(replaced);
+                        }
+                    });
+                    put("replaceFirst", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.STRING.getType(), PrimitiveValueType.STRING.getType()},
+                                {PrimitiveValueType.REGEX.getType(), PrimitiveValueType.STRING.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "replace", values, parameterCombinations);
+
+                        final Value regex = values.get(0);
+                        if (PrimitiveValueType.isType(regex, PrimitiveValueType.REGEX)) {
+                            final Pattern pattern = (Pattern) regex.getValue();
+                            final String replacement = values.get(1).toDisplayString();
+                            final String replaced = pattern.matcher((String) self.getValue()).replaceFirst(replacement);
+                            return new Value(replaced);
+                        } else {
+                            final String replaced = ((String) self.getValue()).replaceFirst(regex.toDisplayString(), values.get(1).toDisplayString());
+                            return new Value(replaced);
+                        }
+                    });
+
+                    put("split", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.STRING.getType()},
+                                {PrimitiveValueType.REGEX.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "split", values, parameterCombinations);
+
+                        final Value regex = values.get(0);
+                        if (PrimitiveValueType.isType(regex, PrimitiveValueType.REGEX)) {
+                            final Pattern pattern = (Pattern) regex.getValue();
+                            final String[] split = pattern.split((String) self.getValue());
+                            return new Value(split);
+                        } else {
+                            final String[] split = ((String) self.getValue()).split(regex.toDisplayString());
+                            return new Value(split);
+                        }
+                    });
+
+                    put("substring", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.NUMBER.getType()},
+                                {PrimitiveValueType.NUMBER.getType(), PrimitiveValueType.NUMBER.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "substring", values, parameterCombinations);
+
+                        if (values.size() == 1) {
+                            return new Value(((String) self.getValue()).substring(values.get(0).getNumericValue().intValue()));
+                        } else {
+                            return new Value(((String) self.getValue()).substring(values.get(0).getNumericValue().intValue(), values.get(1).getNumericValue().intValue()));
+                        }
+                    });
+                    put("toLowerCase", (context, self, values, localInformation) -> new Value(((String) self.getValue()).toLowerCase()));
+                    put("toUpperCase", (context, self, values, localInformation) -> new Value(((String) self.getValue()).toUpperCase()));
+                    put("trim", (context, self, values, localInformation) -> { // either 0 parameters or 1 parameter of type string
+                        final String[][] parameterCombinations = {{}, {PrimitiveValueType.STRING.getType()}};
+                        final int combination = CustomType.checkParameterCombination(values, parameterCombinations);
+                        if (combination == 0) {
+                            return new Value(((String) self.getValue()).trim());
+                        } else if (combination == 1) {
+                            final String trimString = values.get(0).toDisplayString();
+                            return new Value(((String) self.getValue()).replaceAll("^" + trimString + "+|" + trimString + "+$", ""));
+                        } else {
+                            throw CustomType.invalidParameterCombinationException(PrimitiveValueType.STRING.getType(), "trim", values, parameterCombinations);
+                        }
+                    });
+
+                    put("equals", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.ANY.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "equals", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.STRING)) {
+                            return new Value(self.getValue().equals(other.getValue()));
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                    put("equalsIgnoreCase", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.ANY.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.STRING.getType(), "equalsIgnoreCase", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.STRING)) {
+                            return new Value(((String) self.getValue()).equalsIgnoreCase((String) other.getValue()));
+                        } else {
+                            return new Value(false);
+                        }
+                    });
                 }
             });
             put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MenterValueFunction>() {
@@ -824,6 +1068,12 @@ public class Value implements Comparable<Value> {
     }
 
     private static Value fold(GlobalContext context, Value self, List<Value> values, EvaluationContextLocalInformation localInformation, boolean left) {
+        final String[][] parameterCombinations = {
+                {PrimitiveValueType.FUNCTION.getType()},
+                {PrimitiveValueType.ANY.getType(), PrimitiveValueType.FUNCTION.getType()}
+        };
+        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "fold", values, parameterCombinations);
+
         final List<Value> list = new ArrayList<>((self.getMap()).values());
         if (list.isEmpty()) {
             return Value.empty();

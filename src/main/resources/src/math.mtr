@@ -20,6 +20,10 @@ native root()
 native log()
 native ln()
 
+native toNum()
+native toNumber()
+native toStr()
+
 PI = 3.1415926535897932384626433832795028841971
 E  = 2.71828182845904523536028747135266249775724709369995
 
@@ -28,5 +32,6 @@ export [
         sin, cos, tan, asin, acos, atan,
         random, round, floor, ceil, abs,
         sqrt, root, log, ln,
-        PI, E
+        PI, E,
+        toNum, toNumber, toStr
         ] as math

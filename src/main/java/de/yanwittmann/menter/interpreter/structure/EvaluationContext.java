@@ -565,7 +565,14 @@ public abstract class EvaluationContext {
             } else if (node.getType() == TokenType.STRING_LITERAL) {
                 result = new Value(node.getValue().substring(1, node.getValue().length() - 1));
             } else if (node.getType() == TokenType.REGEX_LITERAL) {
-                result = new Value(Pattern.compile(node.getValue()));
+                final String regexString = node.getValue(); // e.g. r/.+/i split into ".+", "i"
+                final String patternAndFlags = regexString.substring(2);
+                final int lastSlashIndex = patternAndFlags.lastIndexOf('/');
+                final String pattern = patternAndFlags.substring(0, lastSlashIndex);
+                final String flags = patternAndFlags.substring(lastSlashIndex + 1);
+                final int flagsInt = parseRegexFlags(flags);
+
+                result = new Value(Pattern.compile(pattern, flagsInt));
 
             } else if (Parser.isKeyword(node, "null") || Parser.isType(node, TokenType.PASS) ||
                        Parser.isType(node, TokenType.BREAK) || Parser.isType(node, TokenType.CONTINUE)) {
@@ -586,6 +593,32 @@ public abstract class EvaluationContext {
             localInformation.popStackFrame();
         }
 
+        return result;
+    }
+
+    private int parseRegexFlags(String flags) {
+        int result = 0;
+        for (char flag : flags.toCharArray()) {
+            switch (flag) {
+                case 'i':
+                    result |= Pattern.CASE_INSENSITIVE;
+                    break;
+                case 'm':
+                    result |= Pattern.MULTILINE;
+                    break;
+                case 's':
+                    result |= Pattern.DOTALL;
+                    break;
+                case 'u':
+                    result |= Pattern.UNICODE_CASE;
+                    break;
+                case 'x':
+                    result |= Pattern.COMMENTS;
+                    break;
+                default:
+                    throw new RuntimeException("Unknown regex flag: " + flag);
+            }
+        }
         return result;
     }
 

@@ -36,6 +36,28 @@ public abstract class CoreModuleMath {
         EvaluationContext.registerNativeFunction("math.mtr", "root", CoreModuleMath::root);
         EvaluationContext.registerNativeFunction("math.mtr", "log", CoreModuleMath::log);
         EvaluationContext.registerNativeFunction("math.mtr", "ln", CoreModuleMath::ln);
+
+        EvaluationContext.registerNativeFunction("math.mtr", "toNum", CoreModuleMath::toNumber);
+        EvaluationContext.registerNativeFunction("math.mtr", "toNumber", CoreModuleMath::toNumber);
+        EvaluationContext.registerNativeFunction("math.mtr", "toStr", CoreModuleMath::stringVersion);
+    }
+
+    private static Value toNumber(List<Value> arguments) {
+        final BigDecimal numericValue = arguments.get(0).getNumericValue();
+        if (numericValue != null) {
+            return new Value(numericValue);
+        }
+
+        final String stringValue = arguments.get(0).toDisplayString();
+        try {
+            return new Value(new BigDecimal(stringValue));
+        } catch (NumberFormatException ignored) {
+            throw new MenterExecutionException("toNum() expects a type that can be parsed to a number");
+        }
+    }
+
+    private static Value stringVersion(List<Value> arguments) {
+        return new Value(arguments.get(0).toDisplayString());
     }
 
     public static Value range(List<Value> arguments) {
@@ -290,7 +312,4 @@ public abstract class CoreModuleMath {
         }
         return result.multiply(TWO);
     }
-
-
-
 }

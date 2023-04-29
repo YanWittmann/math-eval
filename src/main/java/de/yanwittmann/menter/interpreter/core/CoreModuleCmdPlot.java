@@ -26,6 +26,10 @@ public class CoreModuleCmdPlot {
             throw new MenterExecutionException("The plot function requires at least two arguments: [width] [height] [xRange] [yRange...] [function...]");
         }
 
+        final boolean isFirstArgInterpolateFlag = PrimitiveValueType.isType(arguments.get(0), PrimitiveValueType.BOOLEAN.getType());
+        final boolean shouldInterpolate = !isFirstArgInterpolateFlag || arguments.get(0).isTrue();
+        if (isFirstArgInterpolateFlag) arguments.remove(0);
+
         final boolean hasSpecifiedPlotSize = PrimitiveValueType.isType(arguments.get(0), PrimitiveValueType.NUMBER.getType()) &&
                                              PrimitiveValueType.isType(arguments.get(1), PrimitiveValueType.NUMBER.getType());
         final boolean hasInputXRange = PrimitiveValueType.isType(arguments.get(0), PrimitiveValueType.OBJECT.getType()) ||
@@ -106,59 +110,61 @@ public class CoreModuleCmdPlot {
 
                 if (current == null) continue;
 
-                final char gradient = previous == null ? 'x' : (current > previous ? '/' : current < previous ? '\\' : 'x');
+                final char gradient = previous == null || !shouldInterpolate ? 'x' : (current > previous ? '/' : current < previous ? '\\' : 'x');
                 setPlotValue(plot, xValues[j], current, AnsiUtilities.colorize(gradient, getChartColorByIndex(i)), true);
             }
         }
 
         // find missing x values and interpolate them using "-"
-        for (int i = 0; i < yValues.length; i++) {
-            for (int j = 1; j < plotWidth - 1; j++) {
-                final int currentIndex = j;
-                final boolean isMissing = xValues.length == 0 || Arrays.stream(xValues).noneMatch(v -> v == currentIndex);
+        if (shouldInterpolate) {
+            for (int i = 0; i < yValues.length; i++) {
+                for (int j = 1; j < plotWidth - 1; j++) {
+                    final int currentIndex = j;
+                    final boolean isMissing = xValues.length == 0 || Arrays.stream(xValues).noneMatch(v -> v == currentIndex);
 
-                if (isMissing) {
-                    int previousIndex = currentIndex;
-                    for (int k = currentIndex; k >= 0; k--) {
-                        int finalK = k;
-                        if (Arrays.stream(xValues).anyMatch(v -> v == finalK)) {
-                            previousIndex = k;
-                            break;
+                    if (isMissing) {
+                        int previousIndex = currentIndex;
+                        for (int k = currentIndex; k >= 0; k--) {
+                            int finalK = k;
+                            if (Arrays.stream(xValues).anyMatch(v -> v == finalK)) {
+                                previousIndex = k;
+                                break;
+                            }
                         }
-                    }
-                    int nextIndex = currentIndex;
-                    for (int k = currentIndex; k <= plotWidth; k++) {
-                        int finalK = k;
-                        if (Arrays.stream(xValues).anyMatch(v -> v == finalK)) {
-                            nextIndex = k;
-                            break;
+                        int nextIndex = currentIndex;
+                        for (int k = currentIndex; k <= plotWidth; k++) {
+                            int finalK = k;
+                            if (Arrays.stream(xValues).anyMatch(v -> v == finalK)) {
+                                nextIndex = k;
+                                break;
+                            }
                         }
-                    }
 
-                    Integer previousY = null;
-                    for (int k = 0; k < xValues.length; k++) {
-                        if (xValues[k] == previousIndex) {
-                            previousY = yValues[i][k];
-                            break;
+                        Integer previousY = null;
+                        for (int k = 0; k < xValues.length; k++) {
+                            if (xValues[k] == previousIndex) {
+                                previousY = yValues[i][k];
+                                break;
+                            }
                         }
-                    }
-                    Integer nextY = null;
-                    for (int k = 0; k < xValues.length; k++) {
-                        if (xValues[k] == nextIndex) {
-                            nextY = yValues[i][k];
-                            break;
+                        Integer nextY = null;
+                        for (int k = 0; k < xValues.length; k++) {
+                            if (xValues[k] == nextIndex) {
+                                nextY = yValues[i][k];
+                                break;
+                            }
                         }
-                    }
 
-                    if (previousY != null && nextY != null) {
-                        final int yDiff = nextY - previousY;
-                        final int xDiff = nextIndex - previousIndex;
-                        final int interpolated = previousY + (yDiff * (currentIndex - previousIndex)) / xDiff;
-                        setPlotValue(plot, currentIndex, interpolated, AnsiUtilities.colorize('-', getChartColorByIndex(i)), true);
-                    } else if (previousY != null) {
-                        setPlotValue(plot, currentIndex, previousY, AnsiUtilities.colorize('-', getChartColorByIndex(i)), true);
-                    } else if (nextY != null) {
-                        setPlotValue(plot, currentIndex, nextY, AnsiUtilities.colorize('-', getChartColorByIndex(i)), true);
+                        if (previousY != null && nextY != null) {
+                            final int yDiff = nextY - previousY;
+                            final int xDiff = nextIndex - previousIndex;
+                            final int interpolated = previousY + (yDiff * (currentIndex - previousIndex)) / xDiff;
+                            setPlotValue(plot, currentIndex, interpolated, AnsiUtilities.colorize('-', getChartColorByIndex(i)), true);
+                        } else if (previousY != null) {
+                            setPlotValue(plot, currentIndex, previousY, AnsiUtilities.colorize('-', getChartColorByIndex(i)), true);
+                        } else if (nextY != null) {
+                            setPlotValue(plot, currentIndex, nextY, AnsiUtilities.colorize('-', getChartColorByIndex(i)), true);
+                        }
                     }
                 }
             }

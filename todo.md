@@ -140,6 +140,90 @@ Manager = (name, age, departement) -> { $extends: Person(name, age), $fields: [d
 yan = new Manager("Yan", 22, "HR")
 ```
 
+```
+erfInv = (x) -> {
+    w = -log((1 - x) * (1 + x))
+    if (w < 5) {
+        w -= 2.5
+        p = 0.0000000281022636
+        p = 0.000000343273939 + p * w
+        p = -0.0000035233877 + p * w
+        p = -0.00000439150654 + p * w
+        p = 0.00021858087 + p * w
+        p = -0.00125372503 + p * w
+        p = -0.00417768164 + p * w
+        p = 0.246640727 + p * w
+        p = 1.50140941 + p * w
+    } else {
+        w = sqrt(w) - 3
+        p = -0.000200214257
+        p = 0.000100950558 + p * w
+        p = 0.00134934322 + p * w
+        p = -0.00367342844 + p * w
+        p = 0.00573950773 + p * w
+        p = -0.0076224613 + p * w
+        p = 0.00943887047 + p * w
+        p = 1.00167406 + p * w
+        p = 2.83297682 + p * w
+    }
+    return p * x
+}
+inverseNormalDistribution = (x, mu, sigma) -> { mu + sigma * sqrt(2) * erfInv(2 * x - 1) }
+normalDistribution = (x, mu, sigma) -> (1 / (sigma * sqrt(2 * PI))) * E ^^ (-0.5 * ((x - mu) / sigma) ^^ 2)
+```
+
+```
+import cmdplot inline
+
+make = () -> { name: "Test", age: { random(0, 1) >| inverseNormalDistribution(15, 4) |> round } }
+people = range(1, 4000).map(x -> make())
+freq = people.map(x -> x.age).frequency()
+plot(false, freq.keys(), freq.values())
+```
+
+```
+import cmdplot inline
+
+plot(space(-3, 3), x -> normalDistribution(x, 0, 1))
+plot(space(0, 1), x -> inverseNormalDistribution(x, 15, 4))
+```
+
+{\displaystyle f(x;\mu ,\mu ^{2})={\frac {\mu }{\sqrt {2\pi x^{3}}}}\exp {\biggl (}-{\frac {(x-\mu )^{2}}{2x}}{\biggr )}.}
+
+```
+import cmdplot inline
+erfInv = (x) -> {
+    w = -log((1 - x) * (1 + x))
+    if (w < 5) {
+        w -= 2.5
+        p = 0.0000000281022636
+        p = 0.000000343273939 + p * w
+        p = -0.0000035233877 + p * w
+        p = -0.00000439150654 + p * w
+        p = 0.00021858087 + p * w
+        p = -0.00125372503 + p * w
+        p = -0.00417768164 + p * w
+        p = 0.246640727 + p * w
+        p = 1.50140941 + p * w
+    } else {
+        w = sqrt(w) - 3
+        p = -0.000200214257
+        p = 0.000100950558 + p * w
+        p = 0.00134934322 + p * w
+        p = -0.00367342844 + p * w
+        p = 0.00573950773 + p * w
+        p = -0.0076224613 + p * w
+        p = 0.00943887047 + p * w
+        p = 1.00167406 + p * w
+        p = 2.83297682 + p * w
+    }
+    return p * x
+}
+inverseNormalDistribution = (x, mu, sigma) -> { mu + sigma * sqrt(2) * erfInv(2 * x - 1) }
+plot(space(0, 1), x -> { x >| inverseNormalDistribution(0, 1) })
+```
+
+
 ## Bugs:
 
 accessors on maps:

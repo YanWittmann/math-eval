@@ -159,7 +159,7 @@ public abstract class CustomType implements Comparable<CustomType> {
                     availableTypes[j] = false;
                     continue;
                 }
-                if (!type[i].equals(parameterType) && !type[i].equals(PrimitiveValueType.ANY.getType())) {
+                if (!PrimitiveValueType.isType(parameterType, type[i]) && !type[i].equals(PrimitiveValueType.ANY.getType())) {
                     availableTypes[j] = false;
                 }
             }
@@ -196,6 +196,13 @@ public abstract class CustomType implements Comparable<CustomType> {
         }
 
         return new MenterExecutionException(sb.toString());
+    }
+
+    public static void assertAtLeastOneOfParameterCombinationExists(String typeName, String methodName, List<Value> parameters, String[][] types) {
+        final int parameterCombination = checkParameterCombination(parameters, types);
+        if (parameterCombination == -1) {
+            throw invalidParameterCombinationException(typeName, methodName, parameters, types);
+        }
     }
 
     @Override
