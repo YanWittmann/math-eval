@@ -179,7 +179,7 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "2", "([2, 3])[0]"); // brackets would not be evaluated to a value in the accessor system
 
-        evaluateAndAssertEqual(interpreter, "4", "test=\"test\"\ntest[\"test\".functions()[0]]()"); // revered the identifier accessed flattening, otherwise this would have been detected as single accessor chain
+        evaluateAndAssertEqual(interpreter, "test", "test=\"TEST\"\ntest[\"TEST\".functions()[0]]()"); // revered the identifier accessed flattening, otherwise this would have been detected as single accessor chain
         evaluateAndAssertEqual(interpreter, "4", "test=\"test\"\ntest[\"size\"]()");
     }
 
@@ -500,6 +500,12 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "hello t fre t", "\"hello 1.3 fre 23.43\".replaceAll(\"\\\\d+\\\\.\\\\d+\", \"t\")");
         evaluateAndAssertEqual(interpreter, "hello i-1-i fre i-23-i", "\"hello 1.3 fre 23.43\".replaceAll(\"(\\\\d+)\\\\.\\\\d+\", \"i-$1-i\")");
+
+        evaluateAndAssertEqual(interpreter, "[test, hey]", "spl = r/ +/i.split; spl(\"test hey\")");
+        evaluateAndAssertEqual(interpreter, "true", "r/.+ .+/i.matches(\"test hey\")");
+        evaluateAndAssertEqual(interpreter, "false", "r/.+ .+/i.matches(\"test\")");
+
+        evaluateAndAssertEqual(interpreter, "hello", "pattern = r/(.+) (.+)/; matcher = pattern.matcher(\"test hello\"); matcher.find(); matcher.group(2)");
     }
 
     @Test

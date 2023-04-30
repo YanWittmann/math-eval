@@ -6,7 +6,7 @@ public enum PrimitiveValueType {
     STRING("string"),
     BOOLEAN("boolean"),
     OBJECT("object"),
-    REGEX("regex"),
+    REGEX("regex"), MATCHER("matcher"),
     FUNCTION("function"),
     VALUE_FUNCTION("value_function"),
     NATIVE_FUNCTION("native_function"),

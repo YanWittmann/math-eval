@@ -14,6 +14,7 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -245,6 +246,8 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.ITERATOR.getType();
         } else if (value instanceof CustomType) {
             return PrimitiveValueType.CUSTOM_TYPE.getType();
+        } else if (value instanceof Matcher) {
+            return PrimitiveValueType.MATCHER.getType();
         } else {
             if (this.getValue() instanceof CustomType) {
                 return this.getValue().toString();
@@ -1031,6 +1034,125 @@ public class Value implements Comparable<Value> {
                     });
                 }
             });
+            put(PrimitiveValueType.REGEX.getType(), new HashMap<String, MenterValueFunction>() {
+                {
+                    put("matches", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.REGEX.getType(), "matches", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.STRING)) {
+                            final Pattern pattern = (Pattern) self.getValue();
+                            final Matcher matcher = pattern.matcher((String) other.getValue());
+                            return new Value(matcher.matches());
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                    put("split", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.REGEX.getType(), "split", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.STRING)) {
+                            final Pattern pattern = (Pattern) self.getValue();
+                            final String[] split = pattern.split((String) other.getValue());
+                            return new Value(split);
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                    put("matcher", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.STRING.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.REGEX.getType(), "matcher", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.STRING)) {
+                            final Pattern pattern = (Pattern) self.getValue();
+                            final Matcher matcher = pattern.matcher((String) other.getValue());
+                            return new Value(matcher);
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                }
+            });
+            put(PrimitiveValueType.MATCHER.getType(), new HashMap<String, MenterValueFunction>() {
+                {
+                    put("matches", (context, self, values, localInformation) -> {
+                        final Matcher matcher = (Matcher) self.getValue();
+                        return new Value(matcher.matches());
+                    });
+                    put("group", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.NUMBER.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.MATCHER.getType(), "group", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.NUMBER)) {
+                            final Matcher matcher = (Matcher) self.getValue();
+                            return new Value(matcher.group(other.getNumericValue().intValue()));
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                    put("groupCount", (context, self, values, localInformation) -> {
+                        final Matcher matcher = (Matcher) self.getValue();
+                        return new Value(matcher.groupCount());
+                    });
+                    put("start", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.NUMBER.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.MATCHER.getType(), "start", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.NUMBER)) {
+                            final Matcher matcher = (Matcher) self.getValue();
+                            return new Value(matcher.start(other.getNumericValue().intValue()));
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                    put("end", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {{PrimitiveValueType.NUMBER.getType()}};
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.MATCHER.getType(), "end", values, parameterCombinations);
+
+                        final Value other = values.get(0);
+                        if (PrimitiveValueType.isType(other, PrimitiveValueType.NUMBER)) {
+                            final Matcher matcher = (Matcher) self.getValue();
+                            return new Value(matcher.end(other.getNumericValue().intValue()));
+                        } else {
+                            return new Value(false);
+                        }
+                    });
+                    put("find", (context, self, values, localInformation) -> {
+                        final Matcher matcher = (Matcher) self.getValue();
+                        return new Value(matcher.find());
+                    });
+                    put("reset", (context, self, values, localInformation) -> {
+                        final Matcher matcher = (Matcher) self.getValue();
+                        return new Value(matcher.reset());
+                    });
+
+                    put("groups", (context, self, values, localInformation) -> {
+                        // creates a list of lists of all groups
+                        final Matcher matcher = (Matcher) self.getValue();
+                        final List<Value> groups = new ArrayList<>();
+
+                        while (matcher.find()) {
+                            final List<String> group = new ArrayList<>();
+                            for (int i = 0; i <= matcher.groupCount(); i++) {
+                                group.add(matcher.group(i));
+                            }
+                            groups.add(new Value(group));
+                        }
+
+                        return new Value(groups);
+                    });
+                    put("iterator", (context, self, values, localInformation) -> {
+                        final Value groups = VALUE_FUNCTIONS.get(PrimitiveValueType.MATCHER.getType()).get("groups").apply(context, self, values, localInformation);
+                        return groups.iterator();
+                    });
+                }
+            });
             put(PrimitiveValueType.ITERATOR.getType(), new HashMap<String, MenterValueFunction>() {
                 {
                     put("iterator", (context, self, values, localInformation) -> self);
@@ -1057,7 +1179,7 @@ public class Value implements Comparable<Value> {
         }
     };
 
-    private static BigDecimal findHighestNumericKey(Map<Object, Value> map) {
+    public static BigDecimal findHighestNumericKey(Map<Object, Value> map) {
         BigDecimal max = BigDecimal.valueOf(-1);
         for (Object key : map.keySet()) {
             if (key instanceof BigDecimal) {
@@ -1067,7 +1189,7 @@ public class Value implements Comparable<Value> {
         return max;
     }
 
-    private static Value fold(GlobalContext context, Value self, List<Value> values, EvaluationContextLocalInformation localInformation, boolean left) {
+    public static Value fold(GlobalContext context, Value self, List<Value> values, EvaluationContextLocalInformation localInformation, boolean left) {
         final String[][] parameterCombinations = {
                 {PrimitiveValueType.FUNCTION.getType()},
                 {PrimitiveValueType.ANY.getType(), PrimitiveValueType.FUNCTION.getType()}
@@ -1209,6 +1331,8 @@ public class Value implements Comparable<Value> {
                 return ((Token) object).getValue();
             } else if (object instanceof Pattern) {
                 return ((Pattern) object).pattern();
+            } else if (object instanceof Matcher) {
+                return ((Matcher) object).pattern().pattern();
             } else if (object instanceof BigDecimal) {
                 return ((BigDecimal) object).stripTrailingZeros().toPlainString();
 

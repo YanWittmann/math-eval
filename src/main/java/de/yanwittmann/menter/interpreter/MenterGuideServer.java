@@ -46,13 +46,15 @@ public class MenterGuideServer {
             throw new IOException("Could not start MenterGuideServer on port " + serverPort, e);
         }
 
-        final String[] printBuffer = {""};
+
+        final ByteArrayOutputStream printBuffer = new ByteArrayOutputStream();
+
         MenterDebugger.printer = new PrintStream(new OutputStream() {
             @Override
             public void write(int b) {
-                printBuffer[0] += (char) b;
+                printBuffer.write(b);
             }
-        });
+        }, true, StandardCharsets.UTF_8.name());
 
         if (safeMode) {
             interpreter.getModuleOptions().addForbiddenImport("io");
@@ -85,8 +87,11 @@ public class MenterGuideServer {
                             interpreter.deleteContext(context);
 
                             responseJson.put("result", Value.empty().toDisplayString());
-                            responseJson.put("print", printBuffer[0]);
-                            printBuffer[0] = "";
+
+                            final String bufferString = new String(printBuffer.toByteArray(), StandardCharsets.UTF_8);
+                            responseJson.put("print", bufferString);
+                            printBuffer.reset();
+
                             exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
                         } catch (JSONException e) {
                             responseJson.put("error", "Invalid request body.");
@@ -106,8 +111,11 @@ public class MenterGuideServer {
                             result = interpreter.evaluateInContextOf(code, context);
 
                             responseJson.put("result", result.toDisplayString());
-                            responseJson.put("print", printBuffer[0]);
-                            printBuffer[0] = "";
+
+                            final String bufferString = new String(printBuffer.toByteArray(), StandardCharsets.UTF_8);
+                            responseJson.put("print", bufferString);
+                            printBuffer.reset();
+
                             exchange.sendResponseHeaders(200, responseJson.toString().getBytes().length);
                         } catch (JSONException e) {
                             responseJson.put("error", "Invalid request body.");

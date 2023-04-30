@@ -541,9 +541,9 @@ public abstract class EvaluationContext {
             if (!isMultiExpressionNode) {
                 if (MenterDebugger.logInterpreterEvaluationStyle > 1 || isDebuggerBreakpoint) {
                     if (MenterDebugger.logInterpreterEvaluationStyle == 2) {
-                        MenterDebugger.printer.println(createDebuggerPrintIndentation(localInformation) + "└─> " + result);
+                        MenterDebugger.printer.println(createDebuggerPrintIndentation(localInformation) + CORNER + HORIZONTAL_LINE + ARROW_HEAD + SPACE + result);
                     } else if (MenterDebugger.logInterpreterEvaluationStyle == 3) {
-                        MenterDebugger.printer.println(node.reconstructCode() + " --> " + result);
+                        MenterDebugger.printer.println(node.reconstructCode() + SPACE + HORIZONTAL_LINE + HORIZONTAL_LINE + ARROW_HEAD + SPACE + result);
 
                         if (isDebuggerBreakpoint) {
                             breakpointReached(localInformation, node);
@@ -573,6 +573,14 @@ public abstract class EvaluationContext {
                 final int flagsInt = parseRegexFlags(flags);
 
                 result = new Value(Pattern.compile(pattern, flagsInt));
+
+            } else if (node.getType() == TokenType.OTHER_LITERAL) {
+                final String value = node.getValue();
+                if (value.equals("null")) {
+                    return Value.empty();
+                } else {
+                    return new Value(value);
+                }
 
             } else if (Parser.isKeyword(node, "null") || Parser.isType(node, TokenType.PASS) ||
                        Parser.isType(node, TokenType.BREAK) || Parser.isType(node, TokenType.CONTINUE)) {
@@ -969,7 +977,7 @@ public abstract class EvaluationContext {
 
     private Value resolveSymbol(Object identifier, SymbolCreationMode symbolCreationMode, GlobalContext globalContext, EvaluationContextLocalInformation localInformation) {
         if (MenterDebugger.logInterpreterResolveSymbols) {
-            LOG.info("Symbol resolve start: {}", ParserNode.reconstructCode(identifier));
+            MenterDebugger.printer.println("Symbol resolve start: " + ParserNode.reconstructCode(identifier));
         }
 
         final boolean symbolCreationModeIsAllowedToCreateVariable = SymbolCreationMode.CREATE_IF_NOT_EXISTS.equals(symbolCreationMode) || SymbolCreationMode.CREATE_NEW_ANYWAYS.equals(symbolCreationMode);
@@ -1013,7 +1021,7 @@ public abstract class EvaluationContext {
             throw localInformation.createException("Cannot resolve symbol from " + ParserNode.reconstructCode(identifier));
         }
         if (MenterDebugger.logInterpreterResolveSymbols) {
-            LOG.info("Symbol resolve: Split into identifiers: {}", identifiers.stream().map(ParserNode::reconstructCode).collect(Collectors.joining(" --> ")));
+            MenterDebugger.printer.println("Symbol resolve: Split into identifiers: " + identifiers.stream().map(ParserNode::reconstructCode).collect(Collectors.joining(" --> ")));
         }
 
         final GlobalContext originalGlobalContext = globalContext;
@@ -1026,7 +1034,7 @@ public abstract class EvaluationContext {
             final String stringKey = Module.ID_TO_KEY_MAPPER.apply(id);
 
             if (MenterDebugger.logInterpreterResolveSymbols) {
-                LOG.info("Symbol resolve step: {} ({}): {}", i, stringKey, ParserNode.reconstructCode(id));
+                MenterDebugger.printer.printf("Symbol resolve step: %d (%s): %s%n", i, stringKey, ParserNode.reconstructCode(id));
             }
 
             final boolean isFinalIdentifier = id == identifiers.get(identifiers.size() - 1);
@@ -1050,7 +1058,7 @@ public abstract class EvaluationContext {
                     }
 
                     if (MenterDebugger.logInterpreterResolveSymbols) {
-                        LOG.info("Symbol resolve: [{}] from local symbols is [{}]", stringKey, value);
+                        MenterDebugger.printer.printf("Symbol resolve: [%s] from local symbols is [%s]%n", stringKey, value);
                     }
                     continue;
                 }
@@ -1065,7 +1073,7 @@ public abstract class EvaluationContext {
                     }
 
                     if (MenterDebugger.logInterpreterResolveSymbols) {
-                        LOG.info("Symbol resolve: [{}] from global variables", stringKey);
+                        MenterDebugger.printer.println("Symbol resolve: [" + stringKey + "] from global variables");
                     }
                     continue;
                 }
@@ -1092,7 +1100,7 @@ public abstract class EvaluationContext {
                             foundImport = true;
 
                             if (MenterDebugger.logInterpreterResolveSymbols) {
-                                LOG.info("Symbol resolve: [{}] from import: {}; switching to module context", stringKey, anImport);
+                                MenterDebugger.printer.println("Symbol resolve: [" + stringKey + "] from import: " + anImport + "; switching to module context");
                             }
                             break;
                         }
@@ -1112,7 +1120,7 @@ public abstract class EvaluationContext {
                             foundImport = true;
 
                             if (MenterDebugger.logInterpreterResolveSymbols) {
-                                LOG.info("Symbol resolve: [{}] from inline import: {}; switching to module context", stringKey, anImport);
+                                MenterDebugger.printer.printf("Symbol resolve: [%s] from inline import: %s; switching to module context%n", stringKey, anImport);
                             }
                             break;
                         }
@@ -1123,7 +1131,7 @@ public abstract class EvaluationContext {
                 if (id instanceof Value) {
                     value = (Value) id;
                     if (MenterDebugger.logInterpreterResolveSymbols) {
-                        LOG.info("Symbol resolve: [{}] from value", stringKey);
+                        MenterDebugger.printer.printf("Symbol resolve: [%s] from value%n", stringKey);
                     }
                     continue;
                 }
@@ -1133,7 +1141,7 @@ public abstract class EvaluationContext {
                     if (Parser.isEvaluableToValue(node)) {
                         value = evaluate(node, globalContext, symbolCreationMode, localInformation);
                         if (MenterDebugger.logInterpreterResolveSymbols) {
-                            LOG.info("Symbol resolve: [{}] from evaluated node", value);
+                            MenterDebugger.printer.printf("Symbol resolve: [%s] from evaluated node%n", value);
                         }
                         continue;
                     }
@@ -1142,7 +1150,7 @@ public abstract class EvaluationContext {
                 if ("symbols".equals(stringKey) && globalContext != originalGlobalContext) {
                     value = new Value(globalContext.getVariables());
                     if (MenterDebugger.logInterpreterResolveSymbols) {
-                        LOG.info("Symbol resolve: [{}] from symbols", value);
+                        MenterDebugger.printer.printf("Symbol resolve: [%s] from symbols%n", value);
                     }
                     continue;
                 }
@@ -1160,7 +1168,7 @@ public abstract class EvaluationContext {
                                 });
 
                         if (MenterDebugger.logInterpreterResolveSymbols) {
-                            LOG.info("Symbol resolve: [{}] from function call", value);
+                            MenterDebugger.printer.format("Symbol resolve: [%s] from function call", value);
                         }
 
                     } catch (Exception e) {
@@ -1178,7 +1186,7 @@ public abstract class EvaluationContext {
 
                     if (value != null) {
                         if (MenterDebugger.logInterpreterResolveSymbols) {
-                            LOG.info("Symbol resolve: [{}] from accessing previous value: {}", stringKey, previousValue);
+                            MenterDebugger.printer.format("Symbol resolve: [%s] from accessing previous value: %s", stringKey, previousValue);
                         }
                         continue;
 
@@ -1187,7 +1195,7 @@ public abstract class EvaluationContext {
                         if (!previousValue.create(accessAs, value, isFinalIdentifier)) {
                             value = null;
                         } else if (MenterDebugger.logInterpreterResolveSymbols) {
-                            LOG.info("Symbol resolve: [{}] from creating new value on previous value: {}", stringKey, previousValue);
+                            MenterDebugger.printer.format("Symbol resolve: [%s] from creating new value on previous value: %s", stringKey, previousValue);
                         }
                         continue;
                     }
@@ -1210,7 +1218,7 @@ public abstract class EvaluationContext {
 
                 localInformation.putLocalSymbol(stringKey, value);
                 if (MenterDebugger.logInterpreterResolveSymbols) {
-                    LOG.info("Symbol resolve: [{}] from creating new value", stringKey);
+                    MenterDebugger.printer.format("Symbol resolve: [%s] from creating new value", stringKey);
                 }
             }
         }
@@ -1307,6 +1315,12 @@ public abstract class EvaluationContext {
     }
 
     private String createDebuggerPrintIndentation(EvaluationContextLocalInformation localInformation) {
-        return IntStream.range(1, localInformation.getStackTrace().size()).mapToObj(x -> "│ ").collect(Collectors.joining());
+        return IntStream.range(1, localInformation.getStackTrace().size()).mapToObj(x -> VERTICAL_LINE + SPACE).collect(Collectors.joining());
     }
+
+    private final static String VERTICAL_LINE = "│";
+    private final static String HORIZONTAL_LINE = "─";
+    private final static String CORNER = "└";
+    private final static String ARROW_HEAD = ">";
+    private final static String SPACE = " ";
 }

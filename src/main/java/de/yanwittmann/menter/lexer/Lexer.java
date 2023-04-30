@@ -127,7 +127,7 @@ public class Lexer {
 
         private final static String[] KEYWORDS = {
                 "if", "else", "elif", "true", "false", "null", "export", "as", "import", "inline", "native", "return",
-                "while", "for", "break", "continue", "in", "new", "instanceof", "pass", "null"
+                "while", "for", "break", "continue", "in", "new", "instanceof", "pass"
         };
 
         private boolean isSingleCharacterToken(char c) {
@@ -383,6 +383,9 @@ public class Lexer {
                                         break;
                                     case "continue":
                                         nextToken = createToken(buffer, TokenType.CONTINUE);
+                                        break;
+                                    case "null":
+                                        nextToken = createToken(buffer, TokenType.OTHER_LITERAL);
                                         break;
                                     default:
                                         nextToken = createToken(buffer, TokenType.KEYWORD);

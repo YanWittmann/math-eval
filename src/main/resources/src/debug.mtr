@@ -2,5 +2,6 @@
 native breakFlow()
 native switch()
 native stackTraceValues()
+native explain()
 
-export [breakFlow, switch, stackTraceValues] as debug
+export [breakFlow, switch, stackTraceValues, explain] as debug

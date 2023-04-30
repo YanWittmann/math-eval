@@ -2,8 +2,15 @@ package de.yanwittmann.menter.interpreter.core;
 
 import de.yanwittmann.menter.interpreter.MenterDebugger;
 import de.yanwittmann.menter.interpreter.structure.EvaluationContext;
+import de.yanwittmann.menter.interpreter.structure.EvaluationContextLocalInformation;
+import de.yanwittmann.menter.interpreter.structure.GlobalContext;
+import de.yanwittmann.menter.interpreter.structure.value.CustomType;
+import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
+import de.yanwittmann.menter.lexer.Lexer;
+import de.yanwittmann.menter.lexer.Token;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class CoreModuleDebug {
@@ -12,6 +19,36 @@ public abstract class CoreModuleDebug {
         EvaluationContext.registerNativeFunction("debug.mtr", "breakFlow", CoreModuleDebug::breakFlow);
         EvaluationContext.registerNativeFunction("debug.mtr", "switch", CoreModuleDebug::debugSwitch);
         EvaluationContext.registerNativeFunction("debug.mtr", "stackTraceValues", CoreModuleDebug::stackTraceValues);
+        EvaluationContext.registerNativeFunction("debug.mtr", "explain", CoreModuleDebug::explain);
+    }
+
+    /**
+     * Executes the function passed as parameter and returns the result. The specialty of this function is that it will
+     * also show all steps that were executed to get to the result.
+     *
+     * @param context          The global context.
+     * @param localInformation The local information of the evaluation context.
+     * @param arguments        The arguments passed to the function.
+     * @return The result of the function.
+     */
+    public static Value explain(GlobalContext context, EvaluationContextLocalInformation localInformation, List<Value> arguments) {
+        final String[][] parameterCombinations = {
+                {PrimitiveValueType.FUNCTION.getType()},
+                {PrimitiveValueType.FUNCTION.getType(), PrimitiveValueType.BOOLEAN.getType()},
+                {PrimitiveValueType.FUNCTION.getType(), PrimitiveValueType.BOOLEAN.getType(), PrimitiveValueType.BOOLEAN.getType()},
+        };
+        CustomType.assertAtLeastOneOfParameterCombinationExists("debug.mtr", "explain", arguments, parameterCombinations);
+
+        MenterDebugger.logInterpreterEvaluationStyle = arguments.size() > 1 && arguments.get(1).isTrue() || arguments.size() == 1 ? 2 : 0;
+        MenterDebugger.logInterpreterResolveSymbols = arguments.size() > 2 && arguments.get(2).isTrue();
+
+        final Value function = arguments.get(0);
+        final Value result = context.evaluateFunction("explain.explain", function, context, localInformation, new ArrayList<>());
+
+        MenterDebugger.logInterpreterEvaluationStyle = 0;
+        MenterDebugger.logInterpreterResolveSymbols = false;
+
+        return result;
     }
 
     public static Value breakFlow(List<Value> arguments) {
@@ -41,7 +78,7 @@ public abstract class CoreModuleDebug {
                     break;
 
                 default:
-                    throw new IllegalArgumentException("Unknown debugger flag: " + debuggerFlag);
+                    throw new IllegalArgumentException("Unknown debugger flag: " + debuggerFlag + ", must be one of: lexer, parser, parser progress, interpreter resolve, import order");
             }
 
         } else if (arguments.size() == 2) {
@@ -70,7 +107,7 @@ public abstract class CoreModuleDebug {
                     break;
 
                 default:
-                    throw new IllegalArgumentException("Unknown debugger flag: " + debuggerFlag);
+                    throw new IllegalArgumentException("Unknown debugger flag: " + debuggerFlag + ", must be one of: lexer, parser, parser progress, interpreter resolve, import order");
             }
         }
 
