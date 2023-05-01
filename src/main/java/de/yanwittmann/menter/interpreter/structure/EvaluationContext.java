@@ -350,7 +350,7 @@ public abstract class EvaluationContext {
                 }
 
                 final Value value = evaluate(node.getChildren().get(1), globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
-                final Value variable = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_NEW_ANYWAYS, localInformation);
+                final Value variable = evaluate(node.getChildren().get(0), globalContext, SymbolCreationMode.CREATE_IF_NOT_EXISTS, localInformation);
 
                 if (value.isFunction() && !value.hasTaggedAdditionalInformation(Value.TAG_KEY_FUNCTION_CLOSURE_CONTEXT)) {
                     value.setTagParentFunctionClosureContext(globalContext);
@@ -374,7 +374,7 @@ public abstract class EvaluationContext {
                 result = variable;
 
                 if (MenterDebugger.logInterpreterAssignments) {
-                    LOG.info("Assignment: [{}] = [{}] from: {}", ParserNode.reconstructCode(node.getChildren().get(0)), value, node.reconstructCode());
+                    MenterDebugger.printer.format("Assignment: [%s] = [%s] from: %s%n", ParserNode.reconstructCode(node.getChildren().get(0)), variable, node.reconstructCode());
                 }
 
             } else if (node.getType() == ParserNode.NodeType.PARENTHESIS_PAIR) {

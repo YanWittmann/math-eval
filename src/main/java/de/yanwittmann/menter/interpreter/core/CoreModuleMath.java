@@ -40,6 +40,12 @@ public abstract class CoreModuleMath {
         EvaluationContext.registerNativeFunction("math.mtr", "toNum", CoreModuleMath::toNumber);
         EvaluationContext.registerNativeFunction("math.mtr", "toNumber", CoreModuleMath::toNumber);
         EvaluationContext.registerNativeFunction("math.mtr", "toStr", CoreModuleMath::stringVersion);
+
+        EvaluationContext.registerNativeFunction("math.mtr", "identity", CoreModuleMath::identity);
+    }
+
+    private static Value identity(List<Value> arguments) {
+        return arguments.get(0);
     }
 
     private static Value toNumber(List<Value> arguments) {

@@ -36,17 +36,20 @@ public abstract class CoreModuleDebug {
                 {PrimitiveValueType.FUNCTION.getType()},
                 {PrimitiveValueType.FUNCTION.getType(), PrimitiveValueType.BOOLEAN.getType()},
                 {PrimitiveValueType.FUNCTION.getType(), PrimitiveValueType.BOOLEAN.getType(), PrimitiveValueType.BOOLEAN.getType()},
+                {PrimitiveValueType.FUNCTION.getType(), PrimitiveValueType.BOOLEAN.getType(), PrimitiveValueType.BOOLEAN.getType(), PrimitiveValueType.BOOLEAN.getType()},
         };
         CustomType.assertAtLeastOneOfParameterCombinationExists("debug.mtr", "explain", arguments, parameterCombinations);
 
         MenterDebugger.logInterpreterEvaluationStyle = arguments.size() > 1 && arguments.get(1).isTrue() || arguments.size() == 1 ? 2 : 0;
         MenterDebugger.logInterpreterResolveSymbols = arguments.size() > 2 && arguments.get(2).isTrue();
+        MenterDebugger.logInterpreterAssignments = arguments.size() > 3 && arguments.get(3).isTrue();
 
         final Value function = arguments.get(0);
         final Value result = context.evaluateFunction("explain.explain", function, context, localInformation, new ArrayList<>());
 
         MenterDebugger.logInterpreterEvaluationStyle = 0;
         MenterDebugger.logInterpreterResolveSymbols = false;
+        MenterDebugger.logInterpreterAssignments = false;
 
         return result;
     }

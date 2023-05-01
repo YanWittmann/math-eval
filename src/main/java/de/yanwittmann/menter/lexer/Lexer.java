@@ -178,10 +178,12 @@ public class Lexer {
                             unicode[i] = this.stringIterator.next();
                         }
                         buffer.append((char) Integer.parseInt(new String(unicode), 16));
-                    } else if (state != 10) { // 10 = regex
+                    } else if (state != 10) {
                         buffer.append(next);
-                    } else {
-                        buffer.append('\\');
+                    } else {  // 10 = regex
+                        if (next != '\\' && next != '/') {
+                            buffer.append('\\');
+                        }
                         buffer.append(next);
                     }
                     continue;

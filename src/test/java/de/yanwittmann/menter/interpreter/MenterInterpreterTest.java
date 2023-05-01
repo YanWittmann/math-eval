@@ -66,8 +66,12 @@ class MenterInterpreterTest {
         Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("test = 4; test.f = () -> test; test.f() = 43;")); // function calls should not be assignable
         Assertions.assertThrows(ParsingException.class, () -> interpreter.evaluate("a.a(a, b) {}")); // function declaration via object.child() { ... } is not supported
 
-        evaluateAndAssertEqual(interpreter, "{2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}", "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})\n" +
+        evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}", "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})\n" +
                                                                                     "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
+
+
+        evaluateAndAssertEqual(interpreter, "0", "[1, 2, 3, 4].foldr(10, (-))"); // these would not work, as the fold functions would ignore the left/rightmost value if an accumulator is given
+        evaluateAndAssertEqual(interpreter, "0", "[1, 2, 3, 4].foldl(10, (-))");
     }
 
     @Test
@@ -181,6 +185,8 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "test", "test=\"TEST\"\ntest[\"TEST\".functions()[0]]()"); // revered the identifier accessed flattening, otherwise this would have been detected as single accessor chain
         evaluateAndAssertEqual(interpreter, "4", "test=\"test\"\ntest[\"size\"]()");
+
+        evaluateAndAssertEqual(interpreter, "5", "test = 3; fun = () -> { test = 5 }; fun(); test"); // this would not work, as the value of test would be re-captured inside the function when creating a new context
     }
 
     @Test
@@ -506,6 +512,9 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "false", "r/.+ .+/i.matches(\"test\")");
 
         evaluateAndAssertEqual(interpreter, "hello", "pattern = r/(.+) (.+)/; matcher = pattern.matcher(\"test hello\"); matcher.find(); matcher.group(2)");
+
+        evaluateAndAssertEqual(interpreter, "true", "r/\\//.matches(\"/\")");
+        evaluateAndAssertEqual(interpreter, "false", "r/\\//.matches(\"\")");
     }
 
     @Test

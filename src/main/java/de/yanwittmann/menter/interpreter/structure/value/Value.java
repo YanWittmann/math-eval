@@ -4,6 +4,7 @@ import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.structure.Module;
 import de.yanwittmann.menter.interpreter.structure.*;
 import de.yanwittmann.menter.lexer.Token;
+import de.yanwittmann.menter.operator.Operators;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -538,6 +539,20 @@ public class Value implements Comparable<Value> {
                         }
                     });
 
+                    put("get", (context, self, values, localInformation) -> {
+                        final String[][] parameterCombinations = {
+                                {PrimitiveValueType.ANY.getType()}
+                        };
+                        CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "get", values, parameterCombinations);
+
+                        final Map<Object, Value> map = (Map<Object, Value>) self.getValue();
+                        if (map.containsKey(values.get(0).getValue())) {
+                            return map.get(values.get(0).getValue());
+                        } else {
+                            return Value.empty();
+                        }
+                    });
+
                     put("map", (context, self, values, localInformation) -> {
                         final String[][] parameterCombinations = {
                                 {PrimitiveValueType.FUNCTION.getType()},
@@ -628,7 +643,7 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("sort", (context, self, values, localInformation) -> {
-                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}, {}};
                         CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "sort", values, parameterCombinations);
 
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
@@ -645,7 +660,7 @@ public class Value implements Comparable<Value> {
                     });
 
                     put("sortKey", (context, self, values, localInformation) -> {
-                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}};
+                        final String[][] parameterCombinations = {{PrimitiveValueType.FUNCTION.getType()}, {}};
                         CustomType.assertAtLeastOneOfParameterCombinationExists(PrimitiveValueType.OBJECT.getType(), "sortKey", values, parameterCombinations);
 
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
@@ -689,7 +704,7 @@ public class Value implements Comparable<Value> {
                     put("foldr", (context, self, values, localInformation) -> Value.fold(context, self, values, localInformation, false));
 
                     put("sum", (context, self, values, localInformation) -> new Value((self.getMap()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0))));
-                    put("avg", (context, self, values, localInformation) -> new Value((self.getMap()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0)).divide(new BigDecimal((self.getMap()).size()), RoundingMode.HALF_UP)));
+                    put("avg", (context, self, values, localInformation) -> new Value((self.getMap()).values().stream().map(Value::getNumericValue).reduce(BigDecimal::add).orElse(new BigDecimal(0)).divide(new BigDecimal((self.getMap()).size()), Operators.getBigDecimalDivisionScale(), RoundingMode.HALF_UP)));
                     put("max", (context, self, values, localInformation) -> {
                         final Comparator<Value> comparator = extractComparatorFromParameters(context, values, localInformation);
                         return new Value((self.getMap()).values().stream().max(comparator).orElse(Value.empty()));
@@ -1211,14 +1226,14 @@ public class Value implements Comparable<Value> {
             if (aggregator == null) {
                 aggregator = list.get(0);
             }
-            for (int i = 1; i < list.size(); i++) {
+            for (int i = (aggregator == null ? 1 : 0); i < list.size(); i++) {
                 aggregator = applyFunction(toList(aggregator, list.get(i)), function, context, localInformation, "foldl");
             }
         } else {
             if (aggregator == null) {
                 aggregator = list.get(list.size() - 1);
             }
-            for (int i = list.size() - 2; i >= 0; i--) {
+            for (int i = list.size() - (aggregator == null ? 2 : 1); i >= 0; i--) {
                 aggregator = applyFunction(toList(aggregator, list.get(i)), function, context, localInformation, "foldr");
             }
         }
