@@ -1,8 +1,11 @@
 package de.yanwittmann.menter.interpreter;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
+import de.yanwittmann.menter.interpreter.structure.EvaluationContext;
 import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.interpreter.type.Type001;
+import de.yanwittmann.menter.interpreter.type.User;
+import de.yanwittmann.menter.interpreter.type.UserList;
 import de.yanwittmann.menter.operator.Operators;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -14,11 +17,17 @@ public class CustomTypeTest {
     @BeforeAll
     public static void beforeAll() {
         Value.registerCustomValueType(Type001.class);
+
+        EvaluationContext.registerCustomValueType(UserList.class);
+        EvaluationContext.registerCustomValueType(User.class);
     }
 
     @AfterAll
     public static void afterAll() {
         Value.unregisterCustomValueType(Type001.class);
+
+        EvaluationContext.unregisterCustomValueType(UserList.class);
+        EvaluationContext.unregisterCustomValueType(User.class);
     }
 
     @Test
@@ -59,8 +68,28 @@ public class CustomTypeTest {
                                                             "result");
 
         evaluateAndAssertEqual(interpreter, "static Hello World!", "" +
-                                                            "import test inline\n" +
-                                                            "customType001.doStuffStatic()");
+                                                                   "import test inline\n" +
+                                                                   "customType001.doStuffStatic()");
+    }
+
+    @Test
+    public void userCustomTypeTest() {
+        MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+        interpreter.finishLoadingContexts();
+
+        evaluateAndAssertEqual(interpreter, "Yan", "" +
+                                                   "import users inline\n" +
+                                                   "userList = new UserList()\n" +
+                                                   "userList.addUser(\"Yan\", 22)\n" +
+                                                   "userList.addUser(new User(\"Thomas\", 36))\n" +
+                                                   "userList.getUsers().get(0).getName()");
+
+        evaluateAndAssertEqual(interpreter, "36", "" +
+                                                  "import users inline\n" +
+                                                  "userList = new UserList()\n" +
+                                                  "userList.addUser(\"Yan\", 22)\n" +
+                                                  "userList.addUser(new User(\"Thomas\", 36))\n" +
+                                                  "userList.getUsers().get(1).getAge()");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {

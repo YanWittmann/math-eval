@@ -67,7 +67,7 @@ class MenterInterpreterTest {
         Assertions.assertThrows(ParsingException.class, () -> interpreter.evaluate("a.a(a, b) {}")); // function declaration via object.child() { ... } is not supported
 
         evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}", "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})\n" +
-                                                                                    "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
+                                                                                          "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
 
 
         evaluateAndAssertEqual(interpreter, "0", "[1, 2, 3, 4].foldr(10, (-))"); // these would not work, as the fold functions would ignore the left/rightmost value if an accumulator is given
@@ -222,6 +222,10 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "[6, 7]", "" +
                                                       "if (false) 3 + 5\n" +
                                                       "else if (true) [1,2].map(x -> x + 5)");
+
+        // the operator would be combined with the parenthesis pair of the if statement, which would result in a syntax error
+        evaluateAndAssertEqual(interpreter, "(a, b) -> { if (a > b) 1 else if (a < b) { -1 } else 0 }", "maxComparator = (a, b) -> { if (a > b) 1 elif (a < b) -1 else 0 }");
+        evaluateAndAssertEqual(interpreter, "(a, b) -> { if (a > b) 1 else if (a < b) { -1 } else 0 }", "maxComparator = (a, b) -> { if (a > b) 1 else if (a < b) -1 else 0 }");
     }
 
     @Test
@@ -362,7 +366,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluateInContextOf("d = 5; foo() { d }; export [foo, d] as sometestmodule", "sometestmodule");
+        interpreter.evaluateInContextOf("sometestmodule", "d = 5; foo() { d }; export [foo, d] as sometestmodule");
 
         evaluateAndAssertEqual(interpreter, "[d, foo]", "" +
                                                         "import sometestmodule\n" +
@@ -374,8 +378,8 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluateInContextOf("test = 5; export [test] as test", "test-001");
-        interpreter.evaluateInContextOf("test = 10; export [test] as test", "test-002");
+        interpreter.evaluateInContextOf("test-001", "test = 5; export [test] as test");
+        interpreter.evaluateInContextOf("test-002", "test = 10; export [test] as test");
 
         evaluateAndAssertEqual(interpreter, "10", "import test; test.test");
     }
@@ -393,7 +397,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluateInContextOf("test.foo = 4; doStuff(x) { x + calculate(x, 5) }; calculate(a, b) { a + b + test.hmm }; export [test, doStuff] as test", "testContext");
+        interpreter.evaluateInContextOf("testContext", "test.foo = 4; doStuff(x) { x + calculate(x, 5) }; calculate(a, b) { a + b + test.hmm }; export [test, doStuff] as test");
 
         Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import system inline; import test; test.doStuff(5)"));
         Assertions.assertThrows(MenterExecutionException.class, () -> evaluateAndAssertEqual(interpreter, "", "import system inline; import test; print(test.test[1])"));
@@ -410,7 +414,7 @@ class MenterInterpreterTest {
         MenterInterpreter interpreter = new MenterInterpreter(new Operators());
         interpreter.finishLoadingContexts();
 
-        interpreter.evaluateInContextOf("sub(x, y) = x - y\nexport [sub] as math", "math");
+        interpreter.evaluateInContextOf("math", "sub(x, y) = x - y\nexport [sub] as math");
 
         evaluateAndAssertEqual(interpreter, "-6",
                 "import math\n" +
@@ -564,8 +568,9 @@ class MenterInterpreterTest {
         MenterDebugger.logParseProgress = true;
         MenterDebugger.logParsedTokens = true;
         MenterDebugger.logInterpreterEvaluationStyle = 2;
-        // MenterDebugger.logInterpreterResolveSymbols = true;
+        MenterDebugger.logInterpreterResolveSymbols = true;
+        MenterDebugger.logInterpreterAssignments = true;
 
-        evaluateAndAssertEqual(interpreter, "hello i-1-i fre i-23-i", "\"hello 1.3 fre 23.43\".replace(r/(\\d+)\\.\\d+/, \"i-$1-i\")");
+        evaluateAndAssertEqual(interpreter, "0", "maxComparator = (a, b) -> { if (a > b) 1 elif (a < b) -1 else 0 }");
     }
 }

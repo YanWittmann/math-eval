@@ -35,7 +35,7 @@ public class UiTest extends JFrame {
             public void keyReleased(KeyEvent evt) {
                 final String input = in.getText();
                 try {
-                    final Value result = interpreter.evaluateInContextOf(input, "UiTest");
+                    final Value result = interpreter.evaluateInContextOf("UiTest", input);
                     out.setText(result.toDisplayString());
                 } catch (Exception e) {
                     out.setText(e.getMessage()

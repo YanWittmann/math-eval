@@ -245,15 +245,11 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.REFLECTIVE_FUNCTION.getType();
         } else if (value instanceof Iterator<?>) {
             return PrimitiveValueType.ITERATOR.getType();
-        } else if (value instanceof CustomType) {
-            return PrimitiveValueType.CUSTOM_TYPE.getType();
         } else if (value instanceof Matcher) {
             return PrimitiveValueType.MATCHER.getType();
+        } else if (this.getValue() instanceof CustomType) {
+            return ((CustomType) this.getValue()).getTypeName();
         } else {
-            if (this.getValue() instanceof CustomType) {
-                return this.getValue().toString();
-            }
-
             return value.getClass().getSimpleName();
         }
     }

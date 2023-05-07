@@ -108,7 +108,7 @@ public class MenterGuideServer {
                             final String code = requestJson.getString("code");
                             final String context = requestJson.getString("context");
                             LOG.info("Executing code [{}]: {}", context, code);
-                            result = interpreter.evaluateInContextOf(code, context);
+                            result = interpreter.evaluateInContextOf(context, code);
 
                             responseJson.put("result", result.toDisplayString());
 

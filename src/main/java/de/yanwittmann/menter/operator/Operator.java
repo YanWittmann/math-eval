@@ -9,7 +9,10 @@ import de.yanwittmann.menter.parser.ParserRule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Operator {
@@ -132,7 +135,8 @@ public abstract class Operator {
                     final Object beforeBefore = i > 1 ? tokens.get(i - 2) : null;
                     final Object afterAfter = i < tokens.size() - 2 ? tokens.get(i + 2) : null;
 
-                    if (Parser.isType(beforeBefore, TokenType.DOT) || Parser.isType(afterAfter, TokenType.DOT)) {
+                    if (Parser.isType(beforeBefore, TokenType.DOT) || Parser.isType(afterAfter, TokenType.DOT) ||
+                        (checkForOperator.isLeftAssociative() && isDisallowedBeforeBeforeTokenOnLeftAssociative(beforeBefore))) {
                         continue;
                     } else if (isBlockCloser(before)) {
                         continue;
@@ -196,6 +200,10 @@ public abstract class Operator {
         }
 
         return null;
+    }
+
+    private static boolean isDisallowedBeforeBeforeTokenOnLeftAssociative(Object beforeBefore) {
+        return Parser.isKeyword(beforeBefore, "if") || Parser.isKeyword(beforeBefore, "elif");
     }
 
     private static boolean isBlockCloser(Object before) {

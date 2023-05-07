@@ -220,7 +220,7 @@ public class Parser {
     }
 
     @SuppressWarnings("unchecked")
-    private void generateRules(Operators operators) {
+    protected void generateRules(Operators operators) {
 
         if (operators == null) {
             throw new IllegalArgumentException("Operators cannot be null");

@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class MenterInterpreter extends EvalRuntime {
@@ -92,6 +91,7 @@ public class MenterInterpreter extends EvalRuntime {
             commandLineArguments.putAll(extractCommandLineArguments(args, new String[][]{
                     {"-h", "--help"},
                     {"-v", "--version"},
+                    {"-V", "--verbose"},
                     {"-f", "--file"},
                     {"-e", "--eval"},
                     {"-repl", "--repl", "repl"},
@@ -117,12 +117,17 @@ public class MenterInterpreter extends EvalRuntime {
         final MenterInterpreter interpreter = new MenterInterpreter(new Operators());
 
         final boolean isRepl = commandLineArguments.containsKey("-repl");
+        final boolean isVerboseError = commandLineArguments.containsKey("-V");
         final boolean isGuideServer = commandLineArguments.containsKey("-gs");
         final boolean isGuideServerUnsafe = commandLineArguments.containsKey("-gs") && (commandLineArguments.get("-gs").contains("unsafe") || commandLineArguments.get("-gs").contains("us"));
         final int guideServerPort = commandLineArguments.containsKey("-gs") &&
                                     commandLineArguments.get("-gs").stream().anyMatch(s -> s.matches("\\d+"))
                 ? Integer.parseInt(commandLineArguments.get("-gs").stream().filter(s -> s.matches("\\d+")).findFirst().get())
                 : -1;
+
+        if (isVerboseError) {
+            MenterDebugger.detailedParseException = true;
+        }
 
         final List<File> files = new ArrayList<>();
         if (commandLineArguments.containsKey("-f")) {
@@ -155,6 +160,7 @@ public class MenterInterpreter extends EvalRuntime {
             MenterDebugger.printer.println("  [-e, --eval] <code> - evaluate Menter code");
             MenterDebugger.printer.println("  [-repl, --repl, repl] - start REPL");
             MenterDebugger.printer.println("  [-gs, --guide-server, guide-server] <unsafe, us> <port> - start guide server (unsafe mode, port)");
+            MenterDebugger.printer.println("  [-V, --verbose] - enable verbose error mode");
             MenterDebugger.printer.println("  [-h, --help] - print this help");
             MenterDebugger.printer.println("  [-v, --version] - print version");
             MenterDebugger.printer.println();
@@ -242,14 +248,14 @@ public class MenterInterpreter extends EvalRuntime {
                             multilineBuffer.clear();
                             isMultilineMode = false;
                             MenterDebugger.haltOnEveryExecutionStep = false;
-                            result = interpreter.evaluateInContextOf(joined, "repl");
+                            result = interpreter.evaluateInContextOf("repl", joined);
                         } else {
                             multilineBuffer.add(input);
                             continue;
                         }
                     } else {
                         MenterDebugger.haltOnEveryExecutionStep = false;
-                        result = interpreter.evaluateInContextOf(input, "repl");
+                        result = interpreter.evaluateInContextOf("repl", input);
                     }
 
                     if (result != null && !result.isEmpty()) {

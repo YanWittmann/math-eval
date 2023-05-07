@@ -60,6 +60,15 @@ public abstract class EvaluationContext {
         nativeFunctions.put(new String[]{context, module}, (evaluationContext, localInformation, values) -> function.apply(values));
     }
 
+
+    public static void registerCustomValueType(Class<? extends CustomType> type) {
+        Value.registerCustomValueType(type);
+    }
+
+    public static void unregisterCustomValueType(Class<? extends CustomType> type) {
+        Value.unregisterCustomValueType(type);
+    }
+
     public Map<String, Value> getVariables() {
         return variables;
     }

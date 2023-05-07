@@ -40,6 +40,11 @@ public class EvalRuntime {
         parser = new Parser(operators);
     }
 
+    public EvalRuntime(Lexer lexer, Parser parser) {
+        this.lexer = lexer;
+        this.parser = parser;
+    }
+
     public void addModulePath(File modulePath) {
         modulePaths.add(modulePath);
     }
@@ -295,7 +300,7 @@ public class EvalRuntime {
         return context.evaluate(tokenTree);
     }
 
-    public Value evaluateInContextOf(String expression, String contextSource) {
+    public Value evaluateInContextOf(String contextSource, String expression) {
         // attempt to find a context with the given source
         GlobalContext context = globalContexts.stream()
                 .filter(globalContext -> globalContext.getSource().equals(contextSource))
