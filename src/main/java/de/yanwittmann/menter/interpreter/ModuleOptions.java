@@ -22,8 +22,9 @@ public class ModuleOptions {
         forbiddenImports.clear();
     }
 
-    public void addAutoImport(String importStatement) {
+    public ModuleOptions addAutoImport(String importStatement) {
         autoImports.add(importStatement.startsWith("import ") ? importStatement.replace(";", "") : "import " + importStatement.replace(";", ""));
+        return this;
     }
 
     public void clearAutoImports() {

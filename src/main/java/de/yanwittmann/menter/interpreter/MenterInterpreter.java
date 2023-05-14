@@ -18,6 +18,10 @@ public class MenterInterpreter extends EvalRuntime {
     public static final String VERSION = "0.0.1-SNAPSHOT";
     private static final Logger LOG = LogManager.getLogger(MenterInterpreter.class);
 
+    public MenterInterpreter() {
+        this(new Operators());
+    }
+
     public MenterInterpreter(Operators operators) {
         super(operators);
         loadMenterCoreFiles();

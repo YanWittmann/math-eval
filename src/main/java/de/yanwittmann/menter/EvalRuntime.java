@@ -45,6 +45,14 @@ public class EvalRuntime {
         this.parser = parser;
     }
 
+    public Lexer getLexer() {
+        return lexer;
+    }
+
+    public Parser getParser() {
+        return parser;
+    }
+
     public void addModulePath(File modulePath) {
         modulePaths.add(modulePath);
     }
