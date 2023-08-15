@@ -52,15 +52,35 @@ numbers.map(x -> x * 2).filter(filterFunction)
 
 ## Build / Download
 
+### Command line tool
+
 Run this command in the root directory of the project using [Mavens](https://maven.apache.org/download.cgi) `mvn`
 command:
 
 ```bash
-mvn package
+mvn package -Pcmd-jar
 ```
 
 You can then find the built jar in the `target` directory. Or simply download the latest release from the
 [GitHub releases page](https://github.com/YanWittmann/menter-lang/releases).
+
+### Java Library
+
+If you want to use it as a library, build it using the following command:
+
+```bash
+mvn install
+```
+
+and use it using the following dependency:
+
+```xml
+<dependency>
+    <groupId>de.yanwittmann</groupId>
+    <artifactId>menter-lang</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
 
 ## What is this project?
 

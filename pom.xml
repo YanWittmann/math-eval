@@ -73,49 +73,59 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0</version>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.3.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>de.yanwittmann.menter.interpreter.MenterInterpreter</mainClass>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>com.coderplus.maven.plugins</groupId>
-                <artifactId>copy-rename-maven-plugin</artifactId>
-                <version>1.0.1</version>
-                <executions>
-                    <execution>
-                        <id>copy-rename-file</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <sourceFile>${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar</sourceFile>
-                            <destinationFile>${project.build.directory}/menter.jar</destinationFile>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>cmd-jar</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>de.yanwittmann.menter.interpreter.MenterInterpreter</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>com.coderplus.maven.plugins</groupId>
+                        <artifactId>copy-rename-maven-plugin</artifactId>
+                        <version>1.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-rename-file</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <sourceFile>${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar</sourceFile>
+                                    <destinationFile>${project.build.directory}/menter.jar</destinationFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
