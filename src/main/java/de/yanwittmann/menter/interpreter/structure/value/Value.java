@@ -257,9 +257,9 @@ public class Value implements Comparable<Value> {
     public boolean isFunction() {
         final String type = getType();
         return type.equals(PrimitiveValueType.FUNCTION.getType()) ||
-               type.equals(PrimitiveValueType.VALUE_FUNCTION.getType()) ||
-               type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType()) ||
-               type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION.getType());
+                type.equals(PrimitiveValueType.VALUE_FUNCTION.getType()) ||
+                type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType()) ||
+                type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION.getType());
     }
 
     public BigDecimal getNumericValue() {
@@ -290,7 +290,7 @@ public class Value implements Comparable<Value> {
         }
 
         if (value instanceof MenterNodeFunction || value instanceof MenterValueFunction ||
-            value instanceof Function || value instanceof Pattern) {
+                value instanceof Function || value instanceof Pattern) {
             return true;
         }
 
@@ -409,6 +409,24 @@ public class Value implements Comparable<Value> {
         if (this.getValue() instanceof Class<?> && CustomType.class.isAssignableFrom(((Class<?>) this.getValue()))) {
             final Class<CustomType> customTypeClass = (Class<CustomType>) this.getValue();
             return CustomType.accessStaticValue(customTypeClass, identifier);
+        }
+
+        try {
+            final Class<?> clazz = value.getClass();
+            final Method method = clazz.getMethod(identifier.toDisplayString());
+            System.out.println("Method exists: " + method);
+
+            Method[] publicMethods = clazz.getMethods();
+            List<Method> matchingMethods = new ArrayList<>();
+
+            for (Method m : publicMethods) {
+                if (m.getName().equals(identifier.toDisplayString())) {
+                    matchingMethods.add(m);
+                }
+            }
+
+            return new Value(new ClassFunctionList(identifier.toDisplayString(), matchingMethods));
+        } catch (NoSuchMethodException ignored) {
         }
 
         return null;
@@ -1300,15 +1318,15 @@ public class Value implements Comparable<Value> {
             return "null";
         } else if (visited.contains(object)) {
             return "<circular-reference-" +
-                   (object instanceof Value ? ((Value) object).getType() : object.getClass().getSimpleName()) + "@" + Objects.hashCode(object)
-                   + ">";
+                    (object instanceof Value ? ((Value) object).getType() : object.getClass().getSimpleName()) + "@" + Objects.hashCode(object)
+                    + ">";
         } else {
             boolean add = true;
             if (object instanceof String || object instanceof BigDecimal || object instanceof Pattern || object instanceof Boolean || object instanceof Iterator) {
                 add = false;
             } else if (object instanceof Value) {
                 if ((PrimitiveValueType.isType(((Value) object), PrimitiveValueType.NUMBER.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.STRING.getType()) ||
-                     PrimitiveValueType.isType(((Value) object), PrimitiveValueType.BOOLEAN.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.REGEX.getType()))) {
+                        PrimitiveValueType.isType(((Value) object), PrimitiveValueType.BOOLEAN.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.REGEX.getType()))) {
                     add = false;
                 }
             }
