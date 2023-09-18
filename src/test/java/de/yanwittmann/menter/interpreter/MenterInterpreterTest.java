@@ -2,8 +2,6 @@ package de.yanwittmann.menter.interpreter;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.exceptions.ParsingException;
-import de.yanwittmann.menter.interpreter.structure.GlobalContext;
-import de.yanwittmann.menter.interpreter.structure.value.Value;
 import de.yanwittmann.menter.operator.Operators;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -12,18 +10,6 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 class MenterInterpreterTest {
-
-    @Test
-    public void javaClassesTest() {
-        final MenterInterpreter interpreter = new MenterInterpreter(new Operators());
-        interpreter.finishLoadingContexts();
-
-        final GlobalContext testContext = interpreter.getOrCreateContext("test");
-        testContext.getVariables().put("someFile", new Value(new File("test.txt")));
-
-        System.out.println(interpreter.evaluateInContextOf("test", "someFile.getAbsolutePath();"));
-        // System.out.println(interpreter.evaluateInContextOf("test", "someFile.equals(someFile);")); // abstraction hierarchy not implemented yet
-    }
 
     @Test
     public void multiModulesTest() {

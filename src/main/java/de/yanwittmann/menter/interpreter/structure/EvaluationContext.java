@@ -11,6 +11,7 @@ import de.yanwittmann.menter.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
@@ -522,7 +523,25 @@ public abstract class EvaluationContext {
                 final List<Value> constructorParameters = makeFunctionArguments(node, globalContext, localInformation);
 
                 if (constructorIdentifier.getValue() instanceof Class) {
-                    result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorIdentifier.getValue(), constructorParameters));
+                    final Class<?> constructorClass = (Class<?>) constructorIdentifier.getValue();
+
+                    if (CustomType.class.isAssignableFrom(constructorClass)) {
+                        result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorClass, constructorParameters));
+                    } else {
+                        final Constructor<?> bestConstructor = ClassFunctionList.findBestMatchingConstructor(constructorClass, constructorParameters);
+
+                        if (bestConstructor == null) {
+                            throw localInformation.createException("No suitable constructor found for class " + constructorClass.getName());
+                        }
+
+                        final Object[] invokeArgs = ClassFunctionList.buildArgumentList(constructorParameters, bestConstructor.getParameterTypes());
+                        try {
+                            final Object instance = bestConstructor.newInstance(invokeArgs);
+                            result = new Value(instance);
+                        } catch (Exception e) {
+                            throw localInformation.createException("Failed to create instance of class " + constructorClass.getName() + ": " + e.getMessage());
+                        }
+                    }
 
                 } else if (PrimitiveValueType.isType(constructorIdentifier, PrimitiveValueType.FUNCTION)) {
                     result = evaluateFunction(constructorIdentifier, constructorParameters, globalContext, localInformation, ParserNode.reconstructCode(node.getChildren().get(0)),
@@ -918,38 +937,17 @@ public abstract class EvaluationContext {
                     }
 
                 } else if (Objects.equals(functionType, PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType())) {
-                    final ClassFunctionList functionList = (ClassFunctionList) functionValue.getValue(); // find according method
-                    final List<Method> candidates = functionList.getFunctions();
+                    final ClassFunctionList functionList = (ClassFunctionList) functionValue.getValue();
                     final Value calledOnValue = functionList.getCalledOn();
 
-                    Method callMethod = null;
-
-                    for (Method function : candidates) {
-                        final Class<?>[] parameterTypes = function.getParameterTypes();
-                        if (parameterTypes.length != functionParameters.size()) {
-                            continue;
-                        }
-
-                        boolean allMatch = true;
-                        for (int i = 0; i < parameterTypes.length; i++) {
-                            final Class<?> parameterType = parameterTypes[i];
-                            final Value functionParameter = functionParameters.get(i);
-                            if (!parameterType.isAssignableFrom(functionParameter.getValue().getClass())) {
-                                allMatch = false;
-                                break;
-                            }
-                        }
-
-                        if (allMatch) {
-                            callMethod = function;
-                            break;
-                        }
-                    }
+                    final Method callMethod = functionList.findMethod(functionParameters);
 
                     if (callMethod == null) {
                         result = Value.empty();
                     } else {
-                        Object returnValue = callMethod.invoke(calledOnValue.getValue(), functionParameters.toArray());
+                        final Object[] invokeArgs = ClassFunctionList.buildArgumentList(functionParameters, callMethod.getParameterTypes());
+                        final Object returnValue = callMethod.invoke(calledOnValue.getValue(), invokeArgs);
+
                         if (returnValue instanceof Value) {
                             result = (Value) returnValue;
                         } else {
@@ -1201,6 +1199,15 @@ public abstract class EvaluationContext {
                     value = new Value(globalContext.getVariables());
                     if (MenterDebugger.logInterpreterResolveSymbols) {
                         MenterDebugger.printer.printf("Symbol resolve: [%s] from symbols%n", value);
+                    }
+                    continue;
+                }
+
+                final Class<?> nativeClass = Value.getRegisteredNativeClass(stringKey);
+                if (nativeClass != null) {
+                    value = new Value(nativeClass);
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        MenterDebugger.printer.printf("Symbol resolve: [%s] from native class%n", value);
                     }
                     continue;
                 }

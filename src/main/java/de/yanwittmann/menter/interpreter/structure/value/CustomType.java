@@ -138,7 +138,7 @@ public abstract class CustomType implements Comparable<CustomType> {
     public static int checkParameterCombination(List<Value> parameters, String[][] types) {
         final Boolean[] availableTypes = IntStream.range(0, types.length).mapToObj(e -> Boolean.TRUE).toArray(Boolean[]::new);
 
-        if (parameters.size() == 0) {
+        if (parameters.isEmpty()) {
             for (int i = 0; i < availableTypes.length; i++) {
                 if (types[i].length == 0) {
                     return i;

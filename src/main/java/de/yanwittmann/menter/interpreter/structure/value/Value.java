@@ -30,6 +30,7 @@ public class Value implements Comparable<Value> {
     public final static String TAG_KEY_CONTINUE_VALUE = "continueValue";
 
     private final static List<Module> CUSTOM_TYPES = new ArrayList<>();
+    private final static List<Class<?>> NATIVE_CLASSES = new ArrayList<>();
 
     private final int uuidHash = UUID.randomUUID().toString().hashCode();
     private Object value;
@@ -414,22 +415,20 @@ public class Value implements Comparable<Value> {
             return CustomType.accessStaticValue(customTypeClass, identifier);
         }
 
-        try {
-            final Class<?> clazz = value.getClass();
-            final Method method = clazz.getMethod(identifier.toDisplayString());
-            System.out.println("Method exists: " + method);
+        final Class<?> valueClazz = value.getClass();
+        if (NATIVE_CLASSES.contains(valueClazz)) {
+            final String identifierName = identifier.toDisplayString();
 
-            Method[] publicMethods = clazz.getMethods();
-            List<Method> matchingMethods = new ArrayList<>();
+            final Method[] publicMethods = valueClazz.getMethods();
+            final List<Method> matchingMethods = new ArrayList<>();
 
             for (Method m : publicMethods) {
-                if (m.getName().equals(identifier.toDisplayString())) {
+                if (m.getName().equals(identifierName)) {
                     matchingMethods.add(m);
                 }
             }
 
-            return new Value(new ClassFunctionList(this, identifier.toDisplayString(), matchingMethods));
-        } catch (NoSuchMethodException ignored) {
+            return new Value(new ClassFunctionList(this, identifierName, matchingMethods));
         }
 
         return null;
@@ -501,6 +500,36 @@ public class Value implements Comparable<Value> {
                 break;
             }
         }
+    }
+
+    public static void registerNativeClass(Class<?> clazz) {
+        NATIVE_CLASSES.add(clazz);
+    }
+
+    public static void unregisterNativeClass(Class<?> clazz) {
+        NATIVE_CLASSES.remove(clazz);
+    }
+
+    public static boolean isRegisteredNativeClass(Class<?> clazz) {
+        return NATIVE_CLASSES.contains(clazz);
+    }
+
+    public static boolean isRegisteredNativeClass(String className) {
+        for (Class<?> clazz : NATIVE_CLASSES) {
+            if (clazz.getSimpleName().equals(className)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Class<?> getRegisteredNativeClass(String className) {
+        for (Class<?> clazz : NATIVE_CLASSES) {
+            if (clazz.getSimpleName().equals(className)) {
+                return clazz;
+            }
+        }
+        return null;
     }
 
     public static Module findCustomTypeModule(String name) {

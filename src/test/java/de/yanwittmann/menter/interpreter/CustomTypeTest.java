@@ -36,40 +36,40 @@ public class CustomTypeTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "[2, Hello World]", "" +
-                                                                "import test inline\n" +
-                                                                "myType = new customType001(2)\n" +
-                                                                "result = [myType.getMyValue()]\n" +
-                                                                "myType.setMyValue(\"Hello World\")\n" +
-                                                                "result[1] = myType.getMyValue()\n" +
-                                                                "result");
+                "import test inline\n" +
+                "myType = new customType001(2)\n" +
+                "result = [myType.getMyValue()]\n" +
+                "myType.setMyValue(\"Hello World\")\n" +
+                "result[1] = myType.getMyValue()\n" +
+                "result");
 
         Assertions.assertThrows(MenterExecutionException.class,
                 () -> interpreter.evaluate("" +
-                                           "import test inline\n" +
-                                           "myType = new customType001(2)\n" +
-                                           "myType.doStuff()"));
+                        "import test inline\n" +
+                        "myType = new customType001(2)\n" +
+                        "myType.doStuff()"));
 
         evaluateAndAssertEqual(interpreter, "5", "" +
-                                                 "import test inline\n" +
-                                                 "myType = new customType001(\"hey\")\n" +
-                                                 "if (myType) 5 else 6");
+                "import test inline\n" +
+                "myType = new customType001(\"hey\")\n" +
+                "if (myType) 5 else 6");
 
         evaluateAndAssertEqual(interpreter, "6", "" +
-                                                 "import test inline\n" +
-                                                 "myType = new customType001(\"\")\n" +
-                                                 "if (myType) 5 else 6");
+                "import test inline\n" +
+                "myType = new customType001(\"\")\n" +
+                "if (myType) 5 else 6");
 
         evaluateAndAssertEqual(interpreter, "[t, e, s, t]", "" +
-                                                            "import test inline\n" +
-                                                            "myType = new customType001(\"test\")\n" +
-                                                            "result = []\n" +
-                                                            "index = 0\n" +
-                                                            "for (i in myType) { result[index] = i; index = index + 1 }\n" +
-                                                            "result");
+                "import test inline\n" +
+                "myType = new customType001(\"test\")\n" +
+                "result = []\n" +
+                "index = 0\n" +
+                "for (i in myType) { result[index] = i; index = index + 1 }\n" +
+                "result");
 
         evaluateAndAssertEqual(interpreter, "static Hello World!", "" +
-                                                                   "import test inline\n" +
-                                                                   "customType001.doStuffStatic()");
+                "import test inline\n" +
+                "customType001.doStuffStatic()");
     }
 
     @Test
@@ -78,18 +78,18 @@ public class CustomTypeTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "Yan", "" +
-                                                   "import users inline\n" +
-                                                   "userList = new UserList()\n" +
-                                                   "userList.addUser(\"Yan\", 22)\n" +
-                                                   "userList.addUser(new User(\"Thomas\", 36))\n" +
-                                                   "userList.getUsers().get(0).getName()");
+                "import users inline\n" +
+                "userList = new UserList()\n" +
+                "userList.addUser(\"Yan\", 22)\n" +
+                "userList.addUser(new User(\"Thomas\", 36))\n" +
+                "userList.getUsers().get(0).getName()");
 
         evaluateAndAssertEqual(interpreter, "36", "" +
-                                                  "import users inline\n" +
-                                                  "userList = new UserList()\n" +
-                                                  "userList.addUser(\"Yan\", 22)\n" +
-                                                  "userList.addUser(new User(\"Thomas\", 36))\n" +
-                                                  "userList.getUsers().get(1).getAge()");
+                "import users inline\n" +
+                "userList = new UserList()\n" +
+                "userList.addUser(\"Yan\", 22)\n" +
+                "userList.addUser(new User(\"Thomas\", 36))\n" +
+                "userList.getUsers().get(1).getAge()");
     }
 
     private static void evaluateAndAssertEqual(MenterInterpreter interpreter, String expected, String expression) {
