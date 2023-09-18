@@ -21,7 +21,8 @@ class MenterInterpreterTest {
         final GlobalContext testContext = interpreter.getOrCreateContext("test");
         testContext.getVariables().put("someFile", new Value(new File("test.txt")));
 
-        interpreter.evaluateInContextOf("test", "someFile.getAbsolutePath();");
+        System.out.println(interpreter.evaluateInContextOf("test", "someFile.getAbsolutePath();"));
+        // System.out.println(interpreter.evaluateInContextOf("test", "someFile.equals(someFile);")); // abstraction hierarchy not implemented yet
     }
 
     @Test

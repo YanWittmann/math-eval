@@ -243,6 +243,8 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
         } else if (value instanceof Method) {
             return PrimitiveValueType.REFLECTIVE_FUNCTION.getType();
+        } else if (value instanceof ClassFunctionList) {
+            return PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType();
         } else if (value instanceof Iterator<?>) {
             return PrimitiveValueType.ITERATOR.getType();
         } else if (value instanceof Matcher) {
@@ -259,7 +261,8 @@ public class Value implements Comparable<Value> {
         return type.equals(PrimitiveValueType.FUNCTION.getType()) ||
                 type.equals(PrimitiveValueType.VALUE_FUNCTION.getType()) ||
                 type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType()) ||
-                type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION.getType());
+                type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION.getType()) ||
+                type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType());
     }
 
     public BigDecimal getNumericValue() {
@@ -425,7 +428,7 @@ public class Value implements Comparable<Value> {
                 }
             }
 
-            return new Value(new ClassFunctionList(identifier.toDisplayString(), matchingMethods));
+            return new Value(new ClassFunctionList(this, identifier.toDisplayString(), matchingMethods));
         } catch (NoSuchMethodException ignored) {
         }
 

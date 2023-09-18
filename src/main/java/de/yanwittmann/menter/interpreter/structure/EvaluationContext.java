@@ -2,10 +2,7 @@ package de.yanwittmann.menter.interpreter.structure;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
-import de.yanwittmann.menter.interpreter.structure.value.CustomType;
-import de.yanwittmann.menter.interpreter.structure.value.NativeFunction;
-import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
-import de.yanwittmann.menter.interpreter.structure.value.Value;
+import de.yanwittmann.menter.interpreter.structure.value.*;
 import de.yanwittmann.menter.lexer.Lexer.TokenType;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.operator.Operator;
@@ -592,7 +589,7 @@ public abstract class EvaluationContext {
                 }
 
             } else if (Parser.isKeyword(node, "null") || Parser.isType(node, TokenType.PASS) ||
-                       Parser.isType(node, TokenType.BREAK) || Parser.isType(node, TokenType.CONTINUE)) {
+                    Parser.isType(node, TokenType.BREAK) || Parser.isType(node, TokenType.CONTINUE)) {
 
                 result = Value.empty();
                 if (Parser.isType(node, TokenType.BREAK)) {
@@ -662,7 +659,7 @@ public abstract class EvaluationContext {
         } else if (iteratorVariable instanceof ParserNode) {
             final ParserNode varNode = (ParserNode) iteratorVariable;
             if (Parser.isType(varNode, ParserNode.NodeType.PARENTHESIS_PAIR) || Parser.isType(varNode, ParserNode.NodeType.SQUARE_BRACKET_PAIR) ||
-                Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
+                    Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
                 for (Object child : varNode.getChildren()) {
                     variableNames.add(((Token) child).getValue());
                 }
@@ -896,34 +893,78 @@ public abstract class EvaluationContext {
 
                 result = evaluate(executableFunction.getBody(), effectiveParentClosureContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
 
-            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
-                final NativeFunction nativeFunction;
-                try {
-                    nativeFunction = (NativeFunction) functionValue.getValue();
-                } catch (Exception e) {
-                    throw localInformation.createException("Native function [" + originalFunctionName + "] does not have the correct signature; must be List<Value> -> Value");
-                }
-                result = nativeFunction.execute(effectiveParentClosureContext, localInformation, functionParameters);
+            } else {
+                final String functionType = functionValue.getType();
 
-            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
-                final Method executableFunction = (Method) functionValue.getValue();
-                final Value calledOnValue = functionValue.getTagParentFunctionValue();
-                final CustomType calledOnCustomType = (CustomType) calledOnValue.getValue();
+                if (Objects.equals(functionType, PrimitiveValueType.NATIVE_FUNCTION.getType())) {
+                    final NativeFunction nativeFunction;
+                    try {
+                        nativeFunction = (NativeFunction) functionValue.getValue();
+                    } catch (Exception e) {
+                        throw localInformation.createException("Native function [" + originalFunctionName + "] does not have the correct signature; must be List<Value> -> Value");
+                    }
+                    result = nativeFunction.execute(effectiveParentClosureContext, localInformation, functionParameters);
 
-                if (calledOnCustomType != null) {
-                    result = calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
-                } else {
-                    // static method
-                    result = (Value) executableFunction.invoke(null, functionParameters);
-                }
+                } else if (Objects.equals(functionType, PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
+                    final Method executableFunction = (Method) functionValue.getValue();
+                    final Value calledOnValue = functionValue.getTagParentFunctionValue();
+                    final CustomType calledOnCustomType = (CustomType) calledOnValue.getValue();
 
-            } else { // otherwise it must be a value function
-                final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
-                final Value executeOnValue = functionValue.getTagParentFunctionValue();
-                if (executeOnValue == null) {
-                    throw localInformation.createException("Function [" + originalFunctionName + "] cannot be called without a base value to execute on");
+                    if (calledOnCustomType != null) {
+                        result = calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
+                    } else {
+                        // static method
+                        result = (Value) executableFunction.invoke(null, functionParameters);
+                    }
+
+                } else if (Objects.equals(functionType, PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType())) {
+                    final ClassFunctionList functionList = (ClassFunctionList) functionValue.getValue(); // find according method
+                    final List<Method> candidates = functionList.getFunctions();
+                    final Value calledOnValue = functionList.getCalledOn();
+
+                    Method callMethod = null;
+
+                    for (Method function : candidates) {
+                        final Class<?>[] parameterTypes = function.getParameterTypes();
+                        if (parameterTypes.length != functionParameters.size()) {
+                            continue;
+                        }
+
+                        boolean allMatch = true;
+                        for (int i = 0; i < parameterTypes.length; i++) {
+                            final Class<?> parameterType = parameterTypes[i];
+                            final Value functionParameter = functionParameters.get(i);
+                            if (!parameterType.isAssignableFrom(functionParameter.getValue().getClass())) {
+                                allMatch = false;
+                                break;
+                            }
+                        }
+
+                        if (allMatch) {
+                            callMethod = function;
+                            break;
+                        }
+                    }
+
+                    if (callMethod == null) {
+                        result = Value.empty();
+                    } else {
+                        Object returnValue = callMethod.invoke(calledOnValue.getValue(), functionParameters.toArray());
+                        if (returnValue instanceof Value) {
+                            result = (Value) returnValue;
+                        } else {
+                            result = new Value(returnValue);
+                        }
+                    }
+
+                } else { // otherwise it must be a value function
+                    final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
+                    final Value executeOnValue = functionValue.getTagParentFunctionValue();
+                    if (executeOnValue == null) {
+                        throw localInformation.createException("Function [" + originalFunctionName + "] cannot be called without a base value to execute on");
+                    }
+                    result = executableFunction.apply(effectiveParentClosureContext, executeOnValue, functionParameters, localInformation);
                 }
-                result = executableFunction.apply(effectiveParentClosureContext, executeOnValue, functionParameters, localInformation);
             }
 
             result.unwrapReturn();
@@ -1013,7 +1054,7 @@ public abstract class EvaluationContext {
             if (identifiers.get(i) instanceof ParserNode) {
                 final ParserNode node = (ParserNode) identifiers.get(i);
                 if (node.getType() == ParserNode.NodeType.CODE_BLOCK || node.getType() == ParserNode.NodeType.EXPRESSION
-                    || node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
+                        || node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
                     final Value value = evaluate(node, globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                     identifiers.set(i, value);
                 }
@@ -1096,7 +1137,7 @@ public abstract class EvaluationContext {
                     if (!anImport.isInline() && anImport.getAliasOrName().equals(stringKey)) {
                         if (originalGlobalContext != globalContext) {
                             throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: Cannot access reference to the [" + anImport.getModule().getName() + "] module.\n"
-                                                                   + "Accessing symbols across modules is disallowed.");
+                                    + "Accessing symbols across modules is disallowed.");
                         }
 
                         final Module module = anImport.getModule();
@@ -1116,7 +1157,7 @@ public abstract class EvaluationContext {
                     } else if (anImport.isInline() && anImport.getModule().containsSymbol(stringKey)) {
                         if (originalGlobalContext != globalContext) {
                             throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: [" + stringKey + "] references a symbol from the [" + anImport.getModule().getName() + "] module.\n"
-                                                                   + "Accessing symbols across modules is disallowed.");
+                                    + "Accessing symbols across modules is disallowed.");
                         }
 
                         final Module module = anImport.getModule();
@@ -1215,8 +1256,8 @@ public abstract class EvaluationContext {
                 final List<String> candidates = findMostLikelyCandidates(globalContext, previousValue, stringKey);
 
                 throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on [" + ParserNode.reconstructCode(identifier) + "]" +
-                                                       (previousValue != null ? "\nEvaluation stopped at value: " + ParserNode.reconstructCode(previousValue) : "") +
-                                                       (candidates.isEmpty() ? "" : "\nDid you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
+                        (previousValue != null ? "\nEvaluation stopped at value: " + ParserNode.reconstructCode(previousValue) : "") +
+                        (candidates.isEmpty() ? "" : "\nDid you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
 
             } else if (symbolCreationModeIsAllowedToCreateVariable) {
                 if (isFinalIdentifier) {
