@@ -52,22 +52,22 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "true", "[1,2].containsValue(1)"); // contains functions would not compare the values, but the value instances
 
         evaluateAndAssertEqual(interpreter, "[6, 8]", "import system inline; import math inline;" +
-                                                      "range(1, 4)\n" +
-                                                      "  .map(x -> x * 2)\n" +
-                                                      "  .filter(x -> x > 4)"); // this would not have worked because of the indentation being the same on the lower two lines
+                "range(1, 4)\n" +
+                "  .map(x -> x * 2)\n" +
+                "  .filter(x -> x > 4)"); // this would not have worked because of the indentation being the same on the lower two lines
 
         evaluateAndAssertEqual(interpreter, "[6, 0, [6]]", "fun(x) {\n" +
-                                                           "  if (x.type() == \"number\") x + 5\n" +
-                                                           "  else if (x.type() == \"object\") x.map(x -> x + 5)\n" +
-                                                           "  else 0\n" +
-                                                           "}\n" +
-                                                           "[1, \"1\", [1]].map(fun)"); // this would fail because of like 3 different reasons (mainly because the brackets on the if statements would be evaluated after the + expressions)
+                "  if (x.type() == \"number\") x + 5\n" +
+                "  else if (x.type() == \"object\") x.map(x -> x + 5)\n" +
+                "  else 0\n" +
+                "}\n" +
+                "[1, \"1\", [1]].map(fun)"); // this would fail because of like 3 different reasons (mainly because the brackets on the if statements would be evaluated after the + expressions)
 
         Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("test = 4; test.f = () -> test; test.f() = 43;")); // function calls should not be assignable
         Assertions.assertThrows(ParsingException.class, () -> interpreter.evaluate("a.a(a, b) {}")); // function declaration via object.child() { ... } is not supported
 
         evaluateAndAssertEqual(interpreter, "{1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 1}", "import math inline; data = range(0,1).map(x -> {k: x}).cross(range(1,6).map(x -> {w: x})).map(x -> {x.summe = x.k + x.w; x})\n" +
-                                                                                          "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
+                "data.map(x -> x.summe).foldl({}, (acc, val) -> { acc[val] += 1; return acc; })");
 
 
         evaluateAndAssertEqual(interpreter, "0", "[1, 2, 3, 4].foldr(10, (-))"); // these would not work, as the fold functions would ignore the left/rightmost value if an accumulator is given
@@ -130,18 +130,18 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "6", "((x, y) -> x + y)(2, 4)");
 
         evaluateAndAssertEqual(interpreter, "9", "" +
-                                                 "add = (x, y) -> x + y;" +
-                                                 "double = x -> x * 2;" +
-                                                 "math.sin = x -> x + 5;" +
-                                                 "math.test = (x, y) -> if (x < y) x else y;" +
-                                                 "math.test(9, math.sin(double(add(2, 1))));");
+                "add = (x, y) -> x + y;" +
+                "double = x -> x * 2;" +
+                "math.sin = x -> x + 5;" +
+                "math.test = (x, y) -> if (x < y) x else y;" +
+                "math.test(9, math.sin(double(add(2, 1))));");
 
         evaluateAndAssertEqual(interpreter, "19", "" +
-                                                  "add = (x, y) -> x + y;" +
-                                                  "double = x -> x * 2;" +
-                                                  "math.sin = x -> x + 5;" +
-                                                  "math.test = (x, y) -> if (x < y) x else y;" +
-                                                  "1 |> add(2) |> double |> math.sin |> math.test(100) |> ((x, y) -> x + y)(3) |> x -> x + 5");
+                "add = (x, y) -> x + y;" +
+                "double = x -> x * 2;" +
+                "math.sin = x -> x + 5;" +
+                "math.test = (x, y) -> if (x < y) x else y;" +
+                "1 |> add(2) |> double |> math.sin |> math.test(100) |> ((x, y) -> x + y)(3) |> x -> x + 5");
 
         evaluateAndAssertEqual(interpreter, "6", "3 + (4 |> x -> x - 1)");
         evaluateAndAssertEqual(interpreter, "9", "7 |> x -> x + 1 |> x -> x + 1"); // the issue with this one is that the -> would check for operators (|>) behind the next token, which would cancel the -> operator
@@ -218,10 +218,10 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "7", "if (1 == 2) if (3 < 4) 5 else 6 else 7");
 
         evaluateAndAssertEqual(interpreter, "[2, 3]", "" +
-                                                      "[1, 2].map(x -> x + 1)");
+                "[1, 2].map(x -> x + 1)");
         evaluateAndAssertEqual(interpreter, "[6, 7]", "" +
-                                                      "if (false) 3 + 5\n" +
-                                                      "else if (true) [1,2].map(x -> x + 5)");
+                "if (false) 3 + 5\n" +
+                "else if (true) [1,2].map(x -> x + 5)");
 
         // the operator would be combined with the parenthesis pair of the if statement, which would result in a syntax error
         evaluateAndAssertEqual(interpreter, "(a, b) -> { if (a > b) 1 else if (a < b) { -1 } else 0 }", "maxComparator = (a, b) -> { if (a > b) 1 elif (a < b) -1 else 0 }");
@@ -239,13 +239,13 @@ class MenterInterpreterTest {
         evaluateAndAssertEqual(interpreter, "15", "1 + 2 * (3 + 4)");
         evaluateAndAssertEqual(interpreter, "15", "1 * 5 + 2 * (3 + 2)");
         evaluateAndAssertEqual(interpreter, "-44", "" +
-                                                   "-1 * (2 + 3 * 4) + -5 * 6");
+                "-1 * (2 + 3 * 4) + -5 * 6");
         evaluateAndAssertEqual(interpreter, "-75", "" +
-                                                   "foo = x -> x; test = x -> x;" +
-                                                   "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + -30 * 1");
+                "foo = x -> x; test = x -> x;" +
+                "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + -30 * 1");
         evaluateAndAssertEqual(interpreter, "-30", "" +
-                                                   "foo = x -> x; test = x -> x;" +
-                                                   "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + test(1 * 5 + 2 * (3 + 2)) * 1");
+                "foo = x -> x; test = x -> x;" +
+                "1 + 2 * (3 + 4) - 5 + -5 * (3 + foo(4) * 2) + test(1 * 5 + 2 * (3 + 2)) * 1");
 
         evaluateAndAssertEqual(interpreter, "-3.5", "1 + 2 * 3 / 4 % 5 - 6");
 
@@ -287,20 +287,20 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "832040", "" +
-                                                      "fibstorage = {}\n" +
-                                                      "fib(n) = {\n" +
-                                                      "  if (!fibstorage.containsKey(n)) { fibstorage[n] = if (n == 0) 0 else if (n == 1) 1 else fib(n - 1) + fib(n - 2) }\n" +
-                                                      "  fibstorage[n]\n" +
-                                                      "}\n" +
-                                                      "fib(30)");
+                "fibstorage = {}\n" +
+                "fib(n) = {\n" +
+                "  if (!fibstorage.containsKey(n)) { fibstorage[n] = if (n == 0) 0 else if (n == 1) 1 else fib(n - 1) + fib(n - 2) }\n" +
+                "  fibstorage[n]\n" +
+                "}\n" +
+                "fib(30)");
 
         evaluateAndAssertEqual(interpreter, "13", "" +
-                                                  "fib2 = n -> {\n" +
-                                                  " if (n == 0) 0\n" +
-                                                  " else if (n == 1) 1\n" +
-                                                  " else fib2(n - 1) + fib2 (n - 2)\n" +
-                                                  "}\n" +
-                                                  "fib2(7)");
+                "fib2 = n -> {\n" +
+                " if (n == 0) 0\n" +
+                " else if (n == 1) 1\n" +
+                " else fib2(n - 1) + fib2 (n - 2)\n" +
+                "}\n" +
+                "fib2(7)");
     }
 
     @Test
@@ -309,29 +309,29 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "6", "" +
-                                                 "sum = 0\n" +
-                                                 "for (i : [1, 2, 3]) {\n" +
-                                                 "  sum = sum + i\n" +
-                                                 "}\n" +
-                                                 "sum");
+                "sum = 0\n" +
+                "for (i : [1, 2, 3]) {\n" +
+                "  sum = sum + i\n" +
+                "}\n" +
+                "sum");
 
         evaluateAndAssertEqual(interpreter, "11", "" +
-                                                  "sum = 0\n" +
-                                                  "keys = 0\n" +
-                                                  "for ((k, v) in [6, 4]) {\n" +
-                                                  "  sum = sum + v\n" +
-                                                  "  keys = keys + k\n" +
-                                                  "}\n" +
-                                                  "sum + keys");
+                "sum = 0\n" +
+                "keys = 0\n" +
+                "for ((k, v) in [6, 4]) {\n" +
+                "  sum = sum + v\n" +
+                "  keys = keys + k\n" +
+                "}\n" +
+                "sum + keys");
 
         evaluateAndAssertEqual(interpreter, "2", "" +
-                                                 "\"42\".iterator().forEach(k -> k)");
+                "\"42\".iterator().forEach(k -> k)");
 
         evaluateAndAssertEqual(interpreter, "2!", "" +
-                                                  "\"42\".forEach(k -> k + \"!\")");
+                "\"42\".forEach(k -> k + \"!\")");
 
         evaluateAndAssertEqual(interpreter, "3", "" +
-                                                 "[1, 2, 3].forEach((k, v) -> v)");
+                "[1, 2, 3].forEach((k, v) -> v)");
     }
 
     @Test
@@ -340,11 +340,11 @@ class MenterInterpreterTest {
         interpreter.finishLoadingContexts();
 
         evaluateAndAssertEqual(interpreter, "24", "" +
-                                                  "sum = 0\n" +
-                                                  "for (i in [1, 2, 3]) {\n" +
-                                                  "  sum = sum + i; sum = sum + i\n" +
-                                                  "  sum = sum + i * 2\n" +
-                                                  "}");
+                "sum = 0\n" +
+                "for (i in [1, 2, 3]) {\n" +
+                "  sum = sum + i; sum = sum + i\n" +
+                "  sum = sum + i * 2\n" +
+                "}");
     }
 
     @Test
@@ -355,10 +355,10 @@ class MenterInterpreterTest {
         MenterDebugger.logInterpreterAssignments = true;
 
         evaluateAndAssertEqual(interpreter, "[{id: 0, name: Card Stop}, {id: 1, name: Shop Es!}, {id: 2, name: Card Gate}]", "" +
-                                                                                                                             "shops_arr = [\"Card Stop\", \"Shop Es!\", \"Card Gate\"]\n" +
-                                                                                                                             "shops = []\n" +
-                                                                                                                             "for ((k, v) in shops_arr) shops[k] = {id: k, name: v}\n" +
-                                                                                                                             "shops");
+                "shops_arr = [\"Card Stop\", \"Shop Es!\", \"Card Gate\"]\n" +
+                "shops = []\n" +
+                "for ((k, v) in shops_arr) shops[k] = {id: k, name: v}\n" +
+                "shops");
     }
 
     @Test
@@ -369,8 +369,8 @@ class MenterInterpreterTest {
         interpreter.evaluateInContextOf("sometestmodule", "d = 5; foo() { d }; export [foo, d] as sometestmodule");
 
         evaluateAndAssertEqual(interpreter, "[d, foo]", "" +
-                                                        "import sometestmodule\n" +
-                                                        "sometestmodule.symbols.keys()");
+                "import sometestmodule\n" +
+                "sometestmodule.symbols.keys()");
     }
 
     @Test
@@ -418,8 +418,8 @@ class MenterInterpreterTest {
 
         evaluateAndAssertEqual(interpreter, "-6",
                 "import math\n" +
-                "val = x -> {math.sub(-2, x)}\n" +
-                "val(4)");
+                        "val = x -> {math.sub(-2, x)}\n" +
+                        "val(4)");
     }
 
     @Test
@@ -476,24 +476,24 @@ class MenterInterpreterTest {
         Assertions.assertThrows(MenterExecutionException.class, () -> interpreter.evaluate("Person = (age) -> { getAge: () -> args.name }; p = new Person(\"John\", 20); p.getAge()"));
 
         evaluateAndAssertEqual(interpreter, "HR", "Person = (name, age) -> { $init: () -> { self.age++ }, name: args.name, age: args.age }\n" +
-                                                  "Manager = (name, age, departement) -> { $extends: Person(args.name, args.age), departement: args.departement }\n" +
-                                                  "p = new Manager(\"John\", 20, \"HR\")\n" +
-                                                  "p.departement");
+                "Manager = (name, age, departement) -> { $extends: Person(args.name, args.age), departement: args.departement }\n" +
+                "p = new Manager(\"John\", 20, \"HR\")\n" +
+                "p.departement");
         // multi-extends
         evaluateAndAssertEqual(interpreter, "[HR, 1000]", "Person = (name, age) -> { $init: () -> { self.age++ }, $name: args.name, $age: args.age }\n" +
-                                                          "Billable = (billingAmount) -> { billingAmount: billingAmount }\n" +
-                                                          "Manager = (name, age, departement) -> { $extends: [Person(args.name, args.age), Billable(1000)], $departement: args.departement }\n" +
-                                                          "p = new Manager(\"John\", 20, \"HR\")\n" +
-                                                          "[p.departement, p.billingAmount]");
+                "Billable = (billingAmount) -> { billingAmount: billingAmount }\n" +
+                "Manager = (name, age, departement) -> { $extends: [Person(args.name, args.age), Billable(1000)], $departement: args.departement }\n" +
+                "p = new Manager(\"John\", 20, \"HR\")\n" +
+                "[p.departement, p.billingAmount]");
 
         // fields
         evaluateAndAssertEqual(interpreter, "John", "Person = (name, age) -> { $fields: [name, age] }\n" +
-                                                    "p = new Person(\"John\", 20)\n" +
-                                                    "p.name");
+                "p = new Person(\"John\", 20)\n" +
+                "p.name");
         evaluateAndAssertEqual(interpreter, "[HR, 22]", "Person = (name, age) -> { $init: () -> self.age++, $fields: [name, age] }\n" +
-                                                        "Manager = (name, age, departement) -> { $extends: Person(name, age + 1), $fields: [departement] }\n" +
-                                                        "p = new Manager(\"John\", 20, \"HR\")\n" +
-                                                        "[p.departement, p.age]");
+                "Manager = (name, age, departement) -> { $extends: Person(name, age + 1), $fields: [departement] }\n" +
+                "p = new Manager(\"John\", 20, \"HR\")\n" +
+                "[p.departement, p.age]");
     }
 
     @Test

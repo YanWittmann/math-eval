@@ -344,6 +344,17 @@ public class EvalRuntime {
         }
     }
 
+    public GlobalContext getOrCreateContext(String context) {
+        return globalContexts.stream()
+                .filter(c -> c.getSource().equals(context))
+                .findFirst()
+                .orElseGet(() -> {
+                    final GlobalContext newContext = new GlobalContext(context);
+                    globalContexts.add(newContext);
+                    return newContext;
+                });
+    }
+
     public void deleteContext(String context) {
         globalContexts.stream()
                 .filter(c -> c.getSource().equals(context))

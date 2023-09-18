@@ -11,6 +11,7 @@ public enum PrimitiveValueType {
     VALUE_FUNCTION("value_function"),
     NATIVE_FUNCTION("native_function"),
     REFLECTIVE_FUNCTION("reflective_function"),
+    REFLECTIVE_FUNCTION_LIST("reflective_function_list"),
     ITERATOR("iterator"),
     @Deprecated
     ARRAY("array"),

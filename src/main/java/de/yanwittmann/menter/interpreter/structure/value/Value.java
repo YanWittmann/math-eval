@@ -30,6 +30,8 @@ public class Value implements Comparable<Value> {
     public final static String TAG_KEY_CONTINUE_VALUE = "continueValue";
 
     private final static List<Module> CUSTOM_TYPES = new ArrayList<>();
+    private final static List<Class<?>> NATIVE_CLASSES = new ArrayList<>();
+    private static boolean ALLOW_ANY_NATIVE_CLASS_ACCESS = false;
 
     private final int uuidHash = UUID.randomUUID().toString().hashCode();
     private Object value;
@@ -243,6 +245,8 @@ public class Value implements Comparable<Value> {
             return PrimitiveValueType.NATIVE_FUNCTION.getType();
         } else if (value instanceof Method) {
             return PrimitiveValueType.REFLECTIVE_FUNCTION.getType();
+        } else if (value instanceof ClassFunctionList) {
+            return PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType();
         } else if (value instanceof Iterator<?>) {
             return PrimitiveValueType.ITERATOR.getType();
         } else if (value instanceof Matcher) {
@@ -257,9 +261,10 @@ public class Value implements Comparable<Value> {
     public boolean isFunction() {
         final String type = getType();
         return type.equals(PrimitiveValueType.FUNCTION.getType()) ||
-               type.equals(PrimitiveValueType.VALUE_FUNCTION.getType()) ||
-               type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType()) ||
-               type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION.getType());
+                type.equals(PrimitiveValueType.VALUE_FUNCTION.getType()) ||
+                type.equals(PrimitiveValueType.NATIVE_FUNCTION.getType()) ||
+                type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION.getType()) ||
+                type.equals(PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType());
     }
 
     public BigDecimal getNumericValue() {
@@ -290,7 +295,7 @@ public class Value implements Comparable<Value> {
         }
 
         if (value instanceof MenterNodeFunction || value instanceof MenterValueFunction ||
-            value instanceof Function || value instanceof Pattern) {
+                value instanceof Function || value instanceof Pattern) {
             return true;
         }
 
@@ -411,6 +416,22 @@ public class Value implements Comparable<Value> {
             return CustomType.accessStaticValue(customTypeClass, identifier);
         }
 
+        final Class<?> valueClazz = value.getClass();
+        if (ALLOW_ANY_NATIVE_CLASS_ACCESS || NATIVE_CLASSES.contains(valueClazz)) {
+            final String identifierName = identifier.toDisplayString();
+
+            final Method[] publicMethods = valueClazz.getMethods();
+            final List<Method> matchingMethods = new ArrayList<>();
+
+            for (Method m : publicMethods) {
+                if (m.getName().equals(identifierName)) {
+                    matchingMethods.add(m);
+                }
+            }
+
+            return new Value(new ClassFunctionList(this, identifierName, matchingMethods));
+        }
+
         return null;
     }
 
@@ -480,6 +501,31 @@ public class Value implements Comparable<Value> {
                 break;
             }
         }
+    }
+
+    public static void setAllowAnyNativeClassAccess(boolean allowAnyNativeClassAccess) {
+        ALLOW_ANY_NATIVE_CLASS_ACCESS = allowAnyNativeClassAccess;
+    }
+
+    public static boolean isAllowAnyNativeClassAccess() {
+        return ALLOW_ANY_NATIVE_CLASS_ACCESS;
+    }
+
+    public static void registerNativeClass(Class<?> clazz) {
+        NATIVE_CLASSES.add(clazz);
+    }
+
+    public static void unregisterNativeClass(Class<?> clazz) {
+        NATIVE_CLASSES.remove(clazz);
+    }
+
+    public static Class<?> getRegisteredNativeClassForConstruction(String className) {
+        for (Class<?> clazz : NATIVE_CLASSES) {
+            if (clazz.getSimpleName().equals(className)) {
+                return clazz;
+            }
+        }
+        return null;
     }
 
     public static Module findCustomTypeModule(String name) {
@@ -1300,15 +1346,15 @@ public class Value implements Comparable<Value> {
             return "null";
         } else if (visited.contains(object)) {
             return "<circular-reference-" +
-                   (object instanceof Value ? ((Value) object).getType() : object.getClass().getSimpleName()) + "@" + Objects.hashCode(object)
-                   + ">";
+                    (object instanceof Value ? ((Value) object).getType() : object.getClass().getSimpleName()) + "@" + Objects.hashCode(object)
+                    + ">";
         } else {
             boolean add = true;
             if (object instanceof String || object instanceof BigDecimal || object instanceof Pattern || object instanceof Boolean || object instanceof Iterator) {
                 add = false;
             } else if (object instanceof Value) {
                 if ((PrimitiveValueType.isType(((Value) object), PrimitiveValueType.NUMBER.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.STRING.getType()) ||
-                     PrimitiveValueType.isType(((Value) object), PrimitiveValueType.BOOLEAN.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.REGEX.getType()))) {
+                        PrimitiveValueType.isType(((Value) object), PrimitiveValueType.BOOLEAN.getType()) || PrimitiveValueType.isType(((Value) object), PrimitiveValueType.REGEX.getType()))) {
                     add = false;
                 }
             }

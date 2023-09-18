@@ -2,10 +2,7 @@ package de.yanwittmann.menter.interpreter.structure;
 
 import de.yanwittmann.menter.exceptions.MenterExecutionException;
 import de.yanwittmann.menter.interpreter.MenterDebugger;
-import de.yanwittmann.menter.interpreter.structure.value.CustomType;
-import de.yanwittmann.menter.interpreter.structure.value.NativeFunction;
-import de.yanwittmann.menter.interpreter.structure.value.PrimitiveValueType;
-import de.yanwittmann.menter.interpreter.structure.value.Value;
+import de.yanwittmann.menter.interpreter.structure.value.*;
 import de.yanwittmann.menter.lexer.Lexer.TokenType;
 import de.yanwittmann.menter.lexer.Token;
 import de.yanwittmann.menter.operator.Operator;
@@ -14,6 +11,7 @@ import de.yanwittmann.menter.parser.ParserNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
@@ -525,7 +523,25 @@ public abstract class EvaluationContext {
                 final List<Value> constructorParameters = makeFunctionArguments(node, globalContext, localInformation);
 
                 if (constructorIdentifier.getValue() instanceof Class) {
-                    result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorIdentifier.getValue(), constructorParameters));
+                    final Class<?> constructorClass = (Class<?>) constructorIdentifier.getValue();
+
+                    if (CustomType.class.isAssignableFrom(constructorClass)) {
+                        result = new Value(CustomType.createInstance((Class<? extends CustomType>) constructorClass, constructorParameters));
+                    } else {
+                        final Constructor<?> bestConstructor = ClassFunctionList.findBestMatchingConstructor(constructorClass, constructorParameters);
+
+                        if (bestConstructor == null) {
+                            throw localInformation.createException("No suitable constructor found for class " + constructorClass.getName());
+                        }
+
+                        final Object[] invokeArgs = ClassFunctionList.buildArgumentList(constructorParameters, bestConstructor.getParameterTypes());
+                        try {
+                            final Object instance = bestConstructor.newInstance(invokeArgs);
+                            result = new Value(instance);
+                        } catch (Exception e) {
+                            throw localInformation.createException("Failed to create instance of class " + constructorClass.getName() + ": " + e.getMessage());
+                        }
+                    }
 
                 } else if (PrimitiveValueType.isType(constructorIdentifier, PrimitiveValueType.FUNCTION)) {
                     result = evaluateFunction(constructorIdentifier, constructorParameters, globalContext, localInformation, ParserNode.reconstructCode(node.getChildren().get(0)),
@@ -592,7 +608,7 @@ public abstract class EvaluationContext {
                 }
 
             } else if (Parser.isKeyword(node, "null") || Parser.isType(node, TokenType.PASS) ||
-                       Parser.isType(node, TokenType.BREAK) || Parser.isType(node, TokenType.CONTINUE)) {
+                    Parser.isType(node, TokenType.BREAK) || Parser.isType(node, TokenType.CONTINUE)) {
 
                 result = Value.empty();
                 if (Parser.isType(node, TokenType.BREAK)) {
@@ -662,7 +678,7 @@ public abstract class EvaluationContext {
         } else if (iteratorVariable instanceof ParserNode) {
             final ParserNode varNode = (ParserNode) iteratorVariable;
             if (Parser.isType(varNode, ParserNode.NodeType.PARENTHESIS_PAIR) || Parser.isType(varNode, ParserNode.NodeType.SQUARE_BRACKET_PAIR) ||
-                Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
+                    Parser.isType(varNode, ParserNode.NodeType.ARRAY)) {
                 for (Object child : varNode.getChildren()) {
                     variableNames.add(((Token) child).getValue());
                 }
@@ -896,34 +912,57 @@ public abstract class EvaluationContext {
 
                 result = evaluate(executableFunction.getBody(), effectiveParentClosureContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, functionLocalInformation);
 
-            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.NATIVE_FUNCTION.getType())) {
-                final NativeFunction nativeFunction;
-                try {
-                    nativeFunction = (NativeFunction) functionValue.getValue();
-                } catch (Exception e) {
-                    throw localInformation.createException("Native function [" + originalFunctionName + "] does not have the correct signature; must be List<Value> -> Value");
-                }
-                result = nativeFunction.execute(effectiveParentClosureContext, localInformation, functionParameters);
+            } else {
+                final String functionType = functionValue.getType();
 
-            } else if (Objects.equals(functionValue.getType(), PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
-                final Method executableFunction = (Method) functionValue.getValue();
-                final Value calledOnValue = functionValue.getTagParentFunctionValue();
-                final CustomType calledOnCustomType = (CustomType) calledOnValue.getValue();
+                if (Objects.equals(functionType, PrimitiveValueType.NATIVE_FUNCTION.getType())) {
+                    final NativeFunction nativeFunction;
+                    try {
+                        nativeFunction = (NativeFunction) functionValue.getValue();
+                    } catch (Exception e) {
+                        throw localInformation.createException("Native function [" + originalFunctionName + "] does not have the correct signature; must be List<Value> -> Value");
+                    }
+                    result = nativeFunction.execute(effectiveParentClosureContext, localInformation, functionParameters);
 
-                if (calledOnCustomType != null) {
-                    result = calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
-                } else {
-                    // static method
-                    result = (Value) executableFunction.invoke(null, functionParameters);
-                }
+                } else if (Objects.equals(functionType, PrimitiveValueType.REFLECTIVE_FUNCTION.getType())) {
+                    final Method executableFunction = (Method) functionValue.getValue();
+                    final Value calledOnValue = functionValue.getTagParentFunctionValue();
+                    final CustomType calledOnCustomType = (CustomType) calledOnValue.getValue();
 
-            } else { // otherwise it must be a value function
-                final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
-                final Value executeOnValue = functionValue.getTagParentFunctionValue();
-                if (executeOnValue == null) {
-                    throw localInformation.createException("Function [" + originalFunctionName + "] cannot be called without a base value to execute on");
+                    if (calledOnCustomType != null) {
+                        result = calledOnCustomType.callReflectiveMethod(executableFunction, functionParameters);
+                    } else {
+                        // static method
+                        result = (Value) executableFunction.invoke(null, functionParameters);
+                    }
+
+                } else if (Objects.equals(functionType, PrimitiveValueType.REFLECTIVE_FUNCTION_LIST.getType())) {
+                    final ClassFunctionList functionList = (ClassFunctionList) functionValue.getValue();
+                    final Value calledOnValue = functionList.getCalledOn();
+
+                    final Method callMethod = functionList.findMethod(functionParameters);
+
+                    if (callMethod == null) {
+                        result = Value.empty();
+                    } else {
+                        final Object[] invokeArgs = ClassFunctionList.buildArgumentList(functionParameters, callMethod.getParameterTypes());
+                        final Object returnValue = callMethod.invoke(calledOnValue.getValue(), invokeArgs);
+
+                        if (returnValue instanceof Value) {
+                            result = (Value) returnValue;
+                        } else {
+                            result = new Value(returnValue);
+                        }
+                    }
+
+                } else { // otherwise it must be a value function
+                    final MenterValueFunction executableFunction = (MenterValueFunction) functionValue.getValue();
+                    final Value executeOnValue = functionValue.getTagParentFunctionValue();
+                    if (executeOnValue == null) {
+                        throw localInformation.createException("Function [" + originalFunctionName + "] cannot be called without a base value to execute on");
+                    }
+                    result = executableFunction.apply(effectiveParentClosureContext, executeOnValue, functionParameters, localInformation);
                 }
-                result = executableFunction.apply(effectiveParentClosureContext, executeOnValue, functionParameters, localInformation);
             }
 
             result.unwrapReturn();
@@ -1013,7 +1052,7 @@ public abstract class EvaluationContext {
             if (identifiers.get(i) instanceof ParserNode) {
                 final ParserNode node = (ParserNode) identifiers.get(i);
                 if (node.getType() == ParserNode.NodeType.CODE_BLOCK || node.getType() == ParserNode.NodeType.EXPRESSION
-                    || node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
+                        || node.getType() == ParserNode.NodeType.IDENTIFIER_ACCESSED) {
                     final Value value = evaluate(node, globalContext, SymbolCreationMode.THROW_IF_NOT_EXISTS, localInformation);
                     identifiers.set(i, value);
                 }
@@ -1096,7 +1135,7 @@ public abstract class EvaluationContext {
                     if (!anImport.isInline() && anImport.getAliasOrName().equals(stringKey)) {
                         if (originalGlobalContext != globalContext) {
                             throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: Cannot access reference to the [" + anImport.getModule().getName() + "] module.\n"
-                                                                   + "Accessing symbols across modules is disallowed.");
+                                    + "Accessing symbols across modules is disallowed.");
                         }
 
                         final Module module = anImport.getModule();
@@ -1116,7 +1155,7 @@ public abstract class EvaluationContext {
                     } else if (anImport.isInline() && anImport.getModule().containsSymbol(stringKey)) {
                         if (originalGlobalContext != globalContext) {
                             throw localInformation.createException("Illegal access on [" + ParserNode.reconstructCode(identifier) + "]: [" + stringKey + "] references a symbol from the [" + anImport.getModule().getName() + "] module.\n"
-                                                                   + "Accessing symbols across modules is disallowed.");
+                                    + "Accessing symbols across modules is disallowed.");
                         }
 
                         final Module module = anImport.getModule();
@@ -1160,6 +1199,15 @@ public abstract class EvaluationContext {
                     value = new Value(globalContext.getVariables());
                     if (MenterDebugger.logInterpreterResolveSymbols) {
                         MenterDebugger.printer.printf("Symbol resolve: [%s] from symbols%n", value);
+                    }
+                    continue;
+                }
+
+                final Class<?> nativeClass = Value.getRegisteredNativeClassForConstruction(stringKey);
+                if (nativeClass != null) {
+                    value = new Value(nativeClass);
+                    if (MenterDebugger.logInterpreterResolveSymbols) {
+                        MenterDebugger.printer.printf("Symbol resolve: [%s] from native class%n", value);
                     }
                     continue;
                 }
@@ -1215,8 +1263,8 @@ public abstract class EvaluationContext {
                 final List<String> candidates = findMostLikelyCandidates(globalContext, previousValue, stringKey);
 
                 throw localInformation.createException("Cannot resolve symbol '" + stringKey + "' on [" + ParserNode.reconstructCode(identifier) + "]" +
-                                                       (previousValue != null ? "\nEvaluation stopped at value: " + ParserNode.reconstructCode(previousValue) : "") +
-                                                       (candidates.isEmpty() ? "" : "\nDid you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
+                        (previousValue != null ? "\nEvaluation stopped at value: " + ParserNode.reconstructCode(previousValue) : "") +
+                        (candidates.isEmpty() ? "" : "\nDid you mean " + candidates.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + "?"));
 
             } else if (symbolCreationModeIsAllowedToCreateVariable) {
                 if (isFinalIdentifier) {
@@ -1288,7 +1336,7 @@ public abstract class EvaluationContext {
             s1 = s1.toLowerCase();
             s2 = s2.toLowerCase();
 
-            int score = 0;
+            double score = 0;
             int currentMatchIndex = 0;
             boolean isMatchingSequence = true;
             for (int i = 0; i < s1.length() && currentMatchIndex < s2.length(); i++) {
@@ -1305,7 +1353,7 @@ public abstract class EvaluationContext {
                 }
             }
 
-            return score;
+            return (int) score;
         };
 
         return stringCandidates.stream()
