@@ -1203,7 +1203,7 @@ public abstract class EvaluationContext {
                     continue;
                 }
 
-                final Class<?> nativeClass = Value.getRegisteredNativeClass(stringKey);
+                final Class<?> nativeClass = Value.getRegisteredNativeClassForConstruction(stringKey);
                 if (nativeClass != null) {
                     value = new Value(nativeClass);
                     if (MenterDebugger.logInterpreterResolveSymbols) {

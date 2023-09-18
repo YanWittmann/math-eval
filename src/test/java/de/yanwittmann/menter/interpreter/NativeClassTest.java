@@ -84,4 +84,28 @@ public class NativeClassTest {
             interpreter.evaluateInContextOf("test", "val = new NativeTestClass()");
         });
     }
+
+    @Test
+    public void customNativeClassAnyClassAccessTest() {
+        try {
+            final MenterInterpreter interpreter = new MenterInterpreter(new Operators());
+            interpreter.finishLoadingContexts();
+            final GlobalContext testContext = interpreter.getOrCreateContext("test");
+
+            Value.setAllowAnyNativeClassAccess(true);
+
+            final NativeTestClass testInstance = new NativeTestClass();
+            testContext.getVariables().put("testInstance", new Value(testInstance));
+
+            Assertions.assertEquals(0, ((BigDecimal) interpreter.evaluateInContextOf("test", "testInstance.getTestValue()").getValue()).intValue());
+            interpreter.evaluateInContextOf("test", "testInstance.setTestValue(5)");
+            Assertions.assertEquals(5, ((BigDecimal) interpreter.evaluateInContextOf("test", "testInstance.getTestValue()").getValue()).intValue());
+
+            Assertions.assertThrows(MenterExecutionException.class, () -> {
+                interpreter.evaluateInContextOf("test", "val = new NativeTestClass()");
+            });
+        } finally {
+            Value.setAllowAnyNativeClassAccess(false);
+        }
+    }
 }

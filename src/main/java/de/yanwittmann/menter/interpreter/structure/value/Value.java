@@ -31,6 +31,7 @@ public class Value implements Comparable<Value> {
 
     private final static List<Module> CUSTOM_TYPES = new ArrayList<>();
     private final static List<Class<?>> NATIVE_CLASSES = new ArrayList<>();
+    private static boolean ALLOW_ANY_NATIVE_CLASS_ACCESS = false;
 
     private final int uuidHash = UUID.randomUUID().toString().hashCode();
     private Object value;
@@ -416,7 +417,7 @@ public class Value implements Comparable<Value> {
         }
 
         final Class<?> valueClazz = value.getClass();
-        if (NATIVE_CLASSES.contains(valueClazz)) {
+        if (ALLOW_ANY_NATIVE_CLASS_ACCESS || NATIVE_CLASSES.contains(valueClazz)) {
             final String identifierName = identifier.toDisplayString();
 
             final Method[] publicMethods = valueClazz.getMethods();
@@ -502,6 +503,14 @@ public class Value implements Comparable<Value> {
         }
     }
 
+    public static void setAllowAnyNativeClassAccess(boolean allowAnyNativeClassAccess) {
+        ALLOW_ANY_NATIVE_CLASS_ACCESS = allowAnyNativeClassAccess;
+    }
+
+    public static boolean isAllowAnyNativeClassAccess() {
+        return ALLOW_ANY_NATIVE_CLASS_ACCESS;
+    }
+
     public static void registerNativeClass(Class<?> clazz) {
         NATIVE_CLASSES.add(clazz);
     }
@@ -510,20 +519,7 @@ public class Value implements Comparable<Value> {
         NATIVE_CLASSES.remove(clazz);
     }
 
-    public static boolean isRegisteredNativeClass(Class<?> clazz) {
-        return NATIVE_CLASSES.contains(clazz);
-    }
-
-    public static boolean isRegisteredNativeClass(String className) {
-        for (Class<?> clazz : NATIVE_CLASSES) {
-            if (clazz.getSimpleName().equals(className)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static Class<?> getRegisteredNativeClass(String className) {
+    public static Class<?> getRegisteredNativeClassForConstruction(String className) {
         for (Class<?> clazz : NATIVE_CLASSES) {
             if (clazz.getSimpleName().equals(className)) {
                 return clazz;
